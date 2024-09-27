@@ -1,0 +1,67 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "generate-prompt",
+            "command": "python",
+            "args": [
+                "../prompt-generator/pgen.py",
+                "prompt.md"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "detail": "Generate prompt using pgen.py"
+        },
+        {
+            "type": "shell",
+            "label": "generate-gitdiff",
+            "command": "python",
+            "args": [
+                "../prompt-generator/pgen.py",
+                "prompt.md",
+                "--gitdiff"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "detail": "Generate prompt using pgen.py"
+        },
+        {
+            "type": "shell",
+            "label": "build-debug",
+            "command": "make",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}/epanet-dev/build/x64-Debug"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Build EPANET in debug mode"
+        },
+        {
+            "type": "shell",
+            "label": "build-release",
+            "command": "make",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}/epanet-dev/build/release"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": "Build EPANET in release mode"
+        }
+    ]
+}

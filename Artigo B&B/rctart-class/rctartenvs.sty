@@ -1,0 +1,176 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------
+% Rctartenvs
+% LaTeX Package
+% Version 1.0.1 (21/05/2024)
+%
+% Authors: 
+% Guillermo Jimenez (memo.notess1@gmail.com)
+% Eduardo Gracidas (eduardo.gracidas29@gmail.com)
+% --------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------
+%                        WARNING!
+% --------------------------------------------------------
+% Do not remove this package from 'class/rctart.cls' to 
+% avoid compilation problems. This package defines the 
+% included environments and colors.
+% --------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------
+% PACKAGE CONFIGURATION
+%----------------------------------------------------------
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rctart-class/rctartenvs}[2024/05/21]
+
+%----------------------------------------------------------
+% COLORS
+%----------------------------------------------------------
+
+\RequirePackage{xcolor}
+
+%% Veja em https://latexcolor.com/
+\definecolor{airforceblue}{rgb}{0.36, 0.54, 0.66}   % Air Force blue
+\definecolor{ao}{rgb}{0.0, 0.0, 1.0}                % Ao
+\definecolor{armygreen}{rgb}{0.29, 0.33, 0.13}      % Army green
+\definecolor{ballblue}{rgb}{0.13, 0.67, 0.8}        % Ball Blue
+\definecolor{bleudefrance}{rgb}{0.19, 0.55, 0.91}   % Bleu de France
+\definecolor{bluegray}{rgb}{0.4, 0.6, 0.8}          % Blue Gray
+\definecolor{darkcerulean}{rgb}{0.03, 0.27, 0.49}   % Dark cerulean
+\definecolor{darkmidnightblue}{rgb}{0.0, 0.2, 0.4}  % Dark midnight blue
+\definecolor{darkpowderblue}{rgb}{0.0, 0.2, 0.6}    % Dark powder blue
+\definecolor{darkslategray}{rgb}{0.18, 0.31, 0.31}  % Dark slate gray
+
+\colorlet{rctartcolor}{darkmidnightblue}            % rctcolor
+%\definecolor{rctartcolor}{rgb}{0.12, 0.3, 0.17}    % Green
+%\definecolor{rctartcolor}{rgb}{0.4, 0.26, 0.13}    % Brown
+
+%% Cores novas
+\colorlet{rcttarja}{rctartcolor!22}
+\colorlet{rcttexttarja}{rctartcolor} %{white}
+
+%% cores padrão da Facet
+% \colorlet{rctartcolor}{black}        % Blue
+\definecolor{rcttarja}{rgb}{0.0,0.602,0.87} % azul Facet
+\colorlet{rcttexttarja}{white} 
+
+%----------------------------------------------------------
+% RCTARTENV-, INFO-, NOTE- ENVIRONMENTS
+%----------------------------------------------------------
+
+% Rctartenv
+\newmdenv[
+backgroundcolor=rctartcolor!22, 					
+linecolor=rctartcolor!22,									
+linewidth=0.7pt,
+frametitle=\vskip0pt\bfseries,
+frametitlerule=false,
+frametitlefont=\color{rctartcolor}\bfseries\sffamily,
+frametitlealignment=\raggedright,
+innertopmargin=3pt,
+innerbottommargin=6pt,
+innerleftmargin=6pt,
+innerrightmargin=6pt,
+font=\selectfont,
+fontcolor=rctartcolor,									
+frametitleaboveskip=8pt,
+skipabove=10pt
+]{rctartenv}
+
+%----------------------------------------------------------
+
+% Info
+\newmdenv[
+backgroundcolor=rctartcolor!22, 						
+linecolor=rctartcolor!22,									
+linewidth=0.7pt,
+frametitle=\vskip0pt\bfseries\infoname,
+frametitlerule=false,
+frametitlefont=\color{rctartcolor}\bfseries\sffamily,
+frametitlealignment=\raggedright,
+innertopmargin=3pt,
+innerbottommargin=6pt,
+innerleftmargin=6pt,
+innerrightmargin=6pt,
+font=\normalfont,
+fontcolor=rctartcolor,									
+frametitleaboveskip=3pt,
+skipabove=10pt
+]{info}
+
+%----------------------------------------------------------
+
+% Note
+\newmdenv[
+backgroundcolor=rctartcolor!22, 						
+linecolor=rctartcolor!22,									
+linewidth=0.7pt,
+frametitle=\vskip0pt\bfseries\notename,
+frametitlerule=false,
+frametitlefont=\color{rctartcolor}\bfseries\sffamily,
+frametitlealignment=\raggedright,
+innertopmargin=3pt,
+innerbottommargin=6pt,
+innerleftmargin=6pt,
+innerrightmargin=6pt,
+font=\normalfont,
+fontcolor=rctartcolor,									
+frametitleaboveskip=3pt,
+skipabove=10pt
+]{note}
+
+%----------------------------------------------------------
+
+% ABSTRACT with TCOLORBOX
+
+% \newboolean{colorabst}
+% \setboolean{colorabst}{true}
+
+\renewtcolorbox{abstract}{
+  breakable,
+  colback=\ifbool{colorabst}{rctartcolor!22}{white},%abstractcolor!22,
+  arc=0pt,
+  boxrule=0pt,
+  left=\ifbool{colorabst}{5pt}{0pt}, 
+  right=\ifbool{colorabst}{5pt}{0pt},%\latskip,
+  top=6pt,
+  bottom=5pt,  
+  colbacktitle=\ifbool{colorabst}{rctartcolor!22}{white},%abstractcolor!22,
+  colframe=\ifbool{colorabst}{rctartcolor!22}{white},%abstractcolor!22,
+  coltitle=rctartcolor,
+  toptitle=5pt,
+  \abstractalign,
+  fonttitle=\sectionfont,
+  %   fontupper=\linespread{0.7}\sffamily\selectfont,
+  after skip=12pt,
+  title={\MakeUppercase{\abstractname}}
+}
+
+%----------------------------------------------------------
+
+% Citacao direta com mais de 3 linhas - ABNT NBR 10520/2002 - 5.3
+\newlength{\ABNTEXcitacaorecuo}% recuo de 4 cm da margem esquerda
+\if@twocolumn%
+\setlength{\ABNTEXcitacaorecuo}{1.8cm}
+\else% \@twocolumnfalse
+
+\setlength{\ABNTEXcitacaorecuo}{4cm}
+\fi
+
+\newenvironment*{citacao}[1][default]{%
+  \vspace{5pt}
+  \list{}%
+  \footnotesize%
+  \addtolength{\leftskip}{\ABNTEXcitacaorecuo}%
+  \item[]%
+  \begin{singlespace*}%
+    \ifthenelse{\not\equal{#1}{default}}{\itshape\selectlanguage{#1}}{}%
+  }{%
+  \end{singlespace*}%
+  \endlist}%
+
+%----------------------------------------------------------
+
+\endinput

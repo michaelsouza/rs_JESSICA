@@ -1,0 +1,102 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------
+% Rctartbabel
+% LaTeX Package
+% Version 1.0.0 (21/05/2024)
+%
+% Authors: 
+% Guillermo Jimenez (memo.notess1@gmail.com)
+% Eduardo Gracidas (eduardo.gracidas29@gmail.com)
+% --------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------
+%                        WARNING!
+% --------------------------------------------------------
+% Do not remove this package from 'class/rctart.cls' to 
+% avoid compilation problems. This package defines the 
+% translation to spanish for some parts of the text.
+% --------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------
+% PACKAGE CONFIGURATION
+%----------------------------------------------------------
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rctart-class/rctartbabel}[2024/05/21]
+
+%----------------------------------------------------------
+% DOCUMENT LANGUAGE ~ NEWBOOL
+%----------------------------------------------------------
+
+%!TEX Set 'true' for spanish babel
+
+\newboolean{es-babel}
+\setboolean{es-babel}{false}
+\ifthenelse{\boolean{es-babel}}
+{
+    \usepackage[spanish,es-nodecimaldot,es-noindentfirst]{babel}
+}
+{
+    \usepackage[portuges]{babel}
+}
+
+%----------------------------------------------------------
+% BABEL NAMES DEFINITIONS
+%----------------------------------------------------------
+  \newcommand{\keywordname}{}%
+  \newcommand{\andname}{}%
+  \newcommand{\corresname}{}%
+  \newcommand{\emailname}{}%
+  \newcommand{\receivedname}{}%
+  \newcommand{\revisedname}{}%
+  \newcommand{\acceptedname}{}%
+  \newcommand{\publishedname}{}%
+  \newcommand{\infoname}{}%
+  \newcommand{\notename}{}%
+  \newcommand{\captioncodename}{}%
+
+
+\addto\captionsenglish{% 
+  \renewcommand{\keywordname}{Keywords}%
+  \renewcommand{\andname}{and}%
+  \renewcommand{\corresname}{Corresponding author}%
+  \renewcommand{\emailname}{E-mail}%
+  \renewcommand{\receivedname}{Received}%
+  \renewcommand{\revisedname}{Revised}%
+  \renewcommand{\acceptedname}{Accepted}%
+  \renewcommand{\publishedname}{Published}%
+  \renewcommand{\infoname}{Information}%
+  \renewcommand{\notename}{Note}%
+  \renewcommand{\captioncodename}{Code}%
+}
+
+\addto\captionsportuges{% 
+  \renewcommand{\keywordname}{Palavras-chave}%
+  \renewcommand{\andname}{ e }%
+  \renewcommand{\corresname}{Autor de correspondência}%
+  \renewcommand{\emailname}{Correios eletrônico}%
+  \renewcommand{\receivedname}{Recebido}%
+  \renewcommand{\revisedname}{Revisado}%
+  \renewcommand{\acceptedname}{Aceito}%
+  \renewcommand{\publishedname}{Publicado}%
+  \renewcommand{\infoname}{Informação}%
+  \renewcommand{\notename}{Nota}%
+  \renewcommand{\captioncodename}{C\'odigo}%
+  \renewcommand{\bibname}{REFER\^ENCIAS}%
+  \renewcommand{\refname}{REFER\^ENCIAS}%
+}
+
+\addto\captionsspanish{% 
+  \renewcommand{\keywordname}{Palabras-clave}%
+  \renewcommand{\andname}{ y }%
+  \renewcommand{\corresname}{Autor de correspondencia}%
+  \renewcommand{\emailname}{Correo electr\'onico:}%
+  \renewcommand{\receivedname}{Recibido}%
+  \renewcommand{\revisedname}{Revisado}%
+  \renewcommand{\acceptedname}{Aceptado}%
+  \renewcommand{\publishedname}{Publicado}%
+  \renewcommand{\infoname}{Informaci\'on}%
+  \renewcommand{\notename}{Nota}%
+  \renewcommand{\captioncodename}{C\'odigo}%
+}

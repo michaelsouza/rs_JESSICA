@@ -1,0 +1,367 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------
+% Rctart
+% LaTeX Template
+% Version 1.0.0 (24/06/2024)
+%
+% Authors: 
+% Silvio Cesar Garcia Granja (silvio.granja@unemat.br)
+% 
+% License:
+% Creative Commons CC BY 4.0
+% --------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt,a4paper,oneside,linenumbers=off,latinmodern=off,timesnews=off,english,spanish]{rctart-class/rctart}
+
+%% Não alterem as linhas a seguir
+%% Ajustes do título e abstract
+\setboolean{article-info}{false}              % false to hide the article-info section
+\setboolean{tarja-info}{false}                % false to hide the article-info section
+\setboolean{articleinfotop}{false}            % false to print article-info after affiliations
+\setboolean{colorabst}{false}                 % colore o resumo e abstract
+\setboolean{printhead}{false}
+\setboolean{printfoot}{false}
+
+%% Para uma tipografia mais refinada
+% \geometry{includeheadfoot,left=1.25cm,right=1.25cm}
+% \renewcommand{\aligntitleauthor}{\RaggedRight}  % \centering \RaggedRight
+% \renewcommand{\alignsection}{\RaggedRight}      % \filcenter \RaggedRight
+% \renewcommand{\abstractalign}{flushleft title}   % 'flushleft title' para alinhado a esquerda, 'center title' centralizado, 'flushright title' para alinhado a direita
+% \renewcommand{\partfont}{\color{rctartcolor}\large\bfseries\sffamily}
+% \renewcommand{\sectionfont}{\color{rctartcolor}\normalsize\bfseries\sffamily}
+% \renewcommand{\subsectionfont}{\bfseries\sffamily}
+% \renewcommand{\subsubsectionfont}{\small\sffamily\bfseries\itshape}
+% \renewcommand{\paragraphfont}{\small\bfseries\sffamily}
+% \renewcommand{\rcttitlefont}{\color{rctartcolor}\rmfamily\bfseries\sffamily\fontsize{14}{20}\selectfont}
+% \captionsetup{labelfont={normalsize,bf,sf,rctartcolor}}
+%% \colorlet{rctartcolor}{black}
+
+% ---------------------------------------------------------
+
+
+%----------------------------------------------------------
+% TITLE
+%----------------------------------------------------------
+
+\setcounter{page}{13} % ajusta a numeração da primeira página
+
+\journalname{Semana da Facet - 2024}
+\title{Branch and Bound na Programação Operacional de Bombas em Sistemas de Distribuição de Água: Uma Abordagem com DFS Especializado e Paralelismo}
+
+%----------------------------------------------------------
+% AUTHORS AND AFFILIATIONS
+%----------------------------------------------------------
+
+\author[1,$\dagger$]{Jéssica Gomes Melo da Rocha}
+\author[2]{Michael Ferreira de Souza}
+\author[3,$\dagger$]{Ascânio Dias Araújo}
+%\author[4]{Nome completo e sem abreviatura do autor Quatro}
+
+%----------------------------------------------------------
+
+\affil[1]{Universidade Federal do Ceará, Fortaleza, Ceará, Brasil – \url{jessica@fisica.ufc.br}}
+\affil[2]{Universidade Federal do Ceará, Fortaleza, Ceará, Brasil – \url{michael@ufc.br}}
+\affil[3]{Universidade Federal do Ceará, Fortaleza, Ceará, Brasil – \url{ascanio@fisica.ufc.br}}
+%\affil[4]{Afiliação, cidade – \url{email}}
+%\affil[$\dagger$]{Estes autores contribuíram igualmente para este trabalho}
+
+%----------------------------------------------------------
+% DATES
+%----------------------------------------------------------
+
+\dates{}%Este manuscrito foi compilado em 28 de abril de 2024}
+
+%----------------------------------------------------------
+% FOOTER INFORMATION
+%----------------------------------------------------------
+
+\leadauthor{Rocha et al.}
+%\footinfo{Nomes dos autores. Este artigo de acesso aberto é distribuído sob a licença Creative Commons Attribution (CC BY-SA 4.0).}%{Semana da Facet -- 2024}
+%\smalltitle{Modelo \LaTeX\ para a \href{https://periodicos.unemat.br/index.php/recet}{Recet}}
+\institution{Universidade Federal do Ceará}
+\theyear{2024}
+%\thevolume{1}
+%\thelocal{Sinop}
+%\themonths{Jul.-Dez.}
+%\theyears{2023/Jan.-Dez.2024}
+% \theday{Sinop, v.1, Jul.-Dez. 2023/Jan.-Dez.2024} %\today
+
+
+%----------------------------------------------------------
+% ARTICLE INFORMATION
+%----------------------------------------------------------
+
+\corres{Forneça as informações do autor e editor correspondentes aqui.}
+\email{example@organization.com.}
+\doi{\url{https://www.doi.org/exampledoi/XXXXXXXXXX}}
+% 
+\received{YY/ZZ/2024}
+\revised{YY/ZZ/2024}
+\accepted{YY/ZZ/2024}
+\published{YY/ZZ/2024}
+\eissn{2965-9558}
+\articlenum{e0124XX}
+
+\license{}%Classe Rctart \LaTeX\ \ccLogo\ Este documento está licenciado sob Creative Commons CC BY 4.0.}
+
+%----------------------------------------------------------
+
+\begin{document}
+\twocolumn[
+    \maketitle
+    \thispagestyle{firststyle}
+    \linenumbers 
+%     \tableofcontents
+
+%----------------------------------------------------------
+
+%----------------------------------------------------------
+% ABSTRACT
+%----------------------------------------------------------
+
+% \palavraschave{palavra-chave 1, palavra-chave 2, palavra-chave 3, palavra-chave 4, palavra-chave 5}
+% \keywords{keyword 1, keyword 2, keyword 3, keyword 4, keyword 5}
+]
+\begin{abstract}
+   O resumo deve aparecer na parte superior da coluna da esquerda do texto.  O resumo deve conter entre 100 e 150 palavras. Todos os artigos devem ser escritos em Português e conter um Abstract em inglês. Todos os artigos devem conter um máximo de 6 páginas incluindo referências. 
+   \printkeywords{palavra-chave 1, palavra-chave 2, palavra-chave 3, palavra-chave 4, palavra-chave 5.} % deve por \@keyword ou \@palavraschave ou diretamente o texto das palavras-chave
+\end{abstract}
+
+\begin{otherlanguage}{english}
+\begin{abstract}
+  The summary must appear at the top of the left column of the text.  The abstract must contain between 100 and 150 words. All articles must be written in Portuguese and contain an Abstract in English. All articles must contain a maximum of 6 pages including references.
+   \printkeywords{keyword 1, keyword 2, keyword 3, keyword 4, keyword 5.} % must put \@keyword or \@wordskey or directly the text of the keywords
+\end{abstract}
+\end{otherlanguage}
+
+
+\section{Introdução\label{sec:intro}}
+
+Água e energia representam duas das maiores despesas da sociedade moderna. Globalmente, estima-se que 2-3\% do consumo energético é utilizado para o bombeamento e tratamento de água em contextos urbanos e industriais \cite{M2012}. Aproximadamente 86,4\% dos custos gerados por uma bomba de água estão relacionados à energia consumida durante sua operação no abastecimento \cite{Nault2015}, e estudos apontam que a eficiência energética desses sistemas pode ser melhorada em pelo menos 25\% \cite{Moreira2013}.
+
+Diante da crescente demanda e das preocupações ambientais, otimizar o uso desses recursos é imperativo para garantir operações sustentáveis e eficientes. Segundo um relatório da Agência Internacional de Energia \cite{ieaWEO2016Special}, o consumo energético no setor de água mais que duplicará nos próximos 20 anos, principalmente por conta de projetos de dessalinização.
+
+A gestão do consumo energético em sistemas de distribuição de água (SDAs) é uma questão multifacetada. Infraestruturas antigas, rotinas operacionais ineficientes e equipamentos obsoletos são apenas alguns dos obstáculos \cite{M2012, moura2010relaccao}. No entanto, novas tecnologias, como conversores de frequência, algoritmos de otimização e sistemas de monitoramento em tempo real com IoT, surgem como soluções promissoras \cite{Mackle1995, moura2010relaccao, ufopREPOSITORIOINSTITUCIONAL}.
+
+Este trabalho aborda a otimização operacional de bombas em SDAs, um problema desafiador devido à natureza discreta do espaço de busca, não convexidade das leis físicas envolvidas, necessidade de simulações hidráulicas, flutuações nas demandas e complexidade para quantificar as despesas operacionais \cite{Makaremi2017}.
+
+Existem duas principais abordagens para esse problema: a modernização de equipamentos, que demandam investimentos significativos, e a otimização da programação operacional das bombas, que pode ser implementada com baixo custo, através da capacitação dos operadores e adoção de sistemas de apoio a tomada de decisão \cite{Moreira2013}. Esta última pode oferecer economias imediatas nos custos energéticos, destacando-se na literatura por sua viabilidade.
+
+Os custos de operação de SDAs, por sua vez, compreendem tanto despesas de consumo elétrico, como despesas relacionadas à manutenção das bombas de água \cite{vanZyl2004}. A manutenção, apesar de ser um fator de custo significativo, apresenta dificuldades de quantificação devido a várias influências, como o tipo e idade da bomba, o perfil de operação, a experiência do operador e as condições climáticas \cite{Makaremi2017}.
+
+Neste artigo, seguindo as diretrizes de amplos trabalhos da literatura \cite{lopez2008ant, lansey1994optimal, boulos2001optimal, vanZyl2004, savic1997multiobjective, lopez2005multi, kelner2003optimal, bene2013comparison}, assumimos o desgaste através de uma medida substituta, o número de acionamentos de bombas.
+
+Otimizar a operação de SDAs é um campo de pesquisa ativo por quase meio século \cite{MalaJetmarova2017}. Inicialmente, se utilizavam modelos hidráulicos simplificados, funções de custo baseadas em tarifas fixas \cite{MalaJetmarova2017} e a abordagem se dava através de métodos determinísticos como Programação Linear \cite{jowitt1992optimal}, Programação Não Linear \cite{chase1993computer} e Programação Dinâmica \cite{Nitivattananon1996, sterling1975dynamic, zessler1989optimal}.
+
+Desde a década de 1990, algoritmos metaheurísticos, como Algoritmos Genéticos (AGs) \cite{Mackle1995, vanZyl2004, savic1997multiobjective}, Recozimento Simulado (SA) \cite{goldman1999application,teegavarapu2002optimal}, Otimização por Colônia de Formigas (ACO) \cite{lopez2008ant} e Enxame de Partículas \cite{ostadrahimi2012multi}, emergiram como alternativas promissoras para lidar com a complexidade do problema de programação de bombas \cite{MalaJetmarova2017}. Embora populares, esses métodos não garantem a solução ótima global e podem enfrentar dificuldades na busca por soluções de alta qualidade, principalmente em problemas com muitas restrições e redes mais complexas \cite{Costa2015}.
+
+A crescente complexidade dos SDAs e a necessidade de considerar um maior número de variáveis e restrições motivaram a busca por métodos mais eficientes. A estrutura tarifária da eletricidade, por exemplo, é um fator crucial na otimização dos custos de bombeamento, exigindo estratégias que maximizem o uso em horários de menor tarifa.
+
+Avanços tecnológicos permitiram a incorporação de simuladores hidráulicos mais realistas, como o EPANET \cite{epanet}, nos métodos de otimização. Contudo, o esforço computacional necessário para tais simulações, principalmente em modelos com redes mais complexas, ainda limitam sua aplicabilidade \cite{MalaJetmarova2017}. % PROF ACHA QUE FICA MELHOR COMO PRENÚNCIO DE PARÁGRAFO SOBRE RNA
+
+A combinação de métodos determinísticos e metaheurísticas se mostraram uma estratégia eficaz para melhorar o desempenho dos algoritmos e reduzir o tempo de processamento. Por exemplo, a hibridização de AGs com métodos de busca local puderam acelerar a convergência e melhorar a qualidade das soluções \cite{reis2006water, vanZyl2004}.
+
+No entanto, estudos mostram que essas metaheurísticas, quando integradas a simuladores de rede como o EPANET, podem limitar sua implementação em grandes SDAs e em cenários de controle em tempo real, devido ao elevado esforço computacional necessário \cite{MalaJetmarova2017}. Em resposta, métodos determinísticos mais eficientes voltaram a ter destaque e têm sido cada vez mais aplicados.
+
+Em muitos cenários, o número de bombas em SDAs não é excessivamente alto, tornando viável a aplicação de métodos exatos que exploraram a enumeração das soluções possíveis, uma vez que o número de combinações é computacionalmente tratável \cite{Costa2015}. Algoritmos determinísticos, como o Branch-and-Bound (B\&B) \cite{land2010automatic, costa2001global}, além de métodos como Decomposições Lagrangianas \cite{Ghaddar2015} e de Benders generalizadas \cite{verleye2016generalized}, têm se mostrado eficientes na otimização da programação de bombas, ao dividirem problemas complexos em subproblemas menores e mais gerenciáveis.
+
+Apesar dos progressos, desafios permanecem na otimização da programação de bombas, incluindo escalabilidade, transferibilidade do modelo (capacidade do modelo de ser aplicado em diferentes redes), incorporação de incertezas na demanda de água e o alto custo computacional \cite{Kerimov2023}. O uso de metamodelos, como Redes Neurais Artificiais (RNAs)\cite{behzadian2009stochastic, broad2005water, rao2007use}, para simular o comportamento dos SDAs, podem superar alguns desses desafios, reduzindo tempos de simulação e permitindo a implementação de estratégias de controle em tempo real.
+
+Não há consenso sobre qual método é o mais adequado para a otimização da operação de SDAs, pois nenhum se mostra totalmente satisfatório ao enfrentar os diversos desafios envolvidos \cite{MalaJetmarova2017}. Nesse contexto, o presente artigo propõe um algoritmo Branch-and-Bound (B\&B) como método exato para encontrar a solução ótima global para a programação de bombas. 
+
+O B\&B utiliza uma abordagem de divisão e conquista, dividindo o problema em subproblemas menores e explorando o espaço de soluções de maneira sistemática. Ao fixar variáveis de decisão e empregar limites inferiores, o algoritmo elimina soluções inviáveis, reduzindo significativamente o espaço de busca e permitindo encontrar soluções ótimas globais \cite{Costa2015}.
+
+Este trabalho é uma extensão do estudo de Costa \cite{Costa2015}, que apresentou algumas limitações, especialmente em relação ao elevado tempo computacional, causado pelas inúmeras simulações hidráulicas no EPANET e pela ausência de uma estratégia eficaz para o cálculo de limites inferiores, o que dificultou a poda eficiente de soluções inviáveis. Além disso, a busca em largura (Breadth-First Search) exigia maior uso de memória e processamento, pois todas as soluções parciais de cada nível eram analisadas antes de avançar na árvore.
+
+A nova abordagem proposta neste trabalho supera essas limitações ao introduzir uma busca em profundidade (Depth-First Search) especializada. Diferente da busca em largura, que não calculava limites inferiores, esta implementação atualiza continuamente o limite inferior conforme o algoritmo avança. Isso é feito através do cálculo de um peso associado a cada decisão, normalizado pelo nível dos nós da árvore, o que permite priorizar nós mais profundos. Com essa estratégia, o algoritmo faz o backtracking de forma mais eficiente e percorre a árvore de maneira aprimorada, reduzindo o tempo computacional na busca por soluções ótimas globais. Além disso, a aplicação de técnicas de paralelismo melhora ainda mais o desempenho, tornando o algoritmo mais eficiente e adequado para redes de maior escala e complexidade.
+
+[Parágrafo sobre estrutura seguinte do artigo]
+
+
+\section{Definição do Problema}
+
+A otimização da programação operacional de bombas d'água em SDAs é um problema de alta complexidade, em virtude do grande número de variáveis de decisão e das diversas restrições específicas que regem cada sistema.
+
+O problema consiste em determinar a melhor configuração para o funcionamento das bombas ao longo de um horizonte de planejamento diário, de modo a minimizar os custos operacionais, com ênfase nos custos de energia elétrica. Além disso, há também uma preocupação com a redução dos custos de manutenção, que é avaliada de maneira implícita, através de restrições relacionadas ao número de acionamentos das bombas. Essa programação deve ser realizada de forma a atender a todas as restrições hidráulicas e operacionais, garantindo segurança e eficiência do sistema.
+
+\subsection{Conjuntos e Parâmetros}
+
+Para facilitar a compreensão das equações apresentadas, abaixo estão definidos os conjuntos e parâmetros utilizados:
+\\
+
+
+\textbf{Conjuntos}
+\begin{itemize}
+    \item \( N = \{n\}_{n=1}^{N} \) - Conjunto das bombas, onde \(N\) é o número total de bombas.
+    \item \( T = \{t\}_{t=1}^{T} \) - Conjunto dos passos de tempo, onde \(T\) é o número total de passos de tempo.
+    \item \( I = \{i\}_{i=1}^{I} \) - Conjunto dos nós da rede de distribuição de água, onde \(I\) é o número total de nós.
+    \item \( J = \{j\}_{j=1}^{J} \) - Conjunto dos tanques (reservatórios), onde \(J\) é o número total de tanques.
+\end{itemize}
+
+
+\textbf{Parâmetros}  
+\begin{itemize}
+    \item \(E_{nt}\) - Energia consumida (\(kWh\)) pela \textit{n}-ésima bomba no \textit{t}-ésimo período
+    
+    \item \(C_{nt}\) - Custo da tarifa de energia da \textit{n}-ésima bomba no \textit{t}-ésimo período
+    
+    \item \(P_{it}\) - Pressão no \textit{i}-ésimo nó no \textit{t}-ésimo período
+    
+    \item \(P_{min,i}\) - Pressão mínima requerida para o \textit{i}-ésimo nó
+    
+    \item \(P_{max,i}\) - Pressão máxima permitida para o \textit{i}-ésimo nó
+    
+    \item \(S_{jt}\) - Nível do \textit{j}-ésimo tanque no t-ésimo período
+    
+    \item \(S_{min,j}\) - Nível mínimo permitido para o \textit{j}-ésimo tanque
+    
+    \item \(S_{max,j}\) - Nível máximo permitido para o \textit{j}-ésimo tanque
+    
+    \item \(A_n\) - Número de acionamentos da \textit{n}-ésima bomba
+    
+    \item \(A_{max,n}\) - Quantidade máxima permitida de acionamentos para a \textit{n}-ésima bomba
+\end{itemize}
+
+
+\subsection{Variável de Decisão}
+
+As variáveis de decisão no modelo proposto referem-se aos estados operacionais das bombas ao longo do tempo, representados como:
+
+\begin{itemize}
+\item[-] \(X_{nt} \in \{0, 1\}\): Variável binária que indica se a \textit{n}-ésima bomba está ligada (1) ou desligada (0) no \textit{t}-ésimo período.
+\end{itemize}
+
+\subsection{Função Objetivo}
+
+O objetivo principal do modelo é minimizar o custo de consumo elétrico. Este custo é influenciado pelas tarifas de energia, que podem variar ao longo do dia e da semana, e pelo consumo de energia das bombas em operação. A função objetivo é expressa como:
+
+\[
+\text{minimizar } z = \sum_{n=1}^{N} \sum_{t=1}^{T} C_{nt} E_{nt} X_{nt}
+\]
+
+Aqui, \(C_{nt}\) representa o custo da tarifa de energia elétrica para a \textit{n}-ésima bomba no \textit{t}-ésimo período, enquanto \(E_{nt}\) é a energia consumida por essa bomba durante o mesmo período. A minimização dessa função visa identificar a configuração de operação das bombas que resulta no menor custo de energia possível, considerando as variações tarifárias ao longo do tempo.
+
+\subsection{Restrições Operacionais e Hidráulicas}
+
+Para garantir que o sistema opere de maneira eficiente e segura, uma série de restrições foram incorporada ao modelo. Essas restrições garantem que as operações das bombas e o nível dos reservatórios atendam a requisitos técnicos específicos:
+
+\begin{itemize}
+\item Limites do nível do reservatório:
+  \[
+  S_{min,j} \leq S_{jt} \leq S_{max,j}, \forall j, \forall t
+  \]
+\end{itemize}
+
+Os níveis dos tanques devem permanecer dentro dos limites mínimo e máximo em todos os períodos, garantindo que não haja risco de escassez de água ou transbordamento.
+
+\begin{itemize}
+\item Pressões nos nós da rede:
+  \[
+  P_{min,i} \leq P_{it} \leq P_{max,i}, \forall i, \forall t
+  \]
+\end{itemize}
+
+As pressões nos nós críticos da rede devem estar dentro dos limites permitidos para assegurar que a água seja distribuída de maneira eficiente e que não ocorram falhas no fornecimento.
+
+\begin{itemize}
+\item Restrição de volume acumulado:
+  \[
+  S_{j,T} \geq S_{j,0}, \forall j
+  \]
+\end{itemize}
+
+Esta restrição garante que ao final do ciclo operacional de 24 horas, o nível dos tanques seja pelo menos igual ao nível inicial, evitando a redução gradual dos níveis de água ao longo do tempo, além de permitir a replicação do modelo para períodos maiores.
+
+\begin{itemize}
+\item Limite de atuações das bombas:
+  \[
+  A_n = \sum^{T}_{t = 1}(X_{nt}- X_{nt+1})^{2}, \forall n, \forall t
+  \]
+\end{itemize}
+
+O número de atuações de cada bomba é limitado para minimizar o desgaste mecânico e reduzir custos de manutenção. Essa restrição é estabelecida através dessa medida substituta como um esforço para prolongar a vida útil das bombas e garantir uma operação confiável ao longo do tempo. 
+
+Além das restrições explicitamente descritas, o simulador hidráulico EPANET resolve implicitamente um conjunto de equações fundamentais, incluindo o balanço de massa em cada nó da rede e as equações de conservação de energia ao longo das tubulações. A variável binária \( X_{nt} \), que representa o estado ligado ou desligado da bomba, afeta diretamente os níveis dos reservatórios (\( S_{jt} \)) e as pressões nodais (\( P_{it} \)). Quando a bomba está ativa, o simulador ajusta o fluxo de água para atender às demandas e calcular os novos valores de \( S_{jt} \) e \( P_{it} \), esse aumento no fluxo eleva a pressão nos nós conectados e pode alterar o nível dos reservatórios.
+
+Cada uma dessas restrições desempenha um papel fundamental na garantia de que a solução do problema seja não apenas economicamente viável, mas também tecnicamente vantajosa, assegurando a confiabilidade e eficiência do sistema.
+
+A formulação apresentada busca sincronizar de forma otimizada a operação das bombas com as demandas variáveis de consumo de água e as flutuações nas tarifas de energia, garantindo que o custo total seja minimizado sem comprometer a segurança operacional do sistema. A otimização envolve a resolução do problema de programação binária, onde a função objetivo e as restrições são resolvidas simultaneamente para encontrar a melhor configuração de operação possível.
+
+
+\section{Metodologia}
+
+O algoritmo Branch and Bound é uma abordagem determinística utilizada para resolver problemas de otimização combinatória, nos quais o espaço de busca cresce exponencialmente com o número de variáveis de decisão. Em vez de listar todas as soluções possíveis, o algoritmo realiza uma enumeração implícita das soluções, dividindo o espaço de busca em subespaços menores, chamados ramos. Esses ramos são avaliados e, sempre que possível, podados quando se determina que não podem conter a solução ótima.
+
+No contexto deste estudo, o B\&B é aplicado ao problema de programação operacional de bombas em SDAs, cujo objetivo é minimizar o custo energético associado à operação das bombas, respeitando simultaneamente restrições hidráulicas e operacionais, como as pressões mínimas e máximas nos nós e os níveis operacionais dos reservatórios.
+
+O algoritmo constrói uma árvore de decisão, onde cada nó representa uma solução parcial ou completa. A poda de ramos é baseada em dois critérios principais: inviabilidade, quando uma solução viola as restrições, e a análise de limites inferiores, já que o problema é de minimização. Nesse caso, o B\&B estabelece um limite inferior para cada subconjunto, que serve como uma estimativa otimista da qualidade da melhor solução naquele subespaço. Se o limite inferior de um ramo for maior que o custo da melhor solução já encontrada, aquele ramo pode ser descartado com segurança, o que resulta em reduções significativas do espaço de busca e do custo computacional.
+
+A estratégia de poda é fundamental para a eficiência do algoritmo, especialmente em problemas de grande escala, como o da programação de bombas. Cada nó da árvore representa uma solução parcial que corresponde a uma configuração de operação ao longo de um horizonte de 24 horas. O B\&B atua expandindo as soluções viáveis e eliminando aquelas que são subótimas, garantindo uma busca eficiente e a convergência para a solução ótima global.
+
+
+\subsection{Estrutura e Funcionamento do Algoritmo}
+
+O B\&B empregado neste estudo é desenvolvido ao longo de um horizonte de planejamento diário, onde as variáveis de decisão correspondem ao estado de operação de cada bomba em cada hora. O processo começa com uma solução parcial vazia, na qual nenhuma bomba está ativada. À medida que o algoritmo avança, várias soluções parciais são geradas, representando as diferentes combinações de bombas ligadas ou desligadas. Cada combinação configura um nó na árvore de decisão, e essas soluções são continuamente expandidas conforme o horizonte de tempo se estende.
+
+A cada nova solução parcial, o simulador hidráulico EPANET é utilizado para calcular variáveis críticas do sistema, como as pressões nos nós, os níveis de água dos reservatórios, as vazões nas tubulações, a energia consumida, entre outros. Esses valores são indispensáveis para verificação da viabilidade das soluções. As simulações são realizadas iterativamente, com o simulador recalculando as variáveis a cada intervalo de tempo, garantindo que o sistema opere dentro dos limites técnicos. Esse processo ajusta dinamicamente o comportamento da rede, assegurando o cumprimento das restrições em todas as condições operacionais.
+
+Se uma solução for considerada viável, ela é expandida para o próximo período de tempo, adicionando novos nós à árvore de decisão até que se obtenha uma solução completa. Caso contrário, se a solução não atender às restrições ou apresentar desempenho subótimo, ela é eliminada do processo, reduzindo significativamente o número de configurações a serem avaliadas.
+
+Ao final do horizonte de 24 horas, o algoritmo gera uma solução completa, cujo custo total é calculado com base no consumo energético das bombas de água. Entre todas as soluções viáveis, a de menor custo é considerada a solução ótima global. A inovação deste trabalho reside na implementação de uma variante especializada da busca em profundidade, que explora o espaço de busca de maneira mais eficiente.
+
+
+\subsection{Estratégias de Busca}
+
+Diferentes estratégias de busca podem ser utilizadas para explorar a árvore de decisões gerada pelo B\&B. As duas mais comuns são: a Busca em Profundidade (Depth-First Search) e a Busca em Largura (Breadth-First Search), cada uma com suas particularidades e impactos no tempo de execução e eficiência do algoritmo.
+
+No trabalho utilizado como referência, foi adotada a busca em largura (BFS), que explora todos os nós de um nível da árvore antes de avançar para o próximo. Embora essa estratégia garanta a exploração completa de cada nível, ela tende a consumir mais memória, já que é necessário armazenar todos os nós antes de progredir para as camadas seguintes. Além disso, em problemas grandes, como o da programação de bombas, a BFS pode se tornar ineficiente também pelo seu alto custo computacional, pois avalia exaustivamente todas as soluções intermediárias, em vez de avançar diretamente para soluções mais promissoras em níveis mais profundos da árvore.
+
+Na busca em profundidade (DFS), o algoritmo explora uma ramificação da árvore de decisão seguindo um caminho o mais profundo possível, indo de nó em nó até encontrar uma solução completa ou identificar que a ramificação não pode levar a uma solução viável. Esse processo é repetido para cada ramificação, e apenas quando o algoritmo atinge o final de um caminho ou identifica inviabilidade, ele realiza o backtracking.
+
+O backtracking é uma característica essencial da DFS, onde o algoritmo retorna a pontos anteriores na árvore para examinar outras possibilidades, garantindo que todas as soluções viáveis sejam exploradas. A DFS é particularmente eficiente em termos de uso de memória, já que o algoritmo só precisa armazenar o caminho atual que está sendo explorado, em vez de manter todos os nós gerados, como no caso da BFS.
+
+A DFS não garante que a primeira solução encontrada seja a ótima, pois explora única ramificação até o fim antes de avaliar outras alternativas. Esse comportamento pode levar a backtrackings frequentes, especialmente quando soluções inviáveis são descobertas tardiamente, em níveis mais profundos da árvore. Em contrapartida, uma vez que se obtém uma solução completa, esta pode ser utilizada para atualizar o limite inferior, orientando melhor a poda de ramos menos promissores nas buscas subsequentes.
+
+Neste estudo, foi implementada uma versão especializada da DFS, que representa uma inovação significativa em relação às abordagens tradicionais. A estratégia otimizada prioriza a exploração de nós com menor custo acumulado e maior profundidade na árvore de decisão. Para isso, uma função de custo é calculada em cada nó e normalizada pela profundidade, permitindo que o algoritmo avance de forma mais eficaz em direção a soluções completas, reduzindo o número de backtrackings. Além disso, essa abordagem possibilita a atualização dinâmica do limite inferior à medida que novas soluções viáveis são encontradas, refinando continuamente o processo de poda. 
+
+O algoritmo também incorpora paralelização de tarefas, permitindo que diferentes ramos da árvore sejam explorados simultaneamente, de forma independente. À medida que a DFS especializada avança, o custo acumulado normalizado é avaliado, e, ao concluir a exploração de um ramo, o núcleo então disponível é realocado para o ramo mais promissor entre as opções restantes. Essa estratégia não apenas maximiza a utilização dos recursos computacionais, como também resulta em uma redução significativa no tempo total de execução, preservando a robustez do algoritmo e garantindo a convergência para soluções de alta qualidade.
+
+%%%%%%%%%%%%
+
+
+\section{Estudos de Caso e Implementação}
+
+- Descrição da Rede AnyTown Modificada: Detalhes sobre a rede modificada usada como estudo de caso.
+- Parâmetros e Padrões de Demanda: Informações sobre os e quais parâmetros e demanda foram utilizados.
+- Implementação do Algoritmo: Discussão sobre a aplicação do algoritmo ao estudo de caso específico.
+- Ferramentas e softwares utilizados
+- Introduzir o EPANET com um pouco mais de detalhes e critérios
+- Processo de coleta e análise de dados
+- Critérios de avaliação, validação e teste
+
+\section{Resultados e Discussão}
+
+Resultados Computacionais: Apresentação dos resultados obtidos com o algoritmo.
+- Comparação com Métodos Existentes: Análise comparativa com outras abordagens da
+literatura.
+- Análise das Soluções Encontradas: Discussão sobre a qualidade, significância e viabilidade das soluções.
+- Impacto das Restrições: Reflexão sobre como as restrições operacionais influenciam as soluções e o desempenho computacional.
+
+\section{Conclusão}
+
+Resumo dos Resultados: Síntese das principais descobertas do estudo.
+- Implicações Práticas: Discussão sobre as aplicações práticas dos resultados para sistemas
+de distribuição de água.
+- Limitações do Estudo: Identificação das limitações encontradas durante a pesquisa.
+- Contribuições do estudo para a área
+- Recomendações para Pesquisas Futuras: Sugestões para futuros estudos e melhorias possíveis
+
+\section{Agradecimentos}
+
+--
+
+% \printbibliography%[title=Referências]
+\bibliography{rct.bib}
+
+\end{document}

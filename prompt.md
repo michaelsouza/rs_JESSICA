@@ -8,7 +8,7 @@
 [ ] epanet-dev/README.md
 [ ] epanet-dev/.travis.yml
 [ ] epanet-dev/CMakeLists.txt
-[ ] epanet-dev/CMakeSettings.json
+[x] epanet-dev/CMakeSettings.json
 [ ] epanet-dev/src/epanet3.h
 [ ] epanet-dev/src/CLI/main.cpp
 [x] prompt_answer_inp_file.md

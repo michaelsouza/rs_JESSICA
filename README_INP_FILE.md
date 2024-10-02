@@ -830,11 +830,3 @@ Tank levels unlimited. Optimisated results
 - **Simulation Options:** The `[OPTIONS]` section provides control over simulation accuracy, solver behavior, and modeling assumptions, allowing for fine-tuning based on the specific needs of the study.
 
 - **Spatial Coordinates:** While `[COORDINATES]`, `[VERTICES]`, `[LABELS]`, and `[BACKDROP]` are optional, they enhance the visualization of the network, making it easier to interpret results and understand spatial relationships within the system.
-
----
-
-### Conclusion
-
-The `any-town.inp` file is a comprehensive EPANET input file that defines the structural and operational parameters of a hypothetical town's water distribution system. Understanding each section and its parameters is essential for accurately setting up simulations, analyzing hydraulic and water quality behaviors, and optimizing system performance. By carefully configuring these sections, you can tailor the simulation to reflect real-world conditions and explore various scenarios for system management and optimization.
-
-If you plan to modify or extend this input file, ensure that you maintain consistency in units and identifiers across all sections. Additionally, leveraging the optional sections can provide more detailed insights and control over the simulation, enhancing both the depth and accuracy of your analysis.

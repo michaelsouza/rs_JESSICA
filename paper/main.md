@@ -101,8 +101,12 @@ $$
 \end{alignat}
 $$
 
+To derive $x_{it}$ from $y_t$, we minimize the total number of actuations by sequentially activating pumps. For example, if $y_t = 3$, we activate pumps 1, 2, and 3 at time step $t$. In this process, we try to minimize the number of actuations by turning on the first pump and then the second and so on. 
 
-
+## Case Study: Any Town
+- The maximum, minimum and initial levels of the reservoirs are 71.53, 66.53 and 66.93 meters, respectively.
+- The mimimum pressure for the nodes are 51 m (node 90), 42 m (node 50) and 30 m (node 170). 
+- The maximum number of actuations is 3 for all pumps.
 ### Branch-and-Bound Algorithm
 
 ### Implementation

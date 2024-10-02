@@ -1,0 +1,456 @@
+  Page 1                                    Wed Oct  2 13:31:08 2024
+
+  ******************************************************************
+  *                           E P A N E T                          *
+  *                   Hydraulic and Water Quality                  *
+  *                   Analysis for Pipe Networks                   *
+  *                         Version 2.2                            *
+  ******************************************************************
+  
+  Analysis begun Wed Oct  2 13:31:08 2024
+
+   
+  Hydraulic Status:
+  -----------------------------------------------------------------------
+     0:00:00: Balanced after 5 trials
+              57 nodes had demands reduced by a total of 10.28%
+     0:00:00: Reservoir River is emptying
+     0:00:00: Reservoir Lake is closed
+     0:00:00: Tank 1 is filling at 13.10 ft
+     0:00:00: Tank 2 is emptying at 23.50 ft
+     0:00:00: Tank 3 is filling at 29.00 ft
+   
+     1:00:00: Pump 10 changed by timer control
+     1:00:00: Balanced after 7 trials
+              57 nodes had demands reduced by a total of 8.55%
+     1:00:00: Reservoir Lake is emptying
+     1:00:00: Pump 10 changed from closed to open
+   
+     2:00:00: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 7.46%
+     2:00:00: Tank 2 is filling at 22.79 ft
+   
+     3:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 7.19%
+   
+     3:30:16: Pump 335 changed by Tank 1 control
+     3:30:16: Pipe 330 changed by Tank 1 control
+     3:30:16: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 8.21%
+     3:30:16: Pipe 330 changed from closed to open
+     3:30:16: Pump 335 changed from open to closed
+   
+     4:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 7.46%
+   
+     5:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 6.61%
+   
+     6:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.63%
+   
+     7:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.37%
+   
+     8:00:00: Balanced after 4 trials
+              53 nodes had demands reduced by a total of 6.07%
+   
+     8:46:54: Balanced after 5 trials
+              47 nodes had demands reduced by a total of 5.13%
+     8:46:54: Tank 3 is closed at 35.50 ft
+     8:46:54: Pipe 20 changed from open to temporarily closed
+   
+     9:00:00: Balanced after 5 trials
+              54 nodes had demands reduced by a total of 5.65%
+     9:00:00: Tank 3 is emptying at 35.50 ft
+     9:00:00: Pipe 20 changed from temporarily closed to open
+   
+    10:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 5.61%
+   
+    11:00:00: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 5.95%
+    11:00:00: Tank 1 is emptying at 23.97 ft
+   
+    12:00:00: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 5.95%
+   
+    13:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 5.90%
+    13:00:00: Tank 1 is filling at 23.81 ft
+   
+    14:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 5.75%
+    14:00:00: Tank 3 is filling at 34.96 ft
+   
+    15:00:00: Pump 10 changed by timer control
+    15:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 6.58%
+    15:00:00: Reservoir Lake is closed
+    15:00:00: Tank 1 is emptying at 24.24 ft
+    15:00:00: Tank 3 is emptying at 34.98 ft
+    15:00:00: Pump 10 changed from open to closed
+   
+    16:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.35%
+    16:00:00: Tank 2 is emptying at 31.54 ft
+   
+    17:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.42%
+   
+    18:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.39%
+    18:00:00: Tank 2 is filling at 31.44 ft
+   
+    19:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.49%
+    19:00:00: Tank 2 is emptying at 31.48 ft
+   
+    20:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 6.87%
+   
+    21:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 7.23%
+   
+    22:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 8.27%
+   
+    23:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 9.37%
+   
+    24:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 10.01%
+   
+    24:33:25: Pump 335 changed by Tank 1 control
+    24:33:25: Pipe 330 changed by Tank 1 control
+    24:33:25: Balanced after 5 trials
+              57 nodes had demands reduced by a total of 9.54%
+    24:33:25: Tank 1 is filling at 17.10 ft
+    24:33:25: Tank 3 is filling at 29.76 ft
+    24:33:25: Pipe 330 changed from open to closed
+    24:33:25: Pump 335 changed from closed to open
+   
+    25:00:00: Pump 10 changed by timer control
+    25:00:00: Balanced after 7 trials
+              57 nodes had demands reduced by a total of 8.08%
+    25:00:00: Reservoir Lake is emptying
+    25:00:00: Pump 10 changed from closed to open
+   
+    26:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 7.22%
+    26:00:00: Tank 2 is filling at 24.87 ft
+   
+    26:08:57: Pump 335 changed by Tank 1 control
+    26:08:57: Pipe 330 changed by Tank 1 control
+    26:08:57: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 8.39%
+    26:08:57: Pipe 330 changed from closed to open
+    26:08:57: Pump 335 changed from open to closed
+   
+    27:00:00: Balanced after 5 trials
+              58 nodes had demands reduced by a total of 8.32%
+   
+    28:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 7.60%
+   
+    29:00:00: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 6.79%
+   
+    30:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.78%
+   
+    31:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.52%
+   
+    32:00:00: Balanced after 4 trials
+              53 nodes had demands reduced by a total of 6.24%
+   
+    33:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 5.86%
+    33:00:00: Tank 3 is emptying at 34.69 ft
+   
+    34:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 5.83%
+   
+    35:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 6.16%
+    35:00:00: Tank 1 is emptying at 23.31 ft
+    35:00:00: Tank 2 is closed at 30.17 ft
+   
+    36:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 6.15%
+    36:00:00: Tank 2 is filling at 30.17 ft
+   
+    37:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 6.09%
+    37:00:00: Tank 1 is filling at 23.19 ft
+   
+    38:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 5.94%
+    38:00:00: Tank 3 is filling at 34.34 ft
+   
+    39:00:00: Pump 10 changed by timer control
+    39:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 6.76%
+    39:00:00: Reservoir Lake is closed
+    39:00:00: Tank 1 is emptying at 23.66 ft
+    39:00:00: Tank 3 is emptying at 34.38 ft
+    39:00:00: Pump 10 changed from open to closed
+   
+    40:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.52%
+    40:00:00: Tank 2 is emptying at 31.01 ft
+   
+    41:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.59%
+   
+    42:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.54%
+    42:00:00: Tank 2 is filling at 30.92 ft
+   
+    43:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.64%
+    43:00:00: Tank 2 is emptying at 30.98 ft
+   
+    44:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 7.03%
+   
+    45:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 7.38%
+   
+    46:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 8.42%
+   
+    47:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 9.51%
+   
+    47:58:28: Pump 335 changed by Tank 1 control
+    47:58:28: Pipe 330 changed by Tank 1 control
+    47:58:28: Balanced after 5 trials
+              59 nodes had demands reduced by a total of 8.96%
+    47:58:28: Tank 3 is filling at 29.51 ft
+    47:58:28: Pipe 330 changed from open to closed
+    47:58:28: Pump 335 changed from closed to open
+   
+    48:00:00: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 9.56%
+    48:00:00: Tank 1 is filling at 17.08 ft
+   
+    49:00:00: Pump 10 changed by timer control
+    49:00:00: Balanced after 7 trials
+              57 nodes had demands reduced by a total of 8.01%
+    49:00:00: Reservoir Lake is emptying
+    49:00:00: Pump 10 changed from closed to open
+   
+    49:58:22: Pump 335 changed by Tank 1 control
+    49:58:22: Pipe 330 changed by Tank 1 control
+    49:58:22: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 8.73%
+    49:58:22: Tank 1 is emptying at 19.10 ft
+    49:58:22: Tank 3 is emptying at 32.02 ft
+    49:58:22: Pipe 330 changed from closed to open
+    49:58:22: Pump 335 changed from open to closed
+   
+    50:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 8.38%
+    50:00:00: Tank 1 is filling at 19.10 ft
+    50:00:00: Tank 2 is filling at 24.82 ft
+    50:00:00: Tank 3 is filling at 32.02 ft
+   
+    51:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 8.30%
+   
+    52:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 7.58%
+   
+    53:00:00: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 6.76%
+   
+    54:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.76%
+   
+    55:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.49%
+   
+    56:00:00: Balanced after 4 trials
+              53 nodes had demands reduced by a total of 6.22%
+   
+    57:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 5.84%
+    57:00:00: Tank 3 is emptying at 34.79 ft
+   
+    58:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 5.80%
+   
+    59:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 6.13%
+    59:00:00: Tank 1 is emptying at 23.39 ft
+   
+    60:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 6.13%
+   
+    61:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 6.07%
+    61:00:00: Tank 1 is filling at 23.26 ft
+   
+    62:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 5.92%
+    62:00:00: Tank 3 is filling at 34.41 ft
+   
+    63:00:00: Pump 10 changed by timer control
+    63:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 6.74%
+    63:00:00: Reservoir Lake is closed
+    63:00:00: Tank 1 is emptying at 23.72 ft
+    63:00:00: Tank 3 is emptying at 34.45 ft
+    63:00:00: Pump 10 changed from open to closed
+   
+    64:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.50%
+    64:00:00: Tank 2 is emptying at 31.08 ft
+   
+    65:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.57%
+   
+    66:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.52%
+    66:00:00: Tank 2 is filling at 30.98 ft
+   
+    67:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.62%
+    67:00:00: Tank 2 is emptying at 31.04 ft
+   
+    68:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 7.01%
+   
+    69:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 7.37%
+   
+    70:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 8.40%
+   
+    71:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 9.49%
+   
+    72:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 10.14%
+   
+    72:01:24: Pump 335 changed by Tank 1 control
+    72:01:24: Pipe 330 changed by Tank 1 control
+    72:01:24: Balanced after 5 trials
+              57 nodes had demands reduced by a total of 9.56%
+    72:01:24: Tank 1 is filling at 17.10 ft
+    72:01:24: Tank 3 is filling at 29.53 ft
+    72:01:24: Pipe 330 changed from open to closed
+    72:01:24: Pump 335 changed from closed to open
+   
+    73:00:00: Pump 10 changed by timer control
+    73:00:00: Balanced after 7 trials
+              57 nodes had demands reduced by a total of 8.01%
+    73:00:00: Reservoir Lake is emptying
+    73:00:00: Pump 10 changed from closed to open
+   
+    73:58:26: Pump 335 changed by Tank 1 control
+    73:58:26: Pipe 330 changed by Tank 1 control
+    73:58:26: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 8.73%
+    73:58:26: Tank 1 is emptying at 19.10 ft
+    73:58:26: Tank 3 is emptying at 32.01 ft
+    73:58:26: Pipe 330 changed from closed to open
+    73:58:26: Pump 335 changed from open to closed
+   
+    74:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 8.39%
+    74:00:00: Tank 1 is filling at 19.10 ft
+    74:00:00: Tank 2 is filling at 24.83 ft
+    74:00:00: Tank 3 is filling at 32.01 ft
+   
+    75:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 8.30%
+   
+    76:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 7.58%
+   
+    77:00:00: Balanced after 4 trials
+              57 nodes had demands reduced by a total of 6.76%
+   
+    78:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.76%
+   
+    79:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.50%
+   
+    80:00:00: Balanced after 4 trials
+              53 nodes had demands reduced by a total of 6.22%
+   
+    81:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 5.84%
+    81:00:00: Tank 3 is emptying at 34.78 ft
+   
+    82:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 5.80%
+   
+    83:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 6.14%
+    83:00:00: Tank 1 is emptying at 23.38 ft
+   
+    84:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 6.13%
+   
+    85:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 6.07%
+    85:00:00: Tank 1 is filling at 23.25 ft
+   
+    86:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 5.92%
+    86:00:00: Tank 3 is filling at 34.40 ft
+   
+    87:00:00: Pump 10 changed by timer control
+    87:00:00: Balanced after 5 trials
+              56 nodes had demands reduced by a total of 6.74%
+    87:00:00: Reservoir Lake is closed
+    87:00:00: Tank 1 is emptying at 23.72 ft
+    87:00:00: Tank 3 is emptying at 34.44 ft
+    87:00:00: Pump 10 changed from open to closed
+   
+    88:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.51%
+    88:00:00: Tank 2 is emptying at 31.07 ft
+   
+    89:00:00: Balanced after 4 trials
+              54 nodes had demands reduced by a total of 6.57%
+   
+    90:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.52%
+    90:00:00: Tank 2 is filling at 30.98 ft
+   
+    91:00:00: Balanced after 4 trials
+              55 nodes had demands reduced by a total of 6.62%
+    91:00:00: Tank 2 is emptying at 31.03 ft
+   
+    92:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 7.01%
+   
+    93:00:00: Balanced after 4 trials
+              56 nodes had demands reduced by a total of 7.37%
+   
+    94:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 8.40%
+   
+    95:00:00: Balanced after 4 trials
+              59 nodes had demands reduced by a total of 9.49%
+   
+    96:00:00: Balanced after 4 trials
+              58 nodes had demands reduced by a total of 10.15%
+   
+  Water Quality Mass Balance (mg)
+  ================================
+  Initial Mass:       0.00000e+00
+  Mass Inflow:        1.47536e+08
+  Mass Outflow:       1.39850e+08
+  Mass Reacted:       0.00000e+00
+  Final Mass:         7.68629e+06
+  Mass Ratio:         1.00000
+  ================================
+
+  Analysis ended Wed Oct  2 13:31:08 2024

@@ -1,14 +1,5 @@
-### Reframed Question with Additional Context
-
-I'm working on the **EPANET 3** project within the `epanet-dev` repository, utilizing tools like CMake 3.28.3 and Python 3.12.3. As part of this project, I have an input file named `any-town.inp` located in the `dataset` directory. This file is crucial for defining the parameters and configuration of the water distribution system simulation.
-
-To ensure accurate simulation and analysis, I need a comprehensive understanding of the `any-town.inp` file's structure and content. **Could you provide a detailed explanation of each section and the specific parameters defined within the `any-town.inp` file?** This will help me effectively utilize and potentially modify the input file for my simulation needs.
-
----
-
-### Answer
-
-Certainly! The `any-town.inp` file is an **EPANET input file** that defines the configuration of a water distribution system for simulation purposes. EPANET uses this file to model the hydraulic and water quality behavior of the system over time. Below is a detailed breakdown of each section and the parameters within your provided `any-town.inp` file.
+# EPANET INP FILEs
+The `any-town.inp` file is an **EPANET input file** that defines the configuration of a water distribution system for simulation purposes. EPANET uses this file to model the hydraulic and water quality behavior of the system over time. Below is a detailed breakdown of each section and the parameters within your provided `any-town.inp` file.
 
 ---
 

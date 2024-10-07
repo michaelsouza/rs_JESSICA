@@ -1,0 +1,16 @@
+# system:
+- Python 3.11
+- EPANET 2.2
+- WNTR 1.2.0 (python package)
+
+# sources:
+paper: yes
+  main.md: all
+networks: yes
+  any-town.inp: all
+  any-town.md: all
+
+# user_request
+"""
+Please, implement the Branch-and-Bound algorithm with incremental bounding presented in the paper. Write the entire code using the system environment.
+"""

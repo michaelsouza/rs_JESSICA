@@ -2,89 +2,72 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "pgen",
             "type": "shell",
-            "label": "generate-prompt",
-            "command": "python",
-            "args": [
-                "../prompt-generator/pgen.py",
-                "prompt.md"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
+            "command": "../prompt-generator/.venv/bin/python ../prompt-generator/pgen.py prompt.yml",
+            "group": {
+                "kind": "build",
+                "isDefault": false
             },
-            "problemMatcher": [],
-            "group": "build",
-            "detail": "Generate prompt using pgen.py"
+            "problemMatcher": []
         },
         {
+            "label": "pgen git",
             "type": "shell",
-            "label": "generate-gitdiff",
-            "command": "python",
-            "args": [
-                "../prompt-generator/pgen.py",
-                "prompt.md",
-                "--gitdiff"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
+            "command": "../prompt-generator/.venv/bin/python ../prompt-generator/pgen.py prompt.yml --gitdiff",
+            "group": {
+                "kind": "build",
+                "isDefault": false
             },
-            "problemMatcher": [],
-            "group": "build",
-            "detail": "Generate prompt using pgen.py"
+            "problemMatcher": []
         },
         {
+            "label": "black!",
             "type": "shell",
-            "label": "build-debug",
-            "command": "make",
-            "args": [],
-            "options": {
-                "cwd": "${workspaceFolder}/epanet-dev/build/x64-Debug"
-            },
-            "problemMatcher": [
-                "$gcc"
+            "command": "black",
+            "args": [
+                "${file}"
             ],
             "group": {
                 "kind": "build",
                 "isDefault": false
             },
-            "detail": "Build EPANET in debug mode"
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
         },
         {
+            "label": "djlint format",
             "type": "shell",
-            "label": "build-release",
-            "command": "make",
-            "args": [],
-            "options": {
-                "cwd": "${workspaceFolder}/epanet-dev/build/release"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
-            "detail": "Build EPANET in release mode"
-        },
-        {
-            "type": "cppbuild",
-            "label": "C/C++: gcc.exe arquivo de build ativo",
-            "command": "C:\\MinGW\\bin\\gcc.exe",
+            "command": "djlint",
             "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
-            ],
-            "options": {
-                "cwd": "${fileDirname}"
-            },
-            "problemMatcher": [
-                "$gcc"
+                "--reformat",
+                "${file}"
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
-            "detail": "Tarefa gerada pelo Depurador."
+            "problemMatcher": []
+        },
+        {
+            "label": "djlint check",
+            "type": "shell",
+            "command": "djlint",
+            "args": [                
+                "${file}"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": []
         }
     ]
 }

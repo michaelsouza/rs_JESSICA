@@ -8,11 +8,12 @@ import matplotlib.pyplot as plt
 from rich.console import Console
 from rich.table import Table
 import pandas as pd
+import os
 
 console = Console()
 
 # load network
-fn = 'networks/any-town.inp'
+fn = '/home/jessica/Git/rs_JESSICA/networks/any-town.inp'
 wn = wntr.network.WaterNetworkModel(fn)
 
 # define global parameters
@@ -69,6 +70,7 @@ class PumpSchedulingProblem:
     def get_pressure_constraints(self):
         # Define minimum pressure head requirements at critical nodes
         # For simplicity, assume a minimum pressure of 20 units at all nodes
+        ''' PORQUE 20?  CONSULTAR EX ANY TOWN EPANET E AT(M) DO AUTOR R... AVALIAR VALORES MIN/MAX E CRÍTICOS CITADOS'''
         pressure_constraints = {node: 20 for node in self.node_names}
         # Specific nodes can have different constraints as needed
         pressure_constraints['90'] = 51
@@ -234,10 +236,10 @@ def main():
         print(f"Simulating time step {current_time / 3600} hours ...")
 
         # Update simulation times
-        wn.options.duration = current_time
-        wn.options.hydraulic_timestep = time_step
-        wn.options.pattern_timestep = time_step
-        wn.options.report_timestep = time_step
+        wn.options.time.duration = current_time
+        wn.options.time.hydraulic_timestep = time_step
+        wn.options.time.pattern_timestep = time_step
+        wn.options.time.report_timestep = time_step
         
         # Run simulation
         sim = wntr.sim.EpanetSimulator(wn)
@@ -260,6 +262,9 @@ def main():
     tank_level_df = pd.DataFrame(tank_level_results).T
     
     # Save results to CSV files
+    if not os.path.exists('results'):
+        os.makedirs('results')
+
     pressure_df.to_csv('results/pressures.csv', index=False)
     tank_level_df.to_csv('results/tank_levels.csv', index=False)
     

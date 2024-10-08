@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "DBG Python",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "args": [],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Run EPANET3 (Debug)",
             "type": "cppdbg",
             "request": "launch",

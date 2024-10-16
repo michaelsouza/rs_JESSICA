@@ -5,6 +5,7 @@ import numpy as np
 from copy import deepcopy
 from rich.console import Console
 import wntr
+import wntr.network
 
 console = Console()
 
@@ -16,34 +17,50 @@ if not os.path.exists(FN):
 
 # Define global parameters
 WN = wntr.network.WaterNetworkModel(FN)
-N_PUMPS = len(WN.pump_name_list)
-N_STEPS = 24  # number of time steps (1 hour each)
-TIME_STEP = 3600  # 1 hour in seconds
+PUMPS = WN.pump_name_list
+N_PUMPS = len(PUMPS)
+TIME_STEP = WN.options.time.hydraulic_timestep # seconds
+N_STEPS = round(WN.options.time.duration / TIME_STEP)
 OMEGA = 0.5  # weight for the weighted best-first search
 LOWER_BOUND = np.inf  # lower bound for the cost
-TOTAL_DURATION = N_STEPS * TIME_STEP  # 1 day
 SCHEDULE = [None for _ in range(N_STEPS)]  # To store the current schedule
 BEST_SCHEDULE = [None for _ in range(N_STEPS)]  # To store the best feasible solution
 
-# Define constraints (These need to be defined based on the problem specifics)
-CNSTR = {
-    # Minimum and maximum pressure head at each node
-    "pressure": {
-        "1": [30, 100],
-        "2": [30, 100],
-        "3": [30, 100],
-    },
-    # Minimum and maximum reservoir level at each time step
-    "reservoir_level": {
-        "1": [30, 100],
-    },
-    # Maximum number of actuations for each pump
-    "max_actuations": [3] * N_PUMPS,  # Assumes all pumps have the same max actuations
-    # Minimum reservoir level at the end of the simulation
-    "stability": {
-        "1": 30,
-    },
-}
+
+def get_constraints(wn: wntr.network.WaterNetworkModel):
+    """
+    Get the constraints for the network.
+    """
+    # TODO Check if these constraints are correct
+    # TODO Check if they are already defined in the '.inp' file
+    
+    # Get tanks and nodes
+    tanks = wn.tank_name_list
+    tank_level_min_max = {
+        tank: [wn.get_node(tank).min_level, wn.get_node(tank).max_level] for tank in tanks
+    }
+    
+    cntr = {
+        # Minimum pressure head at each node
+        "pressure_min": {
+            '90': 51,
+            '50': 42,
+            '170': 30
+        },
+        # Minimum and maximum tank level at each time step
+        "tank_level_min_max": tank_level_min_max,        
+        # Maximum number of actuations for each pump
+        "actuations_max": [3] * N_PUMPS,  # The same for all pumps
+        # Initial tank level
+        "tank_level_initial": {
+            tank: wn.get_node(tank).init_level for tank in tanks
+        },
+    }
+
+    return cntr
+
+
+CNSTR = get_constraints(WN)
 
 
 # Print network info and parameters using rich table
@@ -57,21 +74,15 @@ def print_network_info(wn: wntr.network.WaterNetworkModel):
     console.print(f"Time step ........ [cyan]{TIME_STEP}[/cyan] seconds")
 
 
-def get_energy_prices(
-    wn: wntr.network.WaterNetworkModel, verbose: bool = False
-) -> list[float]:
+def get_energy_prices(verbose: bool = False) -> list[float]:
     """
     Get the energy prices of the network.
     """
-    if "PRICES" not in wn.pattern_name_list:
+    if "PRICES" not in WN.pattern_name_list:
         console.print("[red]Error:[/red] 'PRICES' pattern not found in the network.")
         exit(1)
 
-    price_pattern = wn.get_pattern("PRICES").multipliers
-    energy_prices = []
-    for i in range(N_STEPS):
-        index = i % len(price_pattern)
-        energy_prices.append(price_pattern[index])
+    energy_prices = WN.get_pattern("PRICES").multipliers    
     if verbose:
         for i in range(N_STEPS):
             console.print(f"Time step {i} ..... [cyan]{energy_prices[i]}[/cyan]")
@@ -82,12 +93,10 @@ def get_energy_prices(
 print_network_info(WN)
 
 # Get energy prices
-ENERGY_PRICES = get_energy_prices(WN, verbose=False)
+ENERGY_PRICES = get_energy_prices(verbose=False)
 
 
-def process_node(
-    node: dict, cnstr: dict, energy_prices: list, is_final: bool = False
-) -> bool:
+def process_node(node: dict, is_final) -> bool:
     """
     Process a node to check if it satisfies the constraints.
     """
@@ -97,51 +106,52 @@ def process_node(
         out = sim.run_sim()
 
         # Update lower bound with the actuations at the current step
-        actuations_cost = np.sum(node["actuations"]) * energy_prices[node["step"]]
+        actuations_cost = np.sum(node["actuations"]) * ENERGY_PRICES[node["step"]]
         node["lower_bound"] += actuations_cost
 
         # Get pressures
         pressures = out.node["pressure"].iloc[-1].to_dict()
 
         # Check pressure head constraints feasibility
-        for node_name, (p_min, p_max) in cnstr["pressure"].items():
+        for node_name, p_min in CNSTR["pressure_min"].items():
             # Get the last pressure value for the node
             p_last = pressures.get(node_name, None)
             if p_last is None:
                 console.print(
                     f"[red]Pressure data for node {node_name} not found![/red]"
                 )
-                return False  # Infeasible due to pressure constraints
-            if p_last < p_min or p_last > p_max:
-                return False  # Infeasible due to pressure constraints
+                return False  
+            # Infeasible due to pressure constraints
+            if p_last < p_min:
+                return False
 
-        # Get reservoir levels
-        reservoir_levels = out.node["head"].iloc[-1].to_dict()
+        # Get tank levels
+        tank_levels = out.node["head"].iloc[-1].to_dict()
 
-        # Check reservoir level constraints feasibility
-        for reservoir_name, (r_min, r_max) in cnstr["reservoir_level"].items():
-            # Get the last reservoir level for the reservoir
-            r_last = reservoir_levels.get(reservoir_name, None)
+        # Check tank level constraints feasibility
+        for tank_name, r_min_max in CNSTR["tank_level_min_max"].items():
+            r_last = tank_levels.get(tank_name, None)
+            r_min = r_min_max[0]
+            r_max = r_min_max[1]
             if r_last is None:
-                console.print(
-                    f"[red]Reservoir level data for reservoir {reservoir_name} not found![/red]"
-                )
-                return False  # Infeasible due to reservoir level constraints
+                console.print(f"[red]Tank level data for tank {tank_name} not found![/red]")
+                return False
+            # Infeasible due to tank level constraints
             if r_last < r_min or r_last > r_max:
-                return False  # Infeasible due to reservoir level constraints
+                return False
 
         # Check reservoir stability constraints
         if is_final:
-            for reservoir_name, r_min in cnstr["stability"].items():
-                # Get the last reservoir level for the reservoir
-                r_last = reservoir_levels.get(reservoir_name, None)
+            for tank_name, r_min in CNSTR["stability"].items():
+                r_last = tank_levels.get(tank_name, None)
                 if r_last is None:
                     console.print(
-                        f"[red]Reservoir level data for reservoir {reservoir_name} not found![/red]"
+                        f"[red]Tank level data for tank {tank_name} not found![/red]"
                     )
-                    return False  # Infeasible due to reservoir level constraints
+                    return False
+                # Infeasible due to tank level constraints
                 if r_last < r_min:
-                    return False  # Infeasible due to reservoir stability constraints
+                    return False
 
         return True
 
@@ -211,6 +221,7 @@ def create_child_node(parent_node: dict, y: int, time_step: int) -> dict | None:
     """
     Create a child node from the parent node.
     """
+    # TODO Set the simulation to run only one step (Probably by just setting the duration)
     child_node = deepcopy(parent_node)
     child_node["step"] += 1
     child_node["y"] = y
@@ -237,8 +248,10 @@ def create_child_node(parent_node: dict, y: int, time_step: int) -> dict | None:
     # Update pump statuses in the network model
     child_node["model"] = deepcopy(parent_node["model"])
     for pump_idx, pump in enumerate(child_node["model"].pump_name_list):
-        child_node["model"].get_link(pump).status = (
-            "OPEN" if child_node["x"][-1][pump_idx] else "CLOSED"
+        child_node["model"].get_link(pump).initial_status = (
+            wntr.network.LinkStatus.Open
+            if child_node["x"][-1][pump_idx]
+            else wntr.network.LinkStatus.Closed
         )
 
     # Update the simulator with the new network model
@@ -263,10 +276,10 @@ def dfs(node: dict):
         return
 
     # Check if node is a leaf node
-    is_final = node["step"] == N_STEPS
+    is_final = node["step"] == N_STEPS - 1
 
     # Check if node is feasible
-    if not process_node(node, CNSTR, ENERGY_PRICES, is_final):
+    if not process_node(node, is_final):
         return
 
     # Update schedule
@@ -295,13 +308,7 @@ def main():
 
     # Close all pumps initially
     for pump in WN.pump_name_list:
-        WN.get_link(pump).status = "CLOSED"
-
-    # Update simulation times
-    WN.options.time.duration = TOTAL_DURATION
-    WN.options.time.hydraulic_timestep = TIME_STEP
-    WN.options.time.pattern_timestep = TIME_STEP
-    WN.options.time.report_timestep = TIME_STEP
+        WN.get_link(pump).initial_status = wntr.network.LinkStatus.Closed
 
     # Create the root node
     root_node = {
@@ -328,7 +335,7 @@ def main():
         console.print(
             f"[bold green]Pump Schedule (Time Step : Pump Status):[/bold green]"
         )
-        for step, pump_status in enumerate(BEST_SCHEDULE["x"], start=1):
+        for step, pump_status in enumerate(BEST_SCHEDULE, start=1):
             status_str = ", ".join(
                 [
                     f"P{idx+1}: {'ON' if status else 'OFF'}"

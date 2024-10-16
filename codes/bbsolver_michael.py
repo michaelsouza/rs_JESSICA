@@ -45,6 +45,7 @@ CNSTR = {
     },
 }
 
+
 # Print network info and parameters using rich table
 def print_network_info(wn: wntr.network.WaterNetworkModel):
     """
@@ -55,14 +56,17 @@ def print_network_info(wn: wntr.network.WaterNetworkModel):
     console.print(f"# Time steps ..... [cyan]{N_STEPS}[/cyan]")
     console.print(f"Time step ........ [cyan]{TIME_STEP}[/cyan] seconds")
 
-def get_energy_prices(wn: wntr.network.WaterNetworkModel, verbose: bool = False) -> list[float]:
+
+def get_energy_prices(
+    wn: wntr.network.WaterNetworkModel, verbose: bool = False
+) -> list[float]:
     """
     Get the energy prices of the network.
     """
     if "PRICES" not in wn.pattern_name_list:
         console.print("[red]Error:[/red] 'PRICES' pattern not found in the network.")
         exit(1)
-        
+
     price_pattern = wn.get_pattern("PRICES").multipliers
     energy_prices = []
     for i in range(N_STEPS):
@@ -73,13 +77,17 @@ def get_energy_prices(wn: wntr.network.WaterNetworkModel, verbose: bool = False)
             console.print(f"Time step {i} ..... [cyan]{energy_prices[i]}[/cyan]")
     return energy_prices
 
+
 # Print network info
 print_network_info(WN)
 
 # Get energy prices
 ENERGY_PRICES = get_energy_prices(WN, verbose=False)
 
-def process_node(node: dict, cnstr: dict, energy_prices: list, is_final: bool = False) -> bool:
+
+def process_node(
+    node: dict, cnstr: dict, energy_prices: list, is_final: bool = False
+) -> bool:
     """
     Process a node to check if it satisfies the constraints.
     """
@@ -100,7 +108,9 @@ def process_node(node: dict, cnstr: dict, energy_prices: list, is_final: bool = 
             # Get the last pressure value for the node
             p_last = pressures.get(node_name, None)
             if p_last is None:
-                console.print(f"[red]Pressure data for node {node_name} not found![/red]")
+                console.print(
+                    f"[red]Pressure data for node {node_name} not found![/red]"
+                )
                 return False  # Infeasible due to pressure constraints
             if p_last < p_min or p_last > p_max:
                 return False  # Infeasible due to pressure constraints
@@ -113,7 +123,9 @@ def process_node(node: dict, cnstr: dict, energy_prices: list, is_final: bool = 
             # Get the last reservoir level for the reservoir
             r_last = reservoir_levels.get(reservoir_name, None)
             if r_last is None:
-                console.print(f"[red]Reservoir level data for reservoir {reservoir_name} not found![/red]")
+                console.print(
+                    f"[red]Reservoir level data for reservoir {reservoir_name} not found![/red]"
+                )
                 return False  # Infeasible due to reservoir level constraints
             if r_last < r_min or r_last > r_max:
                 return False  # Infeasible due to reservoir level constraints
@@ -124,7 +136,9 @@ def process_node(node: dict, cnstr: dict, energy_prices: list, is_final: bool = 
                 # Get the last reservoir level for the reservoir
                 r_last = reservoir_levels.get(reservoir_name, None)
                 if r_last is None:
-                    console.print(f"[red]Reservoir level data for reservoir {reservoir_name} not found![/red]")
+                    console.print(
+                        f"[red]Reservoir level data for reservoir {reservoir_name} not found![/red]"
+                    )
                     return False  # Infeasible due to reservoir level constraints
                 if r_last < r_min:
                     return False  # Infeasible due to reservoir stability constraints
@@ -134,6 +148,7 @@ def process_node(node: dict, cnstr: dict, energy_prices: list, is_final: bool = 
     except Exception as e:
         console.print(f"[red]Error in processing node: {e}[/red]")
         return False
+
 
 def parse_actuations(y: int, actuations: list, x: list) -> bool:
     """
@@ -184,11 +199,13 @@ def parse_actuations(y: int, actuations: list, x: list) -> bool:
 
     return True
 
+
 def get_score(node: dict) -> float:
     """
     Get the score of the node.
     """
     return OMEGA * node["lower_bound"] + (1 - OMEGA) * (-node["depth"])
+
 
 def create_child_node(parent_node: dict, y: int, time_step: int) -> dict | None:
     """
@@ -220,7 +237,9 @@ def create_child_node(parent_node: dict, y: int, time_step: int) -> dict | None:
     # Update pump statuses in the network model
     child_node["model"] = deepcopy(parent_node["model"])
     for pump_idx, pump in enumerate(child_node["model"].pump_name_list):
-        child_node["model"].get_link(pump).status = "OPEN" if child_node["x"][-1][pump_idx] else "CLOSED"
+        child_node["model"].get_link(pump).status = (
+            "OPEN" if child_node["x"][-1][pump_idx] else "CLOSED"
+        )
 
     # Update the simulator with the new network model
     child_node["simulator"] = wntr.sim.EpanetSimulator(child_node["model"])
@@ -229,6 +248,7 @@ def create_child_node(parent_node: dict, y: int, time_step: int) -> dict | None:
     child_node["score"] = get_score(child_node)
 
     return child_node
+
 
 def dfs(node: dict):
     """
@@ -263,10 +283,11 @@ def dfs(node: dict):
 
     # Branching: Iterate over possible number of pumps to open (0 to N_PUMPS)
     for y in range(N_PUMPS + 1):
-        child_node = create_child_node(node, y, TIME_STEP)        
+        child_node = create_child_node(node, y, TIME_STEP)
         if child_node is None:
             continue  # Invalid child node due to actuator constraints
         dfs(child_node)  # Recursively explore the child node
+
 
 def main():
     global LOWER_BOUND  # to update the lower bound in process_node
@@ -287,9 +308,10 @@ def main():
         "step": 0,
         "y": 0,  # y = number of OPEN pumps
         "x": [],  # x[i] = pump status list at time step i
-        "actuations": [0] * N_PUMPS,  # actuations[i] = number of times pump i has been actuated
+        "actuations": [0]
+        * N_PUMPS,  # actuations[i] = number of times pump i has been actuated
         "lower_bound": 0,  # Initial lower bound
-        "depth": 0,  # depth = depth of the current schedule        
+        "depth": 0,  # depth = depth of the current schedule
         "model": deepcopy(WN),  # copy of the water network model
         "simulator": wntr.sim.EpanetSimulator(deepcopy(WN)),  # simulator of the network
         "current_time": 0,  # current time of the simulation
@@ -303,12 +325,20 @@ def main():
     if BEST_SCHEDULE:
         console.print(f"[bold green]Best solution found![/bold green]")
         console.print(f"[bold green]Cost: {LOWER_BOUND}[/bold green]")
-        console.print(f"[bold green]Pump Schedule (Time Step : Pump Status):[/bold green]")
+        console.print(
+            f"[bold green]Pump Schedule (Time Step : Pump Status):[/bold green]"
+        )
         for step, pump_status in enumerate(BEST_SCHEDULE["x"], start=1):
-            status_str = ', '.join([f"P{idx+1}: {'ON' if status else 'OFF'}" for idx, status in enumerate(pump_status)])
+            status_str = ", ".join(
+                [
+                    f"P{idx+1}: {'ON' if status else 'OFF'}"
+                    for idx, status in enumerate(pump_status)
+                ]
+            )
             console.print(f"Time {step}: {status_str}")
     else:
         console.print("[red]No feasible solution found.[/red]")
+
 
 if __name__ == "__main__":
     main()

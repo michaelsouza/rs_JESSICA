@@ -2,12 +2,8 @@ import os
 import hashlib
 from filecmp import dircmp
 
-ignore_contents = [
-    ".git",
-    ".venv",
-    ".DS_Store",
-    "prompt_content.json"
-]
+ignore_contents = [".git", ".venv", ".DS_Store", "prompt_content.json"]
+
 
 def md5sum(filename):
     """Calculates the MD5 checksum of a file."""
@@ -50,9 +46,11 @@ def compare_directories(dir1, dir2):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Check differences between two folders recursively.")
+    parser = argparse.ArgumentParser(
+        description="Check differences between two folders recursively."
+    )
     parser.add_argument("folder1", type=str, help="First folder to compare.")
-    parser.add_argument("folder2", type=str, help="Second folder to compare.")    
-    
+    parser.add_argument("folder2", type=str, help="Second folder to compare.")
+
     args = parser.parse_args()
     compare_directories(args.folder1, args.folder2)

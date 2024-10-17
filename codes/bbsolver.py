@@ -6,6 +6,7 @@ from copy import deepcopy
 from rich.console import Console
 import wntr
 import wntr.network
+from wntr.network.controls import ControlAction, Control
 
 console = Console()
 
@@ -52,9 +53,15 @@ def get_constraints(wn: wntr.network.WaterNetworkModel):
 
     return cntr
 
-
 CNSTR = get_constraints(WN)
 
+def get_actions():
+    """
+    Get the actions for the network.
+    """
+    pass
+
+ACTIONS = get_actions(WN)
 
 # Print network info and parameters using rich table
 def print_network_info(wn: wntr.network.WaterNetworkModel):
@@ -232,6 +239,7 @@ def create_child_node(parent_node: dict, y: int) -> dict | None:
     # Can we change the initial_status if the sim is running?
     x = child_node["x"]
     for pump_idx, pump in enumerate(PUMPS):
+        
         wn.get_link(pump).initial_status = PUMP_OPEN if x[pump_idx] else PUMP_CLOSED
 
     return child_node

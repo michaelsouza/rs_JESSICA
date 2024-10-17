@@ -545,15 +545,15 @@ Tank levels unlimited. Optimisated results
 **Content:**
 ```
 [TIMES]
- Duration          	24:00 
+ Duration          	  24:00 
  Hydraulic Timestep 	0:30
- Quality Timestep  	0:05 
- Pattern Timestep  	1:00 
- Pattern Start     	0:00 
- Report Timestep   	1:00 
- Report Start      	0:00 
- Start ClockTime   	0:00
- Statistic         	NONE
+ Quality Timestep   	0:05 
+ Pattern Timestep   	1:00 
+ Pattern Start      	0:00 
+ Report Timestep    	1:00 
+ Report Start       	0:00 
+ Start ClockTime    	0:00
+ Statistic          	NONE
 ```
 - **Parameters:**
   - **Duration:** Total simulation time (`24:00` indicates 24 hours).

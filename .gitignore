@@ -6,5 +6,10 @@ __pycache__/
 
 # Ignore the epanet-dev directory
 epanet-dev/build/
+
+# Ignore the output files
 dataset/any-town.out
+temp.bin
+temp.inp
+temp.rpt
 prompt_content.json

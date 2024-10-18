@@ -1,12 +1,21 @@
 # codes/bbsolver.py
 
+# Standard library imports
 import os
-import numpy as np
+from typing import List, Tuple, Dict
 from copy import deepcopy
-from rich.console import Console
+
+# Third-party imports
+import numpy as np
 import wntr
-import wntr.network
-from wntr.network.controls import ControlAction, Control
+from wntr.network import LinkStatus, WaterNetworkModel
+from wntr.network.controls import ControlAction, Control, Comparison
+
+# Rich library imports for console output
+from rich.console import Console
+from rich.table import Table
+from rich import box
+from rich.text import Text
 
 console = Console()
 
@@ -17,21 +26,21 @@ if not os.path.exists(FN):
     exit(1)
 
 # Define global parameters
-WN = wntr.network.WaterNetworkModel(FN)
+WN = WaterNetworkModel(FN)
 PUMPS = WN.pump_name_list
-N_PUMPS = len(PUMPS)
+N_PUMPS = WN.num_pumps
 TIME_STEP = 60 * 60  # 1 hour (in seconds)
 N_STEPS = round(24 * 60 * 60 / TIME_STEP)  # number of time steps in a day
 OMEGA = 0.5  # weight for the weighted best-first search
 LOWER_BOUND = np.inf  # lower bound for the cost
 SCHEDULE = [None for _ in range(N_STEPS)]  # To store the current schedule
 BEST_SCHEDULE = [None for _ in range(N_STEPS)]  # To store the best feasible solution
-PUMP_OPEN = wntr.network.LinkStatus.Open
-PUMP_CLOSED = wntr.network.LinkStatus.Closed
+PUMP_OPEN = LinkStatus.Open
+PUMP_CLOSED = LinkStatus.Closed
 ACTUATIONS_MAX = 3  # Max number of actuations for each pump
 
 
-def get_constraints(wn: wntr.network.WaterNetworkModel):
+def get_constraints(wn: WaterNetworkModel):
     """
     Get the constraints for the network.
     """
@@ -53,18 +62,33 @@ def get_constraints(wn: wntr.network.WaterNetworkModel):
 
     return cntr
 
+
 CNSTR = get_constraints(WN)
 
-def get_actions():
-    """
-    Get the actions for the network.
-    """
-    pass
 
-ACTIONS = get_actions(WN)
+def pump_add_control(wn: WaterNetworkModel, pump_name: str, status: LinkStatus, time: int):
+    # Retrieve the pump object
+    pump = wn.get_link(pump_name)
+    if pump is None:
+        console.print(f"[red]Pump {pump_name} not found![/red]")
+        return
+
+    # Define the control action to change on simulation time
+    threshold = max(0, time - 5)  # 5 seconds before the time step to be sure the control is applied
+    condition = wntr.network.TimeOfDayCondition(model=wn, relation=Comparison.eq, threshold=threshold, repeat=False)
+
+    # Define the control action
+    action = ControlAction(target_obj=pump, attribute="status", value=status)
+
+    # Create the control
+    control = Control(condition=condition, then_action=action)
+
+    # Add the control to the network
+    wn.add_control(f"{time:05d}_{pump_name}_{status}", control)
+
 
 # Print network info and parameters using rich table
-def print_network_info(wn: wntr.network.WaterNetworkModel):
+def show_network_info(wn: wntr.network.WaterNetworkModel):
     """
     Print the network info and parameters.
     """
@@ -90,69 +114,270 @@ def get_energy_prices(verbose: bool = False) -> list[float]:
 
 
 # Print network info
-print_network_info(WN)
+show_network_info(WN)
 
 # Get energy prices
 ENERGY_PRICES = get_energy_prices(verbose=False)
 
 
-def process_node(node: dict, is_final: bool) -> bool:
+def show_controls(wn: WaterNetworkModel):
+    """
+    Displays all controls in the WaterNetworkModel using the rich library.
+
+    Parameters:
+    -----------
+    wn : WaterNetworkModel
+        The water network model containing the controls to display.
+    """
+    console = Console()
+
+    if not wn.controls:
+        console.print(
+            "[bold yellow]Oh no! No controls found in the network. Time to get those pumps partying![/bold yellow]"
+        )
+        return
+
+    # Create a rich Table
+    table = Table(title="Water Network Controls Overview", box=box.ROUNDED, expand=False)
+
+    # Define table columns
+    table.add_column("Control Name", style="cyan", no_wrap=True)
+    table.add_column("Condition", style="magenta")
+    table.add_column("Actions", style="green")
+    table.add_column("Priority", style="yellow", justify="center")
+
+    # Iterate over all controls and add rows to the table
+    controls: List[Tuple[str, Control]] = list(wn.controls())
+    controls = sorted(controls, key=lambda x: x[0])
+    for control_name, control in controls:
+
+        # Get condition description
+        condition = str(control.condition)
+        if len(condition) > 40:
+            condition = condition[:37] + "..."
+
+        # Get actions description
+        actions = ", ".join([str(action) for action in control.actions()])
+        if len(actions) > 50:
+            actions = actions[:47] + "..."
+
+        # Get priority
+        priority = f"{control.priority.name}"
+
+        # Add a row to the table
+        table.add_row(control_name, condition, actions, priority)
+
+    console.print(table)
+
+
+def show_node_values(
+    end_time: int,
+    constraints: Dict[str, Dict[str, any]],
+    initial_pressures: Dict[str, float],
+    initial_tank_levels: Dict[str, float],
+    pressures: Dict[str, float],
+    tank_levels: Dict[str, float],
+    is_final: bool,
+):
+    """
+    Displays all values checked in the process_node function using the rich library,
+    including start and end values for pressures and tank levels.
+
+    Parameters:
+    -----------
+    end_time : int
+        The current time step of the simulation.
+    pressures : Dict[str, float]
+        Dictionary containing current pressure values at each node.
+    tank_levels : Dict[str, float]
+        Dictionary containing current tank level (head) values.
+    constraints : Dict[str, Dict[str, any]]
+        Dictionary containing various constraints like pressure_min, tank_level_min_max, etc.
+    initial_pressures : Dict[str, float]
+        Dictionary containing initial pressure values at each node.
+    initial_tank_levels : Dict[str, float]
+        Dictionary containing initial tank levels.
+    final_pressures : Dict[str, float]
+        Dictionary containing final pressure values at each node.
+    final_tank_levels : Dict[str, float]
+        Dictionary containing final tank levels.
+    constraints_final : Dict[str, Dict[str, any]]
+        Dictionary containing final constraints like stability.
+    is_final : bool
+        Flag indicating if this is the final simulation step.
+    """
+
+    # Separator
+    console.rule(f"[bold yellow]Process_Node Values at Time Step {end_time}[/bold yellow]")
+
+    # Create and populate the Pressures Table with Start and End Values
+    pressure_table = Table(title="💧 Node Pressures", box=box.ROUNDED, header_style="bold blue")
+    pressure_table.add_column("Node", style="cyan", no_wrap=True)
+    pressure_table.add_column("Initial Pressure (m)", style="cyan")
+    pressure_table.add_column("Current Pressure (m)", style="magenta")
+    pressure_table.add_column("Min Pressure (m)", style="green")
+    pressure_table.add_column("Status", style="bold")
+
+    for node_name, p_min in constraints.get("pressure_min", {}).items():
+        p_initial = initial_pressures.get(node_name, "N/A")
+        p_current = pressures.get(node_name, "N/A")
+
+        # Determine Status
+        if isinstance(p_current, float):
+            if p_current < p_min:
+                status = Text("🚨 Below Min", style="bold red")
+            else:
+                status = Text("✅ OK", style="bold green")
+        else:
+            status = Text("❓ Missing Data", style="bold yellow")
+
+        pressure_table.add_row(
+            node_name,
+            f"{p_initial:.2f}" if isinstance(p_initial, float) else "N/A",
+            f"{p_current:.2f}" if isinstance(p_current, float) else "N/A",
+            f"{p_min:.2f}",
+            status,
+        )
+
+    # Create and populate the Tank Levels Table with Start and End Values
+    tank_table = Table(title="🏭 Tank Levels", box=box.ROUNDED, header_style="bold blue")
+    tank_table.add_column("Tank", style="cyan", no_wrap=True)
+    tank_table.add_column("Initial Level (m)", style="cyan")
+    tank_table.add_column("Current Level (m)", style="magenta")
+    tank_table.add_column("Min Level (m)", style="green")
+    tank_table.add_column("Max Level (m)", style="green")
+    tank_table.add_column("Status", style="bold")
+
+    for tank_name, level_range in constraints.get("tank_level_min_max", {}).items():
+        r_min, r_max = level_range
+        r_initial = initial_tank_levels.get(tank_name, "N/A")
+        r_current = tank_levels.get(tank_name, "N/A")
+
+        # Determine Status
+        if isinstance(r_current, float):
+            if r_current < r_min:
+                status = Text("🚨 Below Min", style="bold red")
+            elif r_current > r_max:
+                status = Text("🚨 Above Max", style="bold red")
+            else:
+                status = Text("✅ OK", style="bold green")
+        else:
+            status = Text("❓ Missing Data", style="bold yellow")
+
+        tank_table.add_row(
+            tank_name,
+            f"{r_initial:.2f}" if isinstance(r_initial, float) else "N/A",
+            f"{r_current:.2f}" if isinstance(r_current, float) else "N/A",
+            f"{r_min:.2f}",
+            f"{r_max:.2f}",
+            status,
+        )
+
+    # If it's the final step, check reservoir stability and display start and end values
+    if is_final and "stability" in constraints:
+        stability_table = Table(title="🏦 Reservoir Stability", box=box.ROUNDED, header_style="bold blue")
+        stability_table.add_column("Reservoir", style="cyan", no_wrap=True)
+        stability_table.add_column("Initial Level (m)", style="cyan")
+        stability_table.add_column("Current Level (m)", style="magenta")
+        stability_table.add_column("Min Level (m)", style="green")
+        stability_table.add_column("Status", style="bold")
+
+        for reservoir_name, r_min in constraints.get("stability", {}).items():
+            r_initial = initial_tank_levels.get(reservoir_name, "N/A")
+            r_current = tank_levels.get(reservoir_name, "N/A")
+
+            # Determine Status
+            if isinstance(r_current, float):
+                if r_current < r_min:
+                    status = Text("🚨 Below Min", style="bold red")
+                else:
+                    status = Text("✅ Stable", style="bold green")
+            else:
+                status = Text("❓ Missing Data", style="bold yellow")
+
+            stability_table.add_row(
+                reservoir_name,
+                f"{r_initial:.2f}" if isinstance(r_initial, float) else "N/A",
+                f"{r_current:.2f}" if isinstance(r_current, float) else "N/A",
+                f"{r_min:.2f}",
+                status,
+            )
+
+    # Render the tables
+    console.print(pressure_table)
+    console.print(tank_table)
+    if is_final and "stability" in constraints:
+        console.print(stability_table)
+
+
+def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     """
     Process a node to check if it satisfies the constraints.
     """
-    try:
-        # Run simulation
-        sim = wntr.sim.EpanetSimulator(node["model"])
-        out = sim.run_sim()
+    
+    # Run simulation
+    node["model"].options.time.duration = node["end_time"]
+    sim = wntr.sim.EpanetSimulator(node["model"])
+    out = sim.run_sim()
 
-        # Advance the simulation by one time step
-        node["model"].options.time.duration += TIME_STEP
+    # Get pressures
+    pressures = out.node["pressure"].iloc[-1].to_dict()
 
-        # Get pressures
-        pressures = out.node["pressure"].iloc[-1].to_dict()
+    # Get tank levels
+    tank_levels = out.node["head"].iloc[-1].to_dict()
 
-        # Check pressure head constraints feasibility
-        for node_name, p_min in CNSTR["pressure_min"].items():
-            # Get the last pressure value for the node
-            p_last = pressures.get(node_name, None)
-            if p_last is None:
-                console.print(f"[red]Pressure data for node {node_name} not found![/red]")
-                return False
-            # Infeasible due to pressure constraints
-            if p_last < p_min:
-                return False
+    # Get initial pressures
+    initial_pressures = out.node["pressure"].iloc[0].to_dict()
 
-        # Get tank levels
-        tank_levels = out.node["head"].iloc[-1].to_dict()
+    # Get initial tank levels
+    initial_tank_levels = out.node["head"].iloc[0].to_dict()
 
-        # Check tank level constraints feasibility
-        for tank_name, r_min_max in CNSTR["tank_level_min_max"].items():
+    if verbose:
+        show_node_values(
+            node["end_time"],
+            CNSTR,
+            initial_pressures,
+            initial_tank_levels,
+            pressures,
+            tank_levels,
+            is_final,
+        )
+
+    # Check pressure head constraints feasibility
+    for node_name, p_min in CNSTR["pressure_min"].items():
+        # Get the last pressure value for the node
+        p_last = pressures.get(node_name, None)
+        if p_last is None:
+            console.print(f"[red]Pressure data for node {node_name} not found![/red]")
+            return False
+        # Infeasible due to pressure constraints
+        if p_last < p_min:
+            return False
+
+    # Check tank level constraints feasibility
+    for tank_name, r_min_max in CNSTR["tank_level_min_max"].items():
+        r_last = tank_levels.get(tank_name, None)
+        if r_last is None:
+            console.print(f"[red]Tank level data for tank {tank_name} not found![/red]")
+            return False
+        r_min = r_min_max[0]
+        r_max = r_min_max[1]
+        # Infeasible due to tank level constraints
+        if r_last < r_min or r_last > r_max:
+            return False
+
+    # Check reservoir stability constraints
+    if is_final:
+        for tank_name, r_min in CNSTR["stability"].items():
             r_last = tank_levels.get(tank_name, None)
             if r_last is None:
                 console.print(f"[red]Tank level data for tank {tank_name} not found![/red]")
                 return False
-            r_min = r_min_max[0]
-            r_max = r_min_max[1]
             # Infeasible due to tank level constraints
-            if r_last < r_min or r_last > r_max:
+            if r_last < r_min:
                 return False
 
-        # Check reservoir stability constraints
-        if is_final:
-            for tank_name, r_min in CNSTR["stability"].items():
-                r_last = tank_levels.get(tank_name, None)
-                if r_last is None:
-                    console.print(f"[red]Tank level data for tank {tank_name} not found![/red]")
-                    return False
-                # Infeasible due to tank level constraints
-                if r_last < r_min:
-                    return False
-
-        return True
-
-    except Exception as e:
-        console.print(f"[red]Error in processing node: {e}[/red]")
-        return False
+    return True
 
 
 def parse_actuations(y: int, actuations: list[int], x: list[int]) -> bool:
@@ -210,7 +435,7 @@ def get_score(lower_bound: float, depth: int) -> float:
     return OMEGA * lower_bound + (1 - OMEGA) * (-depth)
 
 
-def create_child_node(parent_node: dict, y: int) -> dict | None:
+def create_child_node(parent_node: dict, y: int, verbose: bool = False) -> dict | None:
     """
     Create a child node from the parent node.
     """
@@ -218,6 +443,7 @@ def create_child_node(parent_node: dict, y: int) -> dict | None:
     child_node["step"] += 1
     child_node["depth"] += 1
     child_node["y"] = y
+    child_node["end_time"] += TIME_STEP
 
     # Updates child_node["x"] and child_node["actuations"]
     is_valid = parse_actuations(y, child_node["actuations"], child_node["x"])
@@ -234,18 +460,18 @@ def create_child_node(parent_node: dict, y: int) -> dict | None:
 
     # Update pump statuses in the network model
     wn = child_node["model"]
-    # TODO: Is this the correct way to update the pump statuses?
-    # Should I use wntr.network.LinkStatus.Open or 1?
-    # Can we change the initial_status if the sim is running?
     x = child_node["x"]
     for pump_idx, pump in enumerate(PUMPS):
-        
-        wn.get_link(pump).initial_status = PUMP_OPEN if x[pump_idx] else PUMP_CLOSED
+        status = PUMP_OPEN if x[pump_idx] else PUMP_CLOSED
+        pump_add_control(wn, pump, status, parent_node["end_time"])
+
+    if verbose:
+        show_controls(wn)
 
     return child_node
 
 
-def dfs(node: dict):
+def dfs(node: dict, verbose: bool = False):
     """
     Depth-first search to find the optimal solution.
     """
@@ -261,7 +487,8 @@ def dfs(node: dict):
     is_final = node["step"] == N_STEPS - 1
 
     # Process node
-    is_feasible = process_node(node, is_final)
+    is_feasible = process_node(node, is_final, verbose)
+    console.print(f"is_feasible: {is_feasible}")
     if not is_feasible:
         return
 
@@ -279,15 +506,16 @@ def dfs(node: dict):
 
     # Branching: Iterate over possible number of pumps to open (0 to N_PUMPS)
     for y in range(N_PUMPS + 1):
-        child_node = create_child_node(node, y)
+        child_node = create_child_node(node, y, verbose)
         if child_node is None:
             continue  # Invalid child node
-        dfs(child_node)  # Recursively explore the child node
+        dfs(child_node, verbose)  # Recursively explore the child node
 
 
 def main():
     global LOWER_BOUND  # to update the lower bound in process_node
     global BEST_SCHEDULE
+    verbose = True
 
     # Close all pumps initially
     for pump in WN.pump_name_list:
@@ -301,18 +529,15 @@ def main():
         "lower_bound": 0,  # Initial lower bound
         "depth": 0,  # depth = depth of the current schedule
         "model": deepcopy(WN),  # copy of the water network model
-        "current_time": 0,  # current time of the simulation
+        "end_time": 0,  # end time of the simulation
     }
 
     # Create child nodes
     for y in range(N_PUMPS + 1):
-        child_node = create_child_node(root_node, y)
+        child_node = create_child_node(root_node, y, verbose)
         if child_node is None:
             continue
-        dfs(child_node)
-
-    # Start DFS
-    dfs(root_node)
+        dfs(child_node, verbose)
 
     # Print the best solution
     if BEST_SCHEDULE:

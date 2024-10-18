@@ -12,12 +12,13 @@ networks: no
   any-town.inp: all
   any-town.md: none
 
-codes: yes
+codes: no
   bbsolver.py: all  
 
-.venv/lib/python3.10/site-packages/wntr: no
+.venv/lib/python3.10/site-packages/wntr: yes
   network/controls.py: all
 
 # user_request
-Merge the tables for pressures and tank levels in show_node_values function. Add new columns to indicate the row context (node, tank, ..., pressure, level, ...)
+"""
+How to remove a specific control from a network model in wntr?
 """

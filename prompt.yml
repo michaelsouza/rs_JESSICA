@@ -2,68 +2,22 @@
 - Python 3.11
 - EPANET 2.2
 - WNTR 1.2.0 (python package)
+- rich 13.9.2 (python package)
 
 # sources:
 paper: no
   main.md: all
-networks: yes
+
+networks: no
   any-town.inp: all
   any-town.md: none
+
 codes: yes
   bbsolver.py: all  
 
+.venv/lib/python3.10/site-packages/wntr: no
+  network/controls.py: all
+
 # user_request
-"""
-Each child node should dynamically change the network by actuating the pumps. We are trying to do it by changin the initial_status, but this is not working. It seems that changing the initial_status only affects the first time the network is run, but not the subsequent times.
-
-michaelbynum commented on Oct 23, 2018
-All you need to do is replace
-
-wn.options.time.start_clocktime=wn.options.time.start_clocktime+3600
-with
-
-wn.options.time.duration += 3600
-The start_clocktime should never change during a simulation. As the simulation progresses in time, the simulator will advance wn.sim_time as needed. The clocktime is simply wn.sim_time + wn.options.time.start_clocktime.
-
-However, the simulator should never simulate past wn.options.time.duration. This is a bug, and I will fix it.
-
-If you ever need to reset the network to its initial conditions, just use wn.reset_initial_values(). This will set wn.sim_time back to zero, change the tank levels back to their initial levels, etc. For example:
-
-I'm not sure, but the following 
-
-===
-import wntr
-import pandas as pd
-
-solv_opts = {}
-
-inp_file = 'Net1.inp'
-wn = wntr.network.WaterNetworkModel(inp_file)
-wn.options.time.duration = 3600*24
-wn.options.time.hydraulic_timestep = 3600
-wn.options.time.pattern_timestep =7200
-
-sim = wntr.sim.WNTRSimulator(wn)
-results_24= sim.run_sim(solver_options=solv_opts, convergence_error=True)
-
-wn.reset_initial_values()
-
-wn.options.time.duration = 0
-
-pres=pd.DataFrame()
-stat=pd.DataFrame()
-
-for hour in range(0,25):
-     sim = wntr.sim.WNTRSimulator(wn)
-     results= sim.run_sim(solver_options=solv_opts, convergence_error=True)
-     pres=pres.append(results.node["pressure"],ignore_index = False)
-     stat=stat.append(results.link["status"],ignore_index = False)
-     wn.options.time.duration += 3600
-
-pres_24 = results_24.node["pressure"]
-temp = pres-pres_24
-print(temp)
-====
-
-Please, help us to fix the code.
+Merge the tables for pressures and tank levels in show_node_values function. Add new columns to indicate the row context (node, tank, ..., pressure, level, ...)
 """

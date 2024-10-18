@@ -19,14 +19,19 @@ from rich.text import Text
 
 console = Console()
 
-# Load network
-FN = "networks/any-town.inp"
-if not os.path.exists(FN):
-    console.print(f"[red]Network file {FN} not found![/red]")
-    exit(1)
+
+def load_network(fn: str) -> WaterNetworkModel:
+    """
+    Load a network from a file.
+    """
+    if not os.path.exists(fn):
+        console.print(f"[red]Network file {fn} not found![/red]")
+        exit(1)
+    return WaterNetworkModel(fn)
+
 
 # Define global parameters
-WN = WaterNetworkModel(FN)
+WN = load_network("networks/any-town.inp")
 PUMPS = WN.pump_name_list
 N_PUMPS = WN.num_pumps
 TIME_STEP = 60 * 60  # 1 hour (in seconds)
@@ -93,8 +98,8 @@ def show_network_info(wn: wntr.network.WaterNetworkModel):
     Print the network info and parameters.
     """
     console.print(f"Network name ..... [cyan]{wn.name}[/cyan]")
-    console.print(f"# Pumps .......... [cyan]{N_PUMPS}[/cyan]")
-    console.print(f"# Time steps ..... [cyan]{N_STEPS}[/cyan]")
+    console.print(f"Num pumps ........ [cyan]{N_PUMPS}[/cyan]")
+    console.print(f"Num time steps ... [cyan]{N_STEPS}[/cyan]")
     console.print(f"Time step ........ [cyan]{TIME_STEP}[/cyan] seconds")
 
 
@@ -205,7 +210,9 @@ def show_node_values(
     console.rule(f"[bold yellow]Process_Node : End Time {end_time}[/bold yellow]")
 
     # Create and populate the Combined Table with Context
-    combined_table = Table(title="💧 Water Network Simulation Results", box=box.ROUNDED, header_style="bold blue", expand=True)
+    combined_table = Table(
+        title="💧 Water Network Simulation Results", box=box.ROUNDED, header_style="bold blue", expand=True
+    )
 
     # Define table columns
     combined_table.add_column("Type", style="cyan", no_wrap=True, width=10)
@@ -305,7 +312,7 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     Process a node to check if it satisfies the constraints.
     """
 
-    # Run simulation    
+    # Run simulation
     node["model"].options.time.duration = node["end_time"]
     sim = wntr.sim.EpanetSimulator(node["model"])
     out = sim.run_sim()

@@ -60,6 +60,17 @@
             ],
             "preLaunchTask": "build-release",
             "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "Run unittest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "unittest",
+            "args": [
+                "codes/bbsolver_test.py"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
         }
     ]
 }

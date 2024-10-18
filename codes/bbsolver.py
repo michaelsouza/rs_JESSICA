@@ -197,27 +197,27 @@ def show_node_values(
         Dictionary containing initial pressure values at each node.
     initial_tank_levels : Dict[str, float]
         Dictionary containing initial tank levels.
-    final_pressures : Dict[str, float]
-        Dictionary containing final pressure values at each node.
-    final_tank_levels : Dict[str, float]
-        Dictionary containing final tank levels.
-    constraints_final : Dict[str, Dict[str, any]]
-        Dictionary containing final constraints like stability.
     is_final : bool
         Flag indicating if this is the final simulation step.
     """
 
     # Separator
-    console.rule(f"[bold yellow]Process_Node Values at Time Step {end_time}[/bold yellow]")
+    console.rule(f"[bold yellow]Process_Node : End Time {end_time}[/bold yellow]")
 
-    # Create and populate the Pressures Table with Start and End Values
-    pressure_table = Table(title="💧 Node Pressures", box=box.ROUNDED, header_style="bold blue")
-    pressure_table.add_column("Node", style="cyan", no_wrap=True)
-    pressure_table.add_column("Initial Pressure (m)", style="cyan")
-    pressure_table.add_column("Current Pressure (m)", style="magenta")
-    pressure_table.add_column("Min Pressure (m)", style="green")
-    pressure_table.add_column("Status", style="bold")
+    # Create and populate the Combined Table with Context
+    combined_table = Table(title="💧 Water Network Simulation Results", box=box.ROUNDED, header_style="bold blue", expand=True)
 
+    # Define table columns
+    combined_table.add_column("Type", style="cyan", no_wrap=True, width=10)
+    combined_table.add_column("Entity Name", style="cyan", no_wrap=True)
+    combined_table.add_column("Attribute", style="magenta")
+    combined_table.add_column("Initial Value (m)", style="cyan")
+    combined_table.add_column("Current Value (m)", style="magenta")
+    combined_table.add_column("Min Constraint (m)", style="green")
+    combined_table.add_column("Max Constraint (m)", style="green", justify="center")
+    combined_table.add_column("Status", style="bold")
+
+    # Populate the table with Node Pressures
     for node_name, p_min in constraints.get("pressure_min", {}).items():
         p_initial = initial_pressures.get(node_name, "N/A")
         p_current = pressures.get(node_name, "N/A")
@@ -231,23 +231,18 @@ def show_node_values(
         else:
             status = Text("❓ Missing Data", style="bold yellow")
 
-        pressure_table.add_row(
+        combined_table.add_row(
+            "Node",
             node_name,
+            "Pressure",
             f"{p_initial:.2f}" if isinstance(p_initial, float) else "N/A",
             f"{p_current:.2f}" if isinstance(p_current, float) else "N/A",
             f"{p_min:.2f}",
+            "-",  # No max constraint for pressure
             status,
         )
 
-    # Create and populate the Tank Levels Table with Start and End Values
-    tank_table = Table(title="🏭 Tank Levels", box=box.ROUNDED, header_style="bold blue")
-    tank_table.add_column("Tank", style="cyan", no_wrap=True)
-    tank_table.add_column("Initial Level (m)", style="cyan")
-    tank_table.add_column("Current Level (m)", style="magenta")
-    tank_table.add_column("Min Level (m)", style="green")
-    tank_table.add_column("Max Level (m)", style="green")
-    tank_table.add_column("Status", style="bold")
-
+    # Populate the table with Tank Levels
     for tank_name, level_range in constraints.get("tank_level_min_max", {}).items():
         r_min, r_max = level_range
         r_initial = initial_tank_levels.get(tank_name, "N/A")
@@ -264,8 +259,10 @@ def show_node_values(
         else:
             status = Text("❓ Missing Data", style="bold yellow")
 
-        tank_table.add_row(
+        combined_table.add_row(
+            "Tank",
             tank_name,
+            "Level",
             f"{r_initial:.2f}" if isinstance(r_initial, float) else "N/A",
             f"{r_current:.2f}" if isinstance(r_current, float) else "N/A",
             f"{r_min:.2f}",
@@ -273,15 +270,8 @@ def show_node_values(
             status,
         )
 
-    # If it's the final step, check reservoir stability and display start and end values
+    # If it's the final step, check reservoir stability and add to the table
     if is_final and "stability" in constraints:
-        stability_table = Table(title="🏦 Reservoir Stability", box=box.ROUNDED, header_style="bold blue")
-        stability_table.add_column("Reservoir", style="cyan", no_wrap=True)
-        stability_table.add_column("Initial Level (m)", style="cyan")
-        stability_table.add_column("Current Level (m)", style="magenta")
-        stability_table.add_column("Min Level (m)", style="green")
-        stability_table.add_column("Status", style="bold")
-
         for reservoir_name, r_min in constraints.get("stability", {}).items():
             r_initial = initial_tank_levels.get(reservoir_name, "N/A")
             r_current = tank_levels.get(reservoir_name, "N/A")
@@ -295,27 +285,27 @@ def show_node_values(
             else:
                 status = Text("❓ Missing Data", style="bold yellow")
 
-            stability_table.add_row(
+            combined_table.add_row(
+                "Reservoir",
                 reservoir_name,
+                "Level",
                 f"{r_initial:.2f}" if isinstance(r_initial, float) else "N/A",
                 f"{r_current:.2f}" if isinstance(r_current, float) else "N/A",
                 f"{r_min:.2f}",
+                "-",  # No max constraint for stability
                 status,
             )
 
-    # Render the tables
-    console.print(pressure_table)
-    console.print(tank_table)
-    if is_final and "stability" in constraints:
-        console.print(stability_table)
+    # Render the combined table
+    console.print(combined_table)
 
 
 def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     """
     Process a node to check if it satisfies the constraints.
     """
-    
-    # Run simulation
+
+    # Run simulation    
     node["model"].options.time.duration = node["end_time"]
     sim = wntr.sim.EpanetSimulator(node["model"])
     out = sim.run_sim()
@@ -327,17 +317,23 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     tank_levels = out.node["head"].iloc[-1].to_dict()
 
     # Get initial pressures
-    initial_pressures = out.node["pressure"].iloc[0].to_dict()
+    if node["step"] == 0:
+        prev_pressures = out.node["pressure"].iloc[0].to_dict()
+    else:
+        prev_pressures = out.node["pressure"].iloc[-2].to_dict()
 
     # Get initial tank levels
-    initial_tank_levels = out.node["head"].iloc[0].to_dict()
+    if node["step"] == 0:
+        prev_tank_levels = out.node["head"].iloc[0].to_dict()
+    else:
+        prev_tank_levels = out.node["head"].iloc[-2].to_dict()
 
     if verbose:
         show_node_values(
             node["end_time"],
             CNSTR,
-            initial_pressures,
-            initial_tank_levels,
+            prev_pressures,
+            prev_tank_levels,
             pressures,
             tank_levels,
             is_final,

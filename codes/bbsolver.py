@@ -31,7 +31,7 @@ def load_network(fn: str) -> WaterNetworkModel:
 
 
 # Define global parameters
-WN = load_network("networks/any-town.inp")
+WN = load_network("/home/jessica/Git/rs_JESSICA/networks/any-town.inp")
 PUMPS = WN.pump_name_list
 N_PUMPS = WN.num_pumps
 TIME_STEP = 60 * 60  # 1 hour (in seconds)

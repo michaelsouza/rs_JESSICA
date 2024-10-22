@@ -9,7 +9,7 @@ from copy import deepcopy
 import numpy as np
 import wntr
 from wntr.network import LinkStatus, WaterNetworkModel
-from wntr.network.controls import ControlAction, Control, Comparison
+from wntr.network.controls import ControlAction, Control, Comparison, TimeOfDayCondition
 
 # Rich library imports for console output
 from rich.console import Console
@@ -71,25 +71,24 @@ def get_constraints(wn: WaterNetworkModel):
 CNSTR = get_constraints(WN)
 
 
-def pump_add_control(wn: WaterNetworkModel, pump_name: str, status: LinkStatus, time: int):
-    # Retrieve the pump object
+def model_add_pump_control(wn: WaterNetworkModel, pump_name: str, status: LinkStatus, time: int) -> str:
+    """
+    Add a pump control to the network model.
+    """
+     # check if the control already exists
+    control_name = f"{time:05d}_{pump_name}_{status}"
+    controls = list(wn.controls())
+    for name, control in controls:
+        if name == control_name:
+            print(f"Control {control_name} already exists")
+            return
     pump = wn.get_link(pump_name)
-    if pump is None:
-        console.print(f"[red]Pump {pump_name} not found![/red]")
-        return
-
-    # Define the control action to change on simulation time
-    threshold = max(0, time - 5)  # 5 seconds before the time step to be sure the control is applied
-    condition = wntr.network.TimeOfDayCondition(model=wn, relation=Comparison.eq, threshold=threshold, repeat=False)
-
-    # Define the control action
+    threshold = time
+    condition = TimeOfDayCondition(wn, Comparison.eq, threshold)
     action = ControlAction(target_obj=pump, attribute="status", value=status)
-
-    # Create the control
-    control = Control(condition=condition, then_action=action)
-
-    # Add the control to the network
-    wn.add_control(f"{time:05d}_{pump_name}_{status}", control)
+    control = Control(condition, then_action=action)
+    wn.add_control(control_name, control)
+    return control_name
 
 
 # Print network info and parameters using rich table
@@ -275,37 +274,19 @@ def show_node_values(
             f"{r_min:.2f}",
             f"{r_max:.2f}",
             status,
-        )
-
-    # If it's the final step, check reservoir stability and add to the table
-    if is_final and "stability" in constraints:
-        for reservoir_name, r_min in constraints.get("stability", {}).items():
-            r_initial = initial_tank_levels.get(reservoir_name, "N/A")
-            r_current = tank_levels.get(reservoir_name, "N/A")
-
-            # Determine Status
-            if isinstance(r_current, float):
-                if r_current < r_min:
-                    status = Text("🚨 Below Min", style="bold red")
-                else:
-                    status = Text("✅ Stable", style="bold green")
-            else:
-                status = Text("❓ Missing Data", style="bold yellow")
-
-            combined_table.add_row(
-                "Reservoir",
-                reservoir_name,
-                "Level",
-                f"{r_initial:.2f}" if isinstance(r_initial, float) else "N/A",
-                f"{r_current:.2f}" if isinstance(r_current, float) else "N/A",
-                f"{r_min:.2f}",
-                "-",  # No max constraint for stability
-                status,
-            )
+        )    
 
     # Render the combined table
     console.print(combined_table)
 
+
+def show_step(node: dict):
+    """
+    Show the step of the node.
+    """
+    node_step = node['step']
+    y = [sum(s) for s in SCHEDULE[:node_step]]
+    console.print(f"step: {node_step} - y: {y}")
 
 def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     """
@@ -316,6 +297,8 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     node["model"].options.time.duration = node["end_time"]
     sim = wntr.sim.EpanetSimulator(node["model"])
     out = sim.run_sim()
+
+    show_step(node)
 
     # Get pressures
     pressures = out.node["pressure"].iloc[-1].to_dict()
@@ -371,13 +354,13 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
 
     # Check reservoir stability constraints
     if is_final:
-        for tank_name, r_min in CNSTR["stability"].items():
+        for tank_name, r_initial in CNSTR["tank_level_initial"].items():
             r_last = tank_levels.get(tank_name, None)
             if r_last is None:
                 console.print(f"[red]Tank level data for tank {tank_name} not found![/red]")
                 return False
             # Infeasible due to tank level constraints
-            if r_last < r_min:
+            if r_last < r_initial:
                 return False
 
     return True
@@ -466,7 +449,7 @@ def create_child_node(parent_node: dict, y: int, verbose: bool = False) -> dict 
     x = child_node["x"]
     for pump_idx, pump in enumerate(PUMPS):
         status = PUMP_OPEN if x[pump_idx] else PUMP_CLOSED
-        pump_add_control(wn, pump, status, parent_node["end_time"])
+        model_add_pump_control(wn, pump, status, parent_node["end_time"])
 
     if verbose:
         show_controls(wn)
@@ -491,7 +474,8 @@ def dfs(node: dict, verbose: bool = False):
 
     # Process node
     is_feasible = process_node(node, is_final, verbose)
-    console.print(f"is_feasible: {is_feasible}")
+    if verbose:
+        console.print(f"is_feasible: {is_feasible}")        
     if not is_feasible:
         return
 
@@ -518,7 +502,7 @@ def dfs(node: dict, verbose: bool = False):
 def main():
     global LOWER_BOUND  # to update the lower bound in process_node
     global BEST_SCHEDULE
-    verbose = True
+    verbose = False
 
     # Close all pumps initially
     for pump in WN.pump_name_list:

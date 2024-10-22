@@ -285,7 +285,7 @@ def show_step(node: dict):
     Show the step of the node.
     """
     node_step = node['step']
-    y = [sum(s) for s in SCHEDULE[:node_step]]
+    y = [sum(s) for s in SCHEDULE[:node_step + 1]]
     console.print(f"step: {node_step} - y: {y}")
 
 def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
@@ -472,15 +472,15 @@ def dfs(node: dict, verbose: bool = False):
     # Check if node is a leaf node
     is_final = node["step"] == N_STEPS - 1
 
+    # Update schedule
+    SCHEDULE[node["step"]] = node["x"]
+
     # Process node
     is_feasible = process_node(node, is_final, verbose)
     if verbose:
         console.print(f"is_feasible: {is_feasible}")        
     if not is_feasible:
         return
-
-    # Update schedule
-    SCHEDULE[node["step"]] = node["x"]
 
     if is_final:
         # Update the best solution if this node has a lower cost

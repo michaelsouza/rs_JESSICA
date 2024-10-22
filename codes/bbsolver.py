@@ -4,12 +4,15 @@
 import os
 from typing import List, Tuple, Dict
 from copy import deepcopy
+import os
+from datetime import datetime
+import time
 
 # Third-party imports
-import numpy as np
-import wntr
-from wntr.network import LinkStatus, WaterNetworkModel
-from wntr.network.controls import ControlAction, Control, Comparison, TimeOfDayCondition
+import numpy as np # type: ignore
+import wntr # type: ignore
+from wntr.network import LinkStatus, WaterNetworkModel # type: ignore
+from wntr.network.controls import ControlAction, Control, Comparison, TimeOfDayCondition # type: ignore
 
 # Rich library imports for console output
 from rich.console import Console
@@ -43,6 +46,8 @@ BEST_SCHEDULE = [None for _ in range(N_STEPS)]  # To store the best feasible sol
 PUMP_OPEN = LinkStatus.Open
 PUMP_CLOSED = LinkStatus.Closed
 ACTUATIONS_MAX = 3  # Max number of actuations for each pump
+BEST_SOLUTIONS = []
+
 
 
 def get_constraints(wn: WaterNetworkModel):
@@ -288,6 +293,41 @@ def show_step(node: dict):
     y = [sum(s) for s in SCHEDULE[:node_step + 1]]
     console.print(f"step: {node_step} - y: {y}")
 
+
+def check_or_create_log_file(filename: str):
+    """
+    Ensure the log file exists, creating it if necessary with a header.
+    """
+    if not os.path.isfile(filename):
+        with open(filename, "a") as file:
+            file.write("Schedule Results Log\n")
+            file.write("=====================\n")
+            file.write("This file contains results of multiple simulations\n")
+            file.write("-" * 40 + "\n")
+
+def append_simulation_results(filename: str, best_schedules: List[Tuple[List, float]], start_time: float, end_time: float):
+    """
+    Append the best schedules and their costs, along with execution info, to the log file.
+    """
+    duration = end_time - start_time
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Simplifica a abertura do arquivo e a escrita dos resultados
+    with open(filename, "a") as file:
+        # Escreve informações gerais da execução
+        file.write(f"\nExecution Date: {now}\n")
+        file.write(f"Execution Duration: {duration:.2f} seconds\n")
+        
+        # Registra as best solutions encontradas durante a execução
+        for idx, (schedule, cost) in enumerate(best_schedules, start=1):
+            file.write(f"\n[Update {idx}] Lower Bound: {cost}\n")
+            file.write(f"Pump Schedule (Time Step : Pump Status):\n")
+            for step, pump_status in enumerate(schedule, start=1):
+                status_str = ", ".join([f"P{idx+1}: {'ON' if status else 'OFF'}" for idx, status in enumerate(pump_status)])
+                file.write(f"Time {step}: {status_str}\n")
+        file.write("-" * 40 + "\n")
+
+
 def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     """
     Process a node to check if it satisfies the constraints.
@@ -464,6 +504,7 @@ def dfs(node: dict, verbose: bool = False):
     global LOWER_BOUND
     global SCHEDULE
     global BEST_SCHEDULE
+    global BEST_SOLUTIONS
 
     # Prune the branch if the current lower bound exceeds the best found so far
     if node["lower_bound"] >= LOWER_BOUND:
@@ -487,6 +528,7 @@ def dfs(node: dict, verbose: bool = False):
         if node["lower_bound"] < LOWER_BOUND:
             LOWER_BOUND = node["lower_bound"]
             BEST_SCHEDULE = deepcopy(SCHEDULE)
+            BEST_SOLUTIONS.append((deepcopy(BEST_SCHEDULE), LOWER_BOUND)) #add
             console.print(f"[green]New best solution found![/green]")
             console.print(f"[green]   Cost: {LOWER_BOUND}[/green]")
         return
@@ -504,9 +546,13 @@ def main():
     global BEST_SCHEDULE
     verbose = False
 
+    log_filename = "schedule_results.log"
+
     # Close all pumps initially
     for pump in WN.pump_name_list:
         WN.get_link(pump).initial_status = wntr.network.LinkStatus.Closed
+
+    start_time = time.time()
 
     root_node = {
         "step": -1,
@@ -526,6 +572,8 @@ def main():
             continue
         dfs(child_node, verbose)
 
+    end_time = time.time()
+
     # Print the best solution
     if BEST_SCHEDULE:
         console.print(f"[bold green]Best solution found![/bold green]")
@@ -536,6 +584,10 @@ def main():
             console.print(f"Time {step}: {status_str}")
     else:
         console.print("[red]No feasible solution found.[/red]")
+
+    # Check or create the log file and save the results
+    check_or_create_log_file(log_filename)
+    append_simulation_results(log_filename, BEST_SOLUTIONS, start_time, end_time)
 
 
 if __name__ == "__main__":

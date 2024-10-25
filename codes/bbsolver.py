@@ -9,10 +9,10 @@ from datetime import datetime
 import time
 
 # Third-party imports
-import numpy as np # type: ignore
-import wntr # type: ignore
-from wntr.network import LinkStatus, WaterNetworkModel # type: ignore
-from wntr.network.controls import ControlAction, Control, Comparison, TimeOfDayCondition # type: ignore
+import numpy as np  # type: ignore
+import wntr  # type: ignore
+from wntr.network import LinkStatus, WaterNetworkModel  # type: ignore
+from wntr.network.controls import ControlAction, Control, Comparison, TimeOfDayCondition  # type: ignore
 
 # Rich library imports for console output
 from rich.console import Console
@@ -49,7 +49,6 @@ ACTUATIONS_MAX = 3  # Max number of actuations for each pump
 BEST_SOLUTIONS = []
 
 
-
 def get_constraints(wn: WaterNetworkModel):
     """
     Get the constraints for the network.
@@ -80,7 +79,7 @@ def model_add_pump_control(wn: WaterNetworkModel, pump_name: str, status: LinkSt
     """
     Add a pump control to the network model.
     """
-     # check if the control already exists
+    # check if the control already exists
     control_name = f"{time:05d}_{pump_name}_{status}"
     controls = list(wn.controls())
     for name, control in controls:
@@ -279,7 +278,7 @@ def show_node_values(
             f"{r_min:.2f}",
             f"{r_max:.2f}",
             status,
-        )    
+        )
 
     # Render the combined table
     console.print(combined_table)
@@ -289,8 +288,8 @@ def show_step(node: dict):
     """
     Show the step of the node.
     """
-    node_step = node['step']
-    y = [sum(s) for s in SCHEDULE[:node_step + 1]]
+    node_step = node["step"]
+    y = [sum(s) for s in SCHEDULE[: node_step + 1]]
     console.print(f"step: {node_step} - y: {y}")
 
 
@@ -305,7 +304,10 @@ def check_or_create_log_file(filename: str):
             file.write("This file contains results of multiple simulations\n")
             file.write("-" * 40 + "\n")
 
-def append_simulation_results(filename: str, best_schedules: List[Tuple[List, float]], start_time: float, end_time: float):
+
+def append_simulation_results(
+    filename: str, best_schedules: List[Tuple[List, float]], start_time: float, end_time: float
+):
     """
     Append the best schedules and their costs, along with execution info, to the log file.
     """
@@ -317,13 +319,15 @@ def append_simulation_results(filename: str, best_schedules: List[Tuple[List, fl
         # Escreve informações gerais da execução
         file.write(f"\nExecution Date: {now}\n")
         file.write(f"Execution Duration: {duration:.2f} seconds\n")
-        
+
         # Registra as best solutions encontradas durante a execução
         for idx, (schedule, cost) in enumerate(best_schedules, start=1):
             file.write(f"\n[Update {idx}] Lower Bound: {cost}\n")
             file.write(f"Pump Schedule (Time Step : Pump Status):\n")
             for step, pump_status in enumerate(schedule, start=1):
-                status_str = ", ".join([f"P{idx+1}: {'ON' if status else 'OFF'}" for idx, status in enumerate(pump_status)])
+                status_str = ", ".join(
+                    [f"P{idx+1}: {'ON' if status else 'OFF'}" for idx, status in enumerate(pump_status)]
+                )
                 file.write(f"Time {step}: {status_str}\n")
         file.write("-" * 40 + "\n")
 
@@ -519,7 +523,7 @@ def dfs(node: dict, verbose: bool = False):
     # Process node
     is_feasible = process_node(node, is_final, verbose)
     if verbose:
-        console.print(f"is_feasible: {is_feasible}")        
+        console.print(f"is_feasible: {is_feasible}")
     if not is_feasible:
         return
 
@@ -528,7 +532,7 @@ def dfs(node: dict, verbose: bool = False):
         if node["lower_bound"] < LOWER_BOUND:
             LOWER_BOUND = node["lower_bound"]
             BEST_SCHEDULE = deepcopy(SCHEDULE)
-            BEST_SOLUTIONS.append((deepcopy(BEST_SCHEDULE), LOWER_BOUND)) #add
+            BEST_SOLUTIONS.append((deepcopy(BEST_SCHEDULE), LOWER_BOUND))  # add
             console.print(f"[green]New best solution found![/green]")
             console.print(f"[green]   Cost: {LOWER_BOUND}[/green]")
         return

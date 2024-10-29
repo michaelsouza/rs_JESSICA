@@ -1,0 +1,197 @@
+Schedule Results Log
+=====================
+This file contains results of multiple simulations
+----------------------------------------
+
+Execution Date: 2024-10-22 18:10:21
+Execution Duration: 3905.31 seconds
+
+[Update 1] Lower Bound: 2187.21
+Pump Schedule (Time Step : Pump Status):
+Time 1: P1: ON, P2: ON, P3: OFF
+Time 2: P1: ON, P2: ON, P3: OFF
+Time 3: P1: ON, P2: ON, P3: OFF
+Time 4: P1: ON, P2: ON, P3: ON
+Time 5: P1: ON, P2: ON, P3: ON
+Time 6: P1: ON, P2: ON, P3: ON
+Time 7: P1: ON, P2: ON, P3: ON
+Time 8: P1: ON, P2: ON, P3: ON
+Time 9: P1: ON, P2: ON, P3: ON
+Time 10: P1: ON, P2: ON, P3: ON
+Time 11: P1: ON, P2: ON, P3: ON
+Time 12: P1: ON, P2: ON, P3: ON
+Time 13: P1: ON, P2: ON, P3: ON
+Time 14: P1: ON, P2: ON, P3: ON
+Time 15: P1: ON, P2: ON, P3: ON
+Time 16: P1: OFF, P2: ON, P3: ON
+Time 17: P1: ON, P2: ON, P3: ON
+Time 18: P1: ON, P2: ON, P3: ON
+Time 19: P1: OFF, P2: ON, P3: ON
+Time 20: P1: OFF, P2: ON, P3: ON
+Time 21: P1: OFF, P2: ON, P3: ON
+Time 22: P1: OFF, P2: ON, P3: ON
+Time 23: P1: OFF, P2: OFF, P3: ON
+Time 24: P1: ON, P2: ON, P3: ON
+
+[Update 2] Lower Bound: 2141.52
+Pump Schedule (Time Step : Pump Status):
+Time 1: P1: ON, P2: ON, P3: OFF
+Time 2: P1: ON, P2: ON, P3: OFF
+Time 3: P1: ON, P2: ON, P3: OFF
+Time 4: P1: ON, P2: ON, P3: ON
+Time 5: P1: ON, P2: ON, P3: ON
+Time 6: P1: ON, P2: ON, P3: ON
+Time 7: P1: ON, P2: ON, P3: ON
+Time 8: P1: ON, P2: ON, P3: ON
+Time 9: P1: ON, P2: ON, P3: ON
+Time 10: P1: ON, P2: ON, P3: ON
+Time 11: P1: ON, P2: ON, P3: ON
+Time 12: P1: ON, P2: ON, P3: ON
+Time 13: P1: ON, P2: ON, P3: ON
+Time 14: P1: ON, P2: ON, P3: ON
+Time 15: P1: ON, P2: ON, P3: ON
+Time 16: P1: ON, P2: ON, P3: ON
+Time 17: P1: ON, P2: ON, P3: ON
+Time 18: P1: OFF, P2: ON, P3: ON
+Time 19: P1: OFF, P2: ON, P3: ON
+Time 20: P1: OFF, P2: ON, P3: ON
+Time 21: P1: OFF, P2: ON, P3: ON
+Time 22: P1: OFF, P2: ON, P3: ON
+Time 23: P1: OFF, P2: OFF, P3: ON
+Time 24: P1: ON, P2: ON, P3: ON
+
+[Update 3] Lower Bound: 2124.38
+Pump Schedule (Time Step : Pump Status):
+Time 1: P1: ON, P2: ON, P3: OFF
+Time 2: P1: ON, P2: ON, P3: OFF
+Time 3: P1: ON, P2: ON, P3: ON
+Time 4: P1: ON, P2: ON, P3: ON
+Time 5: P1: ON, P2: ON, P3: ON
+Time 6: P1: ON, P2: ON, P3: ON
+Time 7: P1: ON, P2: ON, P3: ON
+Time 8: P1: OFF, P2: ON, P3: ON
+Time 9: P1: ON, P2: ON, P3: ON
+Time 10: P1: ON, P2: ON, P3: ON
+Time 11: P1: ON, P2: ON, P3: ON
+Time 12: P1: ON, P2: ON, P3: ON
+Time 13: P1: ON, P2: ON, P3: ON
+Time 14: P1: ON, P2: ON, P3: ON
+Time 15: P1: ON, P2: ON, P3: ON
+Time 16: P1: ON, P2: ON, P3: ON
+Time 17: P1: ON, P2: ON, P3: ON
+Time 18: P1: OFF, P2: ON, P3: ON
+Time 19: P1: OFF, P2: ON, P3: ON
+Time 20: P1: OFF, P2: ON, P3: ON
+Time 21: P1: OFF, P2: ON, P3: ON
+Time 22: P1: OFF, P2: ON, P3: ON
+Time 23: P1: OFF, P2: OFF, P3: ON
+Time 24: P1: ON, P2: ON, P3: ON
+
+[Update 4] Lower Bound: 2107.2400000000002
+Pump Schedule (Time Step : Pump Status):
+Time 1: P1: ON, P2: ON, P3: OFF
+Time 2: P1: ON, P2: ON, P3: ON
+Time 3: P1: ON, P2: ON, P3: ON
+Time 4: P1: ON, P2: ON, P3: ON
+Time 5: P1: ON, P2: ON, P3: ON
+Time 6: P1: ON, P2: ON, P3: ON
+Time 7: P1: ON, P2: ON, P3: ON
+Time 8: P1: OFF, P2: ON, P3: ON
+Time 9: P1: OFF, P2: ON, P3: ON
+Time 10: P1: ON, P2: ON, P3: ON
+Time 11: P1: ON, P2: ON, P3: ON
+Time 12: P1: ON, P2: ON, P3: ON
+Time 13: P1: ON, P2: ON, P3: ON
+Time 14: P1: ON, P2: ON, P3: ON
+Time 15: P1: ON, P2: ON, P3: ON
+Time 16: P1: ON, P2: ON, P3: ON
+Time 17: P1: ON, P2: ON, P3: ON
+Time 18: P1: OFF, P2: ON, P3: ON
+Time 19: P1: OFF, P2: ON, P3: ON
+Time 20: P1: OFF, P2: ON, P3: ON
+Time 21: P1: OFF, P2: ON, P3: ON
+Time 22: P1: OFF, P2: ON, P3: ON
+Time 23: P1: OFF, P2: ON, P3: ON
+Time 24: P1: OFF, P2: ON, P3: ON
+
+[Update 5] Lower Bound: 2107.24
+Pump Schedule (Time Step : Pump Status):
+Time 1: P1: ON, P2: ON, P3: OFF
+Time 2: P1: ON, P2: ON, P3: ON
+Time 3: P1: ON, P2: ON, P3: ON
+Time 4: P1: ON, P2: ON, P3: ON
+Time 5: P1: ON, P2: ON, P3: ON
+Time 6: P1: ON, P2: ON, P3: ON
+Time 7: P1: ON, P2: ON, P3: ON
+Time 8: P1: OFF, P2: ON, P3: ON
+Time 9: P1: OFF, P2: ON, P3: ON
+Time 10: P1: ON, P2: ON, P3: ON
+Time 11: P1: ON, P2: ON, P3: ON
+Time 12: P1: ON, P2: ON, P3: ON
+Time 13: P1: ON, P2: ON, P3: ON
+Time 14: P1: ON, P2: ON, P3: ON
+Time 15: P1: ON, P2: ON, P3: ON
+Time 16: P1: ON, P2: ON, P3: ON
+Time 17: P1: ON, P2: ON, P3: ON
+Time 18: P1: OFF, P2: ON, P3: ON
+Time 19: P1: OFF, P2: ON, P3: ON
+Time 20: P1: OFF, P2: ON, P3: ON
+Time 21: P1: OFF, P2: ON, P3: ON
+Time 22: P1: OFF, P2: ON, P3: ON
+Time 23: P1: ON, P2: ON, P3: ON
+Time 24: P1: OFF, P2: OFF, P3: ON
+
+[Update 6] Lower Bound: 2096.8300000000004
+Pump Schedule (Time Step : Pump Status):
+Time 1: P1: ON, P2: ON, P3: OFF
+Time 2: P1: ON, P2: ON, P3: ON
+Time 3: P1: ON, P2: ON, P3: ON
+Time 4: P1: ON, P2: ON, P3: ON
+Time 5: P1: ON, P2: ON, P3: ON
+Time 6: P1: ON, P2: ON, P3: ON
+Time 7: P1: ON, P2: ON, P3: ON
+Time 8: P1: ON, P2: ON, P3: ON
+Time 9: P1: ON, P2: ON, P3: ON
+Time 10: P1: ON, P2: ON, P3: ON
+Time 11: P1: ON, P2: ON, P3: ON
+Time 12: P1: ON, P2: ON, P3: ON
+Time 13: P1: ON, P2: ON, P3: ON
+Time 14: P1: ON, P2: ON, P3: ON
+Time 15: P1: ON, P2: ON, P3: ON
+Time 16: P1: ON, P2: ON, P3: ON
+Time 17: P1: ON, P2: ON, P3: ON
+Time 18: P1: OFF, P2: OFF, P3: ON
+Time 19: P1: ON, P2: OFF, P3: ON
+Time 20: P1: ON, P2: OFF, P3: ON
+Time 21: P1: ON, P2: OFF, P3: ON
+Time 22: P1: ON, P2: OFF, P3: ON
+Time 23: P1: ON, P2: OFF, P3: ON
+Time 24: P1: ON, P2: OFF, P3: ON
+
+[Update 7] Lower Bound: 2096.83
+Pump Schedule (Time Step : Pump Status):
+Time 1: P1: ON, P2: ON, P3: OFF
+Time 2: P1: ON, P2: ON, P3: ON
+Time 3: P1: ON, P2: ON, P3: ON
+Time 4: P1: ON, P2: ON, P3: ON
+Time 5: P1: ON, P2: ON, P3: ON
+Time 6: P1: ON, P2: ON, P3: ON
+Time 7: P1: ON, P2: ON, P3: ON
+Time 8: P1: ON, P2: ON, P3: ON
+Time 9: P1: ON, P2: ON, P3: ON
+Time 10: P1: ON, P2: ON, P3: ON
+Time 11: P1: ON, P2: ON, P3: ON
+Time 12: P1: ON, P2: ON, P3: ON
+Time 13: P1: ON, P2: ON, P3: ON
+Time 14: P1: ON, P2: ON, P3: ON
+Time 15: P1: ON, P2: ON, P3: ON
+Time 16: P1: ON, P2: ON, P3: ON
+Time 17: P1: ON, P2: ON, P3: ON
+Time 18: P1: OFF, P2: OFF, P3: ON
+Time 19: P1: ON, P2: OFF, P3: ON
+Time 20: P1: ON, P2: OFF, P3: ON
+Time 21: P1: ON, P2: OFF, P3: ON
+Time 22: P1: ON, P2: OFF, P3: ON
+Time 23: P1: ON, P2: ON, P3: ON
+Time 24: P1: OFF, P2: OFF, P3: ON
+----------------------------------------

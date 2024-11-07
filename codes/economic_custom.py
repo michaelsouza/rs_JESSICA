@@ -1,6 +1,7 @@
 """
 The wntr.metrics.economic module contains economic metrics.
 """
+import wntr
 from wntr.network import Tank, Pipe, Pump, Valve
 import numpy as np 
 import pandas as pd 
@@ -346,7 +347,7 @@ def pump_energy(flowrate, head, wn):
     
     return energy
 
-def pump_cost(energy, wn):
+def pump_cost(result, wn, energy=None):
     """
     Compute the pump cost over time. 
     
@@ -369,33 +370,18 @@ def pump_cost(energy, wn):
     -----------
     A DataFrame that contains pump cost in $ (index = times, columns = pump names).
     
-    """
-    time = energy.index
+    """    
     pumps = wn.pump_name_list
+    if energy is None:
+        energy = wntr.metrics.pump_energy(result.link['flowrate'], result.node['head'], wn)
     
-    # TODO: Need to get this unit tested and not just functionally tested
-    if wn.options.energy.demand_charge is not None and wn.options.energy.demand_charge != 0:
-        # Additional energy charge per maximum kilowatt usage
-        raise ValueError('WNTR does not support demand charge yet.')
-        
-    price_dict = {}
-    for pump_name, pump in wn.pumps():
-        if pump.energy_price is None and pump.energy_pattern is None:
-            if wn.options.energy.global_pattern is None:
-                price_dict[pump_name] = [wn.options.energy.global_price for i in time]
-            else:
-                raise NotImplementedError('WNTR does not support price patterns yet.')
-        elif pump.energy_pattern is None:
-            if wn.options.energy.global_pattern is None:
-                price_dict[pump_name] = [pump.energy_price for i in time]
-            else:
-                raise NotImplementedError('WNTR does not support price patterns yet.')
-        else:
-            raise NotImplementedError('WNTR does not support price patterns yet.')
-            
-    price = pd.DataFrame(data=price_dict, index=time, columns=pumps)
+    time = energy.index
+    num_timesteps = len(time)
     
-    pump_cost = energy * price
+    # convert the price pattern unit from cents per kWh to dollars per J
+    multipliers = (wn.get_pattern("PRICES").multipliers[:num_timesteps] / 100) / (1000 * 3600)
     
-    return pump_cost
+    cost = 0.0    
+    cost += (energy * multipliers).sum().sum()    
+    return cost
     

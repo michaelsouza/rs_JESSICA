@@ -12,13 +12,13 @@ networks: no
   any-town.inp: all
   any-town.md: none
 
-codes: no
+codes: yes
   bbsolver.py: all  
 
-.venv/lib/python3.10/site-packages/wntr: yes
+.venv/lib/python3.10/site-packages/wntr: no
   network/controls.py: all
 
 # user_request
 """
-How to remove a specific control from a network model in wntr?
+Do a research the check how can we be sure that the demand pattern was satisfied.
 """

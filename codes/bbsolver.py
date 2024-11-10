@@ -7,6 +7,7 @@ from copy import deepcopy
 import os
 from datetime import datetime
 import time
+import pickle
 
 # Third-party imports
 import numpy as np  # type: ignore
@@ -50,7 +51,7 @@ PUMP_OPEN = LinkStatus.Open
 PUMP_CLOSED = LinkStatus.Closed
 ACTUATIONS_MAX = 3  # Max number of actuations for each pump
 BEST_SOLUTIONS = []
-
+NODES_INFO = []
 
 def get_constraints(wn: WaterNetworkModel):
     """
@@ -111,6 +112,17 @@ def show_network_info(wn: wntr.network.WaterNetworkModel):
 
 # Print network info
 show_network_info(WN)
+
+
+def get_node_info(node: dict) -> dict:
+    """
+    Get the info of the node.
+    """
+    return {
+        "step": node["step"],
+        "lower_bound": node["lower_bound"],
+        "prune_reason": node.get("prune_reason", None),
+    }
 
 
 def show_controls(wn: WaterNetworkModel):
@@ -269,7 +281,7 @@ def show_node_values(
     console.print(combined_table)
 
 
-def     show_step(node: dict):
+def show_step(node: dict):
     """
     Show the step of the node.
     """
@@ -321,6 +333,7 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     """
     Process a node to check if it satisfies the constraints.
     """
+    global NODES_INFO
 
     # Run simulation
     node["model"].options.time.duration = node["end_time"]
@@ -333,6 +346,7 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
 
     # Check if the node is infeasible by lower bound
     if node["lower_bound"] >= LOWER_BOUND:
+        node["prune_reason"] = "Lower bound"
         return False
 
     show_step(node)
@@ -375,6 +389,7 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
             return False
         # Infeasible due to pressure constraints
         if p_last < p_min:
+            node["prune_reason"] = "Pressure"
             return False
 
     # Check tank level constraints feasibility
@@ -387,6 +402,7 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
         r_max = r_min_max[1]
         # Infeasible due to tank level constraints
         if r_last < r_min or r_last > r_max:
+            node["prune_reason"] = "Tank level"
             return False
 
     # Check reservoir stability constraints
@@ -398,6 +414,7 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
                 return False
             # Infeasible due to tank level constraints
             if r_last < r_initial:
+                node["prune_reason"] = "Stability"
                 return False
 
     return True
@@ -510,6 +527,8 @@ def dfs(node: dict, verbose: bool = False):
 
     # Process node
     is_feasible = process_node(node, is_final, verbose)
+    
+    NODES_INFO.append(get_node_info(node))
     if verbose:
         console.print(f"is_feasible: {is_feasible}")
     if not is_feasible:
@@ -581,6 +600,9 @@ def main():
     check_or_create_log_file(log_filename)
     append_simulation_results(log_filename, BEST_SOLUTIONS, start_time, end_time)
 
+    # Save nodes info as pickle file
+    with open("nodes_info.pkl", "wb") as file:
+        pickle.dump(NODES_INFO, file)
 
 if __name__ == "__main__":
     main()

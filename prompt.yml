@@ -14,11 +14,39 @@ networks: no
 
 codes: yes
   bbsolver.py: all  
+  economic_custom.py: all
 
 .venv/lib/python3.10/site-packages/wntr: no
   network/controls.py: all
 
 # user_request
 """
-Do a research the check how can we be sure that the demand pattern was satisfied.
+rs_JESSICA on  main [!] via 🐍 v3.10.12 (.venv) took 5m11s 
+❯ python codes/bbsolver.py 
+Network name ..... networks/any-town.inp
+Num pumps ........ 3
+Num time steps ... 24
+Time step ........ 3600 seconds
+Traceback (most recent call last):
+  File "/home/michael/github/rs_JESSICA/codes/bbsolver.py", line 586, in <module>
+    main()
+  File "/home/michael/github/rs_JESSICA/codes/bbsolver.py", line 565, in main
+    dfs(child_node, verbose)
+  File "/home/michael/github/rs_JESSICA/codes/bbsolver.py", line 512, in dfs
+    is_feasible = process_node(node, is_final, verbose)
+  File "/home/michael/github/rs_JESSICA/codes/bbsolver.py", line 331, in process_node
+    cost = pump_cost(out, node["model"])
+  File "/home/michael/github/rs_JESSICA/codes/economic_custom.py", line 414, in pump_cost
+    cost += (energy * multipliers).sum().sum()    
+  File "/home/michael/github/rs_JESSICA/.venv/lib/python3.10/site-packages/pandas/core/ops/common.py", line 76, in new_method
+    return method(self, other)
+  File "/home/michael/github/rs_JESSICA/.venv/lib/python3.10/site-packages/pandas/core/arraylike.py", line 202, in __mul__
+    return self._arith_method(other, operator.mul)
+  File "/home/michael/github/rs_JESSICA/.venv/lib/python3.10/site-packages/pandas/core/frame.py", line 7910, in _arith_method
+    self, other = self._align_for_op(other, axis, flex=True, level=None)
+  File "/home/michael/github/rs_JESSICA/.venv/lib/python3.10/site-packages/pandas/core/frame.py", line 8141, in _align_for_op
+    right = to_series(right)
+  File "/home/michael/github/rs_JESSICA/.venv/lib/python3.10/site-packages/pandas/core/frame.py", line 8133, in to_series
+    raise ValueError(
+ValueError: Unable to coerce to Series, length must be 44: given 2
 """

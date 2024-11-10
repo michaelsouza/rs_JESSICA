@@ -1,6 +1,15 @@
 """
-The wntr.metrics.economic module contains economic metrics.
+The wntr.metrics.economic_custom module contains custom economic metrics 
+for water network simulations, including functions to calculate pump costs 
+and energy consumption.
+
+Dependencies:
+- wntr
+- numpy
+- pandas
+- scipy
 """
+
 import wntr
 from wntr.network import Tank, Pipe, Pump, Valve
 import numpy as np 
@@ -282,33 +291,43 @@ def pump_power(flowrate, head, wn):
     pumps = wn.pump_name_list
     time = flowrate.index
     
+    # Initialize a DataFrame to store headloss for each pump at each time step
     headloss = pd.DataFrame(data=None, index=time, columns=pumps)
+
+    # Calculate headloss for each pump based on the flowrate and node head
     for pump_name, pump in wn.pumps():
         start_node = pump.start_node_name
         end_node = pump.end_node_name
         start_head = head.loc[:,start_node]
         end_head = head.loc[:,end_node]
-        headloss.loc[:,pump_name] = end_head - start_head
+        node_headloss = end_head - start_head
+        headloss.loc[:,pump_name] = node_headloss
 
+    # Initialize a dictionary to store efficiency for each pump at each time step
     efficiency_dict = {}
     for pump_name, pump in wn.pumps():
         if pump.efficiency is None:
+            # If no efficiency curve is defined, use the global efficiency
             efficiency_dict[pump_name] = [wn.options.energy.global_efficiency/100.0 for i in time]
         else:
-            # raise NotImplementedError('WNTR does not support pump efficiency curves yet.')
-            # TODO: WNTR does not support pump efficiency curves yet
+            # If an efficiency curve is defined, interpolate the efficiency based on flowrate
             curve = wn.get_curve(pump.efficiency)
             x = [point[0] for point in curve.points]
             y = [point[1]/100.0 for point in curve.points]
             interp = scipy.interpolate.interp1d(x, y, kind='linear')
             efficiency_dict[pump_name] = interp(np.array(flowrate.loc[:, pump_name]))
     
+    # Convert the dictionary to a DataFrame
     efficiency = pd.DataFrame(data=efficiency_dict, index=time, columns=pumps)    
 
-    # Efficiency will be zero when flowrate is zero, which will cause a divide by zero error
+    # Replace zero efficiency with 1 to avoid division by zero
     efficiency.replace(0, 1, inplace=True)
 
-    power = 1000.0 * 9.81 * headloss * flowrate / efficiency # Watts = J/s
+    # Calculate power using the formula: Power = (Flowrate * Headloss * Gravity * Density) / Efficiency
+    # Constants: Gravity = 9.81 m/s², Density of water = 1000 kg/m³
+    pumps_flowrate = flowrate.loc[:,pumps]  
+    pumps_headloss = headloss.loc[:,pumps]
+    power = 1000.0 * 9.81 * pumps_headloss * pumps_flowrate / efficiency # Watts = J/s
 
     return power
 
@@ -342,7 +361,10 @@ def pump_energy(flowrate, head, wn):
     A DataFrame that contains pump energy in J (index = times, columns = pump names).
     """
     
+    # Calculate instantaneous power consumption
     power = pump_power(flowrate, head, wn) # Watts = J/s
+
+    # Calculate energy by multiplying power with the timestep duration
     energy = power * wn.options.time.report_timestep # J = Ws
     
     return energy
@@ -368,20 +390,30 @@ def pump_cost(result, wn, energy=None):
         
     Returns
     -----------
-    A DataFrame that contains pump cost in $ (index = times, columns = pump names).
-    
+    float: total pump cost
+        Total pump operational cost in dollars ($)
     """    
     pumps = wn.pump_name_list
     if energy is None:
-        energy = wntr.metrics.pump_energy(result.link['flowrate'], result.node['head'], wn)
+        # Calculate pump energy if not provided
+        energy = pump_energy(result.link['flowrate'], result.node['head'], wn)
     
     time = energy.index
     num_timesteps = len(time)
     
-    # convert the price pattern unit from cents per kWh to dollars per J
-    multipliers = (wn.get_pattern("PRICES").multipliers[:num_timesteps] / 100) / (1000 * 3600)
+    # Retrieve the energy price pattern, if any
+    # The price pattern "PRICES" should be defined in the input file
+    # Prices are converted from cents per kWh to dollars per Joule
+    try:
+        price_pattern = wn.get_pattern("PRICES")
+        multipliers = (price_pattern.multipliers[:num_timesteps] / 100.0) / (1000 * 3600)
+    except KeyError:
+        raise KeyError("Price pattern 'PRICES' not found in the network.")
     
-    cost = 0.0    
-    cost += (energy * multipliers).sum().sum()    
+    # Calculate total pump cost
+    # Sum up the energy consumption for all pumps and multiply by the price per Joule
+    cost = 0.0
+    energy_matrix = energy.to_numpy().T # shape (num_pumps, num_timesteps)
+    cost += (energy_matrix * multipliers).sum()
     return cost
     

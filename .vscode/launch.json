@@ -13,6 +13,14 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Run BBSolver",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/codes/bbsolver.py",
+            "args": [],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Run EPANET3 (Debug)",
             "type": "cppdbg",
             "request": "launch",

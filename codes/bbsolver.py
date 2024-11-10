@@ -13,6 +13,7 @@ import numpy as np  # type: ignore
 import wntr  # type: ignore
 from wntr.network import LinkStatus, WaterNetworkModel  # type: ignore
 from wntr.network.controls import ControlAction, Control, Comparison, TimeOfDayCondition  # type: ignore
+from economic_custom import pump_cost
 
 # Rich library imports for console output
 from rich.console import Console
@@ -108,26 +109,8 @@ def show_network_info(wn: wntr.network.WaterNetworkModel):
     console.print(f"Time step ........ [cyan]{TIME_STEP}[/cyan] seconds")
 
 
-def get_energy_prices(verbose: bool = False) -> list[float]:
-    """
-    Get the energy prices of the network.
-    """
-    if "PRICES" not in WN.pattern_name_list:
-        console.print("[red]Error:[/red] 'PRICES' pattern not found in the network.")
-        exit(1)
-
-    energy_prices = WN.get_pattern("PRICES").multipliers
-    if verbose:
-        for i in range(N_STEPS):
-            console.print(f"Time step {i} ..... [cyan]{energy_prices[i]}[/cyan]")
-    return energy_prices
-
-
 # Print network info
 show_network_info(WN)
-
-# Get energy prices
-ENERGY_PRICES = get_energy_prices(verbose=False)
 
 
 def show_controls(wn: WaterNetworkModel):
@@ -286,7 +269,7 @@ def show_node_values(
     console.print(combined_table)
 
 
-def show_step(node: dict):
+def     show_step(node: dict):
     """
     Show the step of the node.
     """
@@ -343,6 +326,14 @@ def process_node(node: dict, is_final: bool, verbose: bool = False) -> bool:
     node["model"].options.time.duration = node["end_time"]
     sim = wntr.sim.EpanetSimulator(node["model"])
     out = sim.run_sim()
+
+    # Get pump cost and update node lower bound
+    cost = pump_cost(out, node["model"])
+    node["lower_bound"] = cost
+
+    # Check if the node is infeasible by lower bound
+    if node["lower_bound"] >= LOWER_BOUND:
+        return False
 
     show_step(node)
 
@@ -471,7 +462,11 @@ def create_child_node(parent_node: dict, y: int, verbose: bool = False) -> dict 
     """
     Create a child node from the parent node.
     """
+
+    # Copy parent node
     child_node = deepcopy(parent_node)
+
+    # Update step and depth
     child_node["step"] += 1
     child_node["depth"] += 1
     child_node["y"] = y
@@ -481,11 +476,6 @@ def create_child_node(parent_node: dict, y: int, verbose: bool = False) -> dict 
     is_valid = parse_actuations(y, child_node["actuations"], child_node["x"])
     if not is_valid:
         return None  # Invalid child node due to actuator constraints
-
-    # Update lower bound (will be updated in process_node)
-    child_node["lower_bound"] += y * ENERGY_PRICES[child_node["step"]]
-    if child_node["lower_bound"] >= LOWER_BOUND:
-        return None  # Infeasible by lower bound
 
     # Update score
     child_node["score"] = get_score(child_node["lower_bound"], child_node["depth"])
@@ -511,10 +501,6 @@ def dfs(node: dict, verbose: bool = False):
     global SCHEDULE
     global BEST_SCHEDULE
     global BEST_SOLUTIONS
-
-    # Prune the branch if the current lower bound exceeds the best found so far
-    if node["lower_bound"] >= LOWER_BOUND:
-        return
 
     # Check if node is a leaf node
     is_final = node["step"] == N_STEPS - 1
@@ -554,7 +540,7 @@ def main():
 
     log_filename = "schedule_results.log"
 
-    # Close all pumps initially
+    # Initialize all pumps to be in the OFF state
     for pump in WN.pump_name_list:
         WN.get_link(pump).initial_status = wntr.network.LinkStatus.Closed
 
@@ -571,7 +557,7 @@ def main():
         "end_time": 0,  # end time of the simulation
     }
 
-    # Create child nodes
+    # Create root and child nodes
     for y in range(N_PUMPS + 1):
         child_node = create_child_node(root_node, y, verbose)
         if child_node is None:

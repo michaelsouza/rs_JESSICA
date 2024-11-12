@@ -318,7 +318,7 @@ def pump_power(flowrate, head, wn):
             curve = wn.get_curve(pump.efficiency)
             x = [point[0] for point in curve.points]
             y = [point[1] / 100.0 for point in curve.points]
-            interp = scipy.interpolate.interp1d(x, y, kind="linear")
+            interp = scipy.interpolate.interp1d(x, y, kind="linear", fill_value="extrapolate")
             efficiency_dict[pump_name] = interp(np.array(flowrate.loc[:, pump_name]))
 
     # Convert the dictionary to a DataFrame

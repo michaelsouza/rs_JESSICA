@@ -40,3 +40,33 @@ network placed in a text file (see Section 11.4).
 4. Select a set of analysis options (see Section 8.1).
 5. Run a hydraulic/water quality analysis (see Section 8.2).
 6. View the results of the analysis (see Section 9).
+
+----------------------------------------------------------------
+
+Rao and Salomons (2007): Global optimal solution cost $ $3612.84 - 
+
+Costa (2015):
+Global optimal solution cost $ 3578.66 - 121211110022222121000210 - 81.12 h - 7,843,662 complete feasible solutions
+In the scenario with a maximum number of 2 pump actions...
+Global optimal solution cost $ 3618.59 - ... - 36,914 s - 1,447,133 complete feasible solutions
+In the scenario with a maximum number of 1 pump actions...
+Global optimal solution cost $ 3916.98 - ... - 425 s - 313,340 complete feasible solutions
+
+--------------------------------------------------------------------
+
+Solução do Costa:
+
+ PMP111          	1           	1           	1           	1           	1           	1           
+ PMP111          	1           	1           	0           	0           	1           	1           
+ PMP111          	1           	1           	1           	1           	1           	1           
+ PMP111          	0           	0           	0           	1           	1           	0           
+;
+ PMP222          	0           	1           	0           	1           	0           	0           
+ PMP222          	0           	0           	0           	0           	1           	1           
+ PMP222          	1           	1           	1           	0           	0           	0           
+ PMP222          	0           	0           	0           	0           	0           	0           
+;
+ PMP333          	0           	0           	0           	0           	0           	0           
+ PMP333          	0           	0           	0           	0           	0           	0           
+ PMP333          	0           	0           	0           	0           	1           	0           
+ PMP333          	0           	0           	0           	1           	0           	0

@@ -36,7 +36,7 @@ def load_network(fn: str) -> WaterNetworkModel:
 
 
 # Define global parameters
-# fn_jessica = "C:/Users/Jéssica/Git/rs_JESSICA/codes/input.inp"
+fn_jessica = "../networks/any-town.inp"
 fn_michael = "networks/any-town.inp"
 WN = load_network(fn_michael)
 PUMPS = WN.pump_name_list
@@ -66,7 +66,7 @@ def get_constraints(wn: WaterNetworkModel):
 
     cntr = {
         # Minimum pressure head at each node
-        "pressure_min": {"90": 51, "50": 42, "170": 30},
+        "pressure_min": {"90": 51, "55": 42, "170": 30},
         # Minimum and maximum tank level at each time step
         "tank_level_min_max": tank_level_min_max,
         # Initial tank level

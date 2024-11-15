@@ -116,34 +116,87 @@ def calc_actuations_csum(x: np.ndarray, h: int):
     return actuations
 
 
-def update_x(x: np.ndarray, y: np.ndarray, h: int, max_actuations: int) -> bool:
-    # number of actuations in hour h - 1
-    if y[h] == y[h - 1]:
-        x[h, :] = x[h - 1, :]
-        return True
-    # reset the actuations for hour h
-    x[h, :] = 0
+def update_x(x: np.ndarray, y: np.ndarray, h: int, max_actuations: int, verbose: bool = False) -> bool:
+    """
+    Update the pump activation matrix x based on the current state y and hour h.
 
-    # calculate the cumulative actuations
+    Parameters:
+    - x: Activation matrix (hours x pumps)
+    - y: Current number of actuations required per hour
+    - h: Current hour
+    - max_actuations: Maximum allowed actuations per pump
+    - verbose: If True, print debug statements
+
+    Returns:
+    - True if the update is successful and feasible
+    - False otherwise
+    """
+    y_old = y[h - 1]
+    y_new = y[h]
+    x_old = x[h - 1]
+    x_new = x[h]
+
+    # Start by copying the previous state
+    x_new[:] = x_old[:]
+
+    if y_new == y_old:
+        if verbose:
+            print(f"Hour {h}: No change in actuations required (y_new={y_new} == y_old={y_old}).")
+        return True
+
+    # Calculate the cumulative actuations up to hour h
     actuations_csum = calc_actuations_csum(x, h)
 
-    # sorted from least actuations to most
-    pumps_to_actuate = np.argsort(actuations_csum)
+    # Sort pumps by the lowest number of actuations to prioritize less-used pumps
+    pumps_sorted = np.argsort(actuations_csum)
 
-    if y[h] > y[h - 1]:
-        num_actuations = y[h] - y[h - 1]
+    if y_new > y_old:
+        num_actuations = y_new - y_old
+        # Identify pumps that are not currently actuating
+        pumps_to_actuate = [pump for pump in pumps_sorted if x_old[pump] == 0]
+        # Select the first 'num_actuations' pumps with the fewest actuations
         pumps_to_actuate = pumps_to_actuate[:num_actuations]
-        if any(actuations_csum[pumps_to_actuate] == max_actuations):
+
+        if verbose:
+            print(f"Hour {h}: Need to actuate {num_actuations} pump(s). Pumps selected: {pumps_to_actuate}")
+
+        # Check if actuating these pumps would exceed max_actuations
+        if any(actuations_csum[pump] >= max_actuations for pump in pumps_to_actuate):
+            if verbose:
+                print(f"Hour {h}: Actuating pumps {pumps_to_actuate} would exceed max_actuations ({max_actuations}).")
             return False
-        x[h, pumps_to_actuate] = 1
+
+        # Actuate the selected pumps
+        x_new[pumps_to_actuate] = 1
+
+        if verbose:
+            print(f"Hour {h}: Updated x_new after actuating: {x_new}")
+
         return True
 
-    if y[h] < y[h - 1]:
-        num_actuations = y[h - 1] - y[h]
-        pumps_to_deactuate = pumps_to_actuate[:num_actuations]
-        x[h, pumps_to_deactuate] = 0
+    elif y_new < y_old:
+        num_deactuations = y_old - y_new
+        # Identify pumps that are currently actuating
+        pumps_actuating = [pump for pump in pumps_sorted if x_old[pump] == 1]
+        # Select the first 'num_deactuations' pumps to deactuate
+        pumps_to_deactuate = pumps_actuating[:num_deactuations]
+
+        if verbose:
+            print(f"Hour {h}: Need to deactuate {num_deactuations} pump(s). Pumps selected: {pumps_to_deactuate}")
+
+        # Deactuate the selected pumps
+        x_new[pumps_to_deactuate] = 0
+
+        if verbose:
+            print(f"Hour {h}: Updated x_new after deactuating: {x_new}")
+
         return True
-    return True
+
+    else:
+        # This case should not occur due to the initial equality check
+        if verbose:
+            print(f"Hour {h}: Unexpected condition encountered.")
+        return False
 
 
 def bbsolver():
@@ -164,7 +217,10 @@ def bbsolver():
         is_feasible = update_x(x, y, h, max_actuations)
         print(f"y:{y[1:h+1]}, h: {h}, is_feasible: {is_feasible}")
         show_x(x, h)
-        if not is_feasible:
+
+        if is_feasible:
+            assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
+        else:
             continue
 
 

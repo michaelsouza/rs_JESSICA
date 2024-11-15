@@ -13,6 +13,8 @@ from wntr.network import LinkStatus, WaterNetworkModel
 from wntr.sim import EpanetSimulator
 from wntr.sim.results import SimulationResults
 from rich import print
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+
 
 # Local Application/Library Imports
 import economic_custom as ec
@@ -20,12 +22,8 @@ from economic_custom import pump_cost
 
 from typing import Dict, List
 
-
-def sim_run(wn: WaterNetworkModel, h: int, verbose: bool = False):
-    wn.options.time.duration = 3600 * h  # seconds
-    sim = EpanetSimulator(wn)
-    out = sim.run_sim()
-    return out
+from rich.console import Console
+from rich.table import Table
 
 
 class BBCounter:
@@ -58,6 +56,13 @@ class BBCounter:
 
     def jump_to_end(self, h: int):
         self.y[h] = self.num_pumps
+
+
+def sim_run(wn: WaterNetworkModel, h: int, verbose: bool = False):
+    wn.options.time.duration = 3600 * h  # seconds
+    sim = EpanetSimulator(wn)
+    out = sim.run_sim()
+    return out
 
 
 def show_x(x: np.ndarray, h: int):
@@ -180,7 +185,7 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
     - False if any pressure is below its threshold.
     """
     # Define pressure thresholds for each node
-    pressure_thresholds: dict = {"55": 42, "90": 51, "170": 30}
+    pressure_thresholds: Dict[str, float] = {"55": 42, "90": 51, "170": 30}
 
     # Get pressures
     pressures = out.node["pressure"]
@@ -191,6 +196,10 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
     # Flag to track overall pressure feasibility
     pressures_ok = True
 
+    # Initialize a list to store messages for each node
+    message: List[List[str]] = []
+
+    # Define pressure condition: pressure >= threshold
     if verbose:
         print(f"\n[bold blue]Checking Pressures at Hour {h}[/bold blue]")
 
@@ -200,7 +209,7 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
             pressure = pressures.loc[simulation_step, node_name]
         except KeyError:
             if verbose:
-                print(f"[bold red]❌ Error: Node '{node_name}' not found in simulation results.[/bold red]")
+                message.append(["❌", node_name, f"Node '{node_name}' not found in simulation results."])
             pressures_ok = False
             continue
 
@@ -208,14 +217,48 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
         if pressure < threshold:
             pressures_ok = False
             if verbose:
-                print(
-                    f"[bold red]⚠️  Pressure Alert: Node {node_name} has pressure {pressure:.2f} < {threshold}[/bold red]"
+                message.append(
+                    [
+                        "⚠️",
+                        node_name,
+                        f"[bold yellow]has pressure {pressure:.2f} <  {threshold}[/bold yellow]",
+                    ]
                 )
         else:
             if verbose:
-                print(
-                    f"[bold green]✅ Pressure OK: Node {node_name} has pressure {pressure:.2f} >= {threshold}[/bold green]"
+                message.append(
+                    [
+                        "✅",
+                        node_name,
+                        f"[bold green]has pressure {pressure:.2f} >= {threshold}[/bold green]",
+                    ]
                 )
+
+    if verbose:
+        # Create a pandas DataFrame from the messages
+        df = pd.DataFrame(message, columns=["Status", "Node", "Message"])
+
+        # Initialize Rich console
+        console = Console()
+
+        # Create a Rich Table
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Status", style="dim", width=6)
+        table.add_column("Node", style="dim", width=10)
+        table.add_column("Message", style="dim")
+
+        # Populate the table with DataFrame rows
+        for _, row in df.iterrows():
+            table.add_row(row["Status"], row["Node"], row["Message"])
+
+        # Print the table to the console
+        console.print(table)
+
+        # Final summary message
+        if pressures_ok:
+            print("[bold green]All node pressures are within acceptable limits.[/bold green]\n")
+        else:
+            print("[bold red]Some node pressures are below the required thresholds.[/bold red]\n")
 
     return pressures_ok
 
@@ -249,6 +292,10 @@ def check_levels(out: SimulationResults, h: int, verbose: bool = False) -> bool:
     level_min: float = 66.53
     level_max: float = 71.53
 
+    # Initialize a list to store messages for each tank
+    message: List[List[str]] = []
+
+    # Define level condition: level_min <= level <= level_max
     if verbose:
         print(f"\n[bold blue]Checking Levels at Hour {h}[/bold blue]")
 
@@ -258,22 +305,57 @@ def check_levels(out: SimulationResults, h: int, verbose: bool = False) -> bool:
             level = levels.loc[simulation_step, tank_name]
         except KeyError:
             if verbose:
-                print(f"[bold red]❌ Error: Tank '{tank_name}' not found in simulation results.[/bold red]")
+                message.append(["❌", tank_name, f"Tank '{tank_name}' not found in simulation results."])
             levels_ok = False
+            # Append error message to the list
             continue
 
         # Check if the level meets the threshold
         if level < level_min or level > level_max:
             levels_ok = False
             if verbose:
-                print(
-                    f"[bold red]⚠️  Level Alert: Tank {tank_name} has level {level:.3f} not in [{level_min}, {level_max}][/bold red]"
+                message.append(
+                    [
+                        "⚠️",
+                        tank_name,
+                        f"[bold yellow]has level {level:.3f} not in [{level_min}, {level_max}][/bold yellow]",
+                    ]
                 )
         else:
             if verbose:
-                print(
-                    f"[bold green]✅ Level OK: Tank {tank_name} has level {level:.2f} within [{level_min}, {level_max}][/bold green]"
+                message.append(
+                    [
+                        "✅",
+                        tank_name,
+                        f"[bold green]has level {level:.2f} within [{level_min}, {level_max}][/bold green]",
+                    ]
                 )
+
+    if verbose:
+        # Create a pandas DataFrame from the messages
+        df = pd.DataFrame(message, columns=["Status", "Tank", "Message"])
+
+        # Initialize Rich console
+        console = Console()
+
+        # Create a Rich Table
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Status", style="dim", width=6)
+        table.add_column("Tank", style="dim", width=10)
+        table.add_column("Message", style="dim")
+
+        # Populate the table with DataFrame rows
+        for _, row in df.iterrows():
+            table.add_row(row["Status"], row["Tank"], row["Message"])
+
+        # Print the table to the console
+        console.print(table)
+
+        # Final summary message
+        if levels_ok:
+            print("[bold green]All tank levels are within acceptable limits.[/bold green]\n")
+        else:
+            print("[bold red]Some tank levels are outside the required thresholds.[/bold red]\n")
 
     return levels_ok
 
@@ -305,8 +387,10 @@ def check_stability(out: SimulationResults, h: int, verbose: bool = False) -> bo
     # Flag to track overall stability feasibility
     stability_ok = True
 
-    # Define stability thresholds (if any additional thresholds are needed)
-    # For now, stability is defined as final level >= initial level
+    # Initialize a list to store messages for each tank
+    message: List[List[str]] = []
+
+    # Define stability condition: final level >= initial level
     if verbose:
         print(f"\n[bold blue]Checking Stability at Hour {h}[/bold blue]")
 
@@ -319,7 +403,7 @@ def check_stability(out: SimulationResults, h: int, verbose: bool = False) -> bo
             level_final = levels.loc[simulation_step, tank_name]
         except KeyError:
             if verbose:
-                print(f"[bold red]❌ Error: Tank '{tank_name}' not found in simulation results.[/bold red]")
+                message.append(["❌", tank_name, f"Tank '{tank_name}' not found in simulation results."])
             stability_ok = False
             continue
 
@@ -327,16 +411,45 @@ def check_stability(out: SimulationResults, h: int, verbose: bool = False) -> bo
         if level_final < level_initial:
             stability_ok = False
             if verbose:
-                print(
-                    f"[bold red]⚠️  Stability Alert: Tank {tank_name} has final level {level_final:.3f} < initial level {level_initial:.3f}[/bold red]"
+                message.append(
+                    [
+                        "⚠️",
+                        tank_name,
+                        f"[bold yellow]has final level {level_final:.3f} < initial level {level_initial:.2f}[/bold yellow]",
+                    ]
                 )
         else:
+            # Append success message to the list
             if verbose:
-                print(
-                    f"[bold green]✅ Stability OK: Tank {tank_name} has final level {level_final:.3f} >= initial level {level_initial:.3f}[/bold green]"
+                message.append(
+                    [
+                        "✅",
+                        tank_name,
+                        f"[bold green]has final level {level_final:.3f} ≥ initial level {level_initial:.2f}[/bold green]",
+                    ]
                 )
 
     if verbose:
+        # Create a pandas DataFrame from the messages
+        df = pd.DataFrame(message, columns=["Status", "Tank", "Message"])
+
+        # Initialize Rich console
+        console = Console()
+
+        # Create a Rich Table
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Status", style="dim", width=6)
+        table.add_column("Tank", style="dim", width=10)
+        table.add_column("Message", style="dim")
+
+        # Populate the table with DataFrame rows
+        for _, row in df.iterrows():
+            table.add_row(row["Status"], row["Tank"], row["Message"])
+
+        # Print the table to the console
+        console.print(table)
+
+        # Final summary message
         if stability_ok:
             print("[bold green]All tank levels are stable within acceptable limits.[/bold green]\n")
         else:
@@ -348,66 +461,92 @@ def check_stability(out: SimulationResults, h: int, verbose: bool = False) -> bo
 def bbsolver():
     wn = WaterNetworkModel("networks/any-town.inp")
     node_name_list = ["55", "90", "170"]
-    max_actuations = 1
-    hmax = 3
-
+    max_actuations = 3
+    hmax = 24  # last hour
+    verbose = False
     x = np.zeros((hmax + 1, 3), dtype=int)
-    counter = BBCounter(hmax, max_actuations + 1)
+    counter = BBCounter(hmax, max_actuations)
 
     is_feasible = True
     niter = 0
     cost_min = np.inf
-    while counter.update_y(is_feasible):
-        niter += 1
-        print("-" * 120)
-        y, h = counter.y, counter.h
-        is_feasible = update_x(x, y, h, max_actuations, verbose=False)
 
-        # Display iteration details using Rich
-        print(f"[bold blue]Iteration: {niter}[/bold blue]")
-        print(f"h={h}, y{y[1:h+1]}")
-        show_x(x, h)
+    # Initialize Rich Progress
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[bold blue]{task.completed}[/bold blue] Iterations"),
+        TimeElapsedColumn(),
+        console=Console(),
+    ) as progress:
+        task = progress.add_task("Running bbsolver...", start=False)
 
-        if not is_feasible:
-            # Use a warning icon with styled text for pruning due to max_actuations
-            print("[bold yellow]⚠️  Pruned: max_actuations[/bold yellow]")
-            continue
+        while counter.update_y(is_feasible):
+            niter += 1
+            progress.start_task(task)
+            progress.update(task, advance=1, description=f"Iteration {niter}")
 
-        assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
+            y, h = counter.y, counter.h
+            is_feasible = update_x(x, y, h, max_actuations, verbose=False)
 
-        # Update pump statuses without verbosity
-        update_pumps(wn, h, x, False)
+            # Display iteration details using Rich (if verbose)
+            if verbose:
+                print(f"[bold blue]Iteration: {niter}[/bold blue]")
+                print(f"h={h}, y{y[1:h+1]}")
+                show_x(x, h)
 
-        out = sim_run(wn, h, verbose=False)
-        cost = pump_cost(out, wn)
-        print(f"cost={cost:.2f}, cost_min={cost_min:.2f}")
-
-        is_feasible = cost < cost_min
-        if not is_feasible:
-            print("[bold yellow]⚠️  Pruned: cost[/bold yellow]")
-            # Can prune the entire level
-            counter.jump_to_end(h)
-            continue
-
-        is_feasible = check_pressures(out, h, True)
-        if not is_feasible:
-            print("[bold yellow]⚠️  Pruned: pressure[/bold yellow]")
-            continue
-
-        is_feasible = check_levels(out, h, True)
-        if not is_feasible:
-            print("[bold yellow]⚠️  Pruned: level[/bold yellow]")
-            continue
-
-        if h == hmax:  # last hour
-            # Check stability
-            is_feasible = check_stability(out, h, verbose=True)
             if not is_feasible:
-                print("[bold yellow]⚠️  Pruned: stability[/bold yellow]")
+                if verbose:
+                    print("[bold yellow]⚠️  Pruned: max_actuations[/bold yellow]")
                 continue
 
-            cost_min = cost
-            print(f"[bold red]💰 cost_min updated: {cost_min:.2f}[/bold red]")
+            assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
+
+            # Update pump statuses without verbosity
+            update_pumps(wn, h, x, False)
+
+            # Run the simulation
+            out = sim_run(wn, h, verbose=False)
+            cost = pump_cost(out, wn)
+            if verbose:
+                print(f"cost={cost:.2f}, cost_min={cost_min:.2f}")
+
+            # Determine feasibility based on cost
+            is_feasible = cost < cost_min
+            if not is_feasible:
+                if verbose:
+                    print("[bold yellow]⚠️  Pruned: cost[/bold yellow]")
+                # Can prune the entire level
+                counter.jump_to_end(h)
+                continue
+
+            # Check pressures
+            is_feasible = check_pressures(out, h, verbose=False)
+            if not is_feasible:
+                if verbose:
+                    print("[bold yellow]⚠️  Pruned: pressure[/bold yellow]")
+                continue
+
+            # Check levels
+            is_feasible = check_levels(out, h, verbose=False)
+            if not is_feasible:
+                if verbose:
+                    print("[bold yellow]⚠️  Pruned: level[/bold yellow]")
+                continue
+
+            if h == hmax:  # last hour
+                # Check stability
+                is_feasible = check_stability(out, h, verbose=False)
+                if not is_feasible:
+                    if verbose:
+                        print("[bold yellow]⚠️  Pruned: stability[/bold yellow]")
+                    continue
+
+                cost_min = cost
+                print(f"\n[bold green]💰 [{niter}] cost_min updated: {cost_min:.2f}[/bold green]")
+
+    print(f"\nCompleted in {niter} iterations with a minimum cost of {cost_min:.2f}.")
 
 
 if __name__ == "__main__":

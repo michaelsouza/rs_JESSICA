@@ -1,17 +1,25 @@
-import wntr
-from wntr.network import LinkStatus, WaterNetworkModel
-from wntr.network.controls import ControlAction, Control, Comparison
-from wntr.sim import EpanetSimulator
-from rich import print
-import pandas as pd
+# Standard Library Imports
 from copy import deepcopy
-import economic_custom as ec
-from wntr.network.controls import ControlAction, Control, TimeOfDayCondition, Comparison
-from economic_custom import pump_cost
-import numpy as np
 
+# Third-Party Imports
+import numpy as np
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import wntr
+from wntr.network import LinkStatus, WaterNetworkModel
+from wntr.network.controls import (
+    ControlAction,
+    Control,
+    Comparison,
+    TimeOfDayCondition,
+)
+from wntr.sim import EpanetSimulator
+from rich import print
+
+# Local Application/Library Imports
+import economic_custom as ec
+from economic_custom import pump_cost
 
 
 def parse_y(y: list, max_actuations=3):
@@ -115,10 +123,10 @@ def update_x(x: np.ndarray, y: np.ndarray, h: int, max_actuations: int) -> bool:
         return True
     # reset the actuations for hour h
     x[h, :] = 0
-    
+
     # calculate the cumulative actuations
     actuations_csum = calc_actuations_csum(x, h)
-    
+
     # sorted from least actuations to most
     pumps_to_actuate = np.argsort(actuations_csum)
 
@@ -139,13 +147,13 @@ def update_x(x: np.ndarray, y: np.ndarray, h: int, max_actuations: int) -> bool:
 
 
 def bbsolver():
-    wn = WaterNetworkModel("/home/michael/github/rs_JESSICA/networks/any-town.inp")
+    wn = WaterNetworkModel("networks/any-town.inp")
     node_name_list = ["55", "90", "170"]
     max_actuations = 1
     hmax = 3
 
     x = np.zeros((hmax + 1, 3), dtype=int)
-    counter = BBCounter(hmax, max_actuations)
+    counter = BBCounter(hmax, max_actuations + 1)
 
     is_feasible = True
     niter = 0

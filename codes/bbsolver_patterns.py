@@ -55,7 +55,7 @@ class BBCounter:
             return True
 
         return False
-        
+
     def jump_to_end(self, h: int):
         self.y[h] = self.num_pumps
 
@@ -179,8 +179,6 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
     - True if all pressures meet or exceed their thresholds.
     - False if any pressure is below its threshold.
     """
-    node_name_list: List[str] = ["55", "90", "170"]
-
     # Define pressure thresholds for each node
     pressure_thresholds: dict = {"55": 42, "90": 51, "170": 30}
 
@@ -196,7 +194,7 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
     if verbose:
         print(f"\n[bold blue]Checking Pressures at Hour {h}[/bold blue]")
 
-    for node_name in node_name_list:
+    for node_name, threshold in pressure_thresholds.items():
         # Retrieve the pressure value for the current node and simulation step
         try:
             pressure = pressures.loc[simulation_step, node_name]
@@ -205,9 +203,6 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
                 print(f"[bold red]❌ Error: Node '{node_name}' not found in simulation results.[/bold red]")
             pressures_ok = False
             continue
-
-        # Get the minimum required pressure for the current node
-        threshold = pressure_thresholds.get(node_name, 0)
 
         # Check if the pressure meets the threshold
         if pressure < threshold:
@@ -225,12 +220,129 @@ def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bo
     return pressures_ok
 
 
-def check_levels(out, h: int):
-    return True
+def check_levels(out: SimulationResults, h: int, verbose: bool = False) -> bool:
+    """
+    Check if the water levels in specified tanks are within the acceptable range.
+
+    Parameters:
+    - out: SimulationResults instance containing simulation outputs.
+    - h: Current hour in the simulation.
+    - verbose: If True, print detailed level checks with styled messages.
+
+    Returns:
+    - True if all tank levels are within the acceptable range.
+    - False if any tank level is outside the acceptable range or if a tank is missing.
+    """
+    # List of tanks to monitor
+    tanks: List[str] = ["65", "165", "265"]
+
+    # Get water levels (heads) from simulation results
+    levels = out.node["head"]
+
+    # Calculate the simulation step corresponding to the current hour
+    simulation_step = 3600 * h
+
+    # Flag to track overall level feasibility
+    levels_ok = True
+
+    # Define level thresholds
+    level_min: float = 66.53
+    level_max: float = 71.53
+
+    if verbose:
+        print(f"\n[bold blue]Checking Levels at Hour {h}[/bold blue]")
+
+    for tank_name in tanks:
+        # Retrieve the level value for the current tank and simulation step
+        try:
+            level = levels.loc[simulation_step, tank_name]
+        except KeyError:
+            if verbose:
+                print(f"[bold red]❌ Error: Tank '{tank_name}' not found in simulation results.[/bold red]")
+            levels_ok = False
+            continue
+
+        # Check if the level meets the threshold
+        if level < level_min or level > level_max:
+            levels_ok = False
+            if verbose:
+                print(
+                    f"[bold red]⚠️  Level Alert: Tank {tank_name} has level {level:.3f} not in [{level_min}, {level_max}][/bold red]"
+                )
+        else:
+            if verbose:
+                print(
+                    f"[bold green]✅ Level OK: Tank {tank_name} has level {level:.2f} within [{level_min}, {level_max}][/bold green]"
+                )
+
+    return levels_ok
 
 
-def check_stability(out, h: int):
-    return True
+def check_stability(out: SimulationResults, h: int, verbose: bool = False) -> bool:
+    """
+    Check if the water levels in specified tanks remain stable throughout the simulation.
+
+    Stability is determined by ensuring that the final level of each tank is not below its initial level.
+
+    Parameters:
+    - out: SimulationResults instance containing simulation outputs.
+    - h: Current hour in the simulation.
+    - verbose: If True, print detailed stability checks with styled messages.
+
+    Returns:
+    - True if all tank levels are stable (final level >= initial level).
+    - False if any tank level is unstable or if a tank is missing.
+    """
+    # List of tanks to monitor
+    tanks: List[str] = ["65", "165", "265"]
+
+    # Get water levels (heads) from simulation results
+    levels = out.node["head"]
+
+    # Calculate the simulation step corresponding to the current hour
+    simulation_step = 3600 * h
+
+    # Flag to track overall stability feasibility
+    stability_ok = True
+
+    # Define stability thresholds (if any additional thresholds are needed)
+    # For now, stability is defined as final level >= initial level
+    if verbose:
+        print(f"\n[bold blue]Checking Stability at Hour {h}[/bold blue]")
+
+    for tank_name in tanks:
+        # Retrieve the initial and final level values for the current tank and simulation step
+        try:
+            # Initial level at simulation step 0
+            level_initial = levels.loc[0, tank_name]
+            # Final level at the current simulation step
+            level_final = levels.loc[simulation_step, tank_name]
+        except KeyError:
+            if verbose:
+                print(f"[bold red]❌ Error: Tank '{tank_name}' not found in simulation results.[/bold red]")
+            stability_ok = False
+            continue
+
+        # Check if the final level meets the stability condition
+        if level_final < level_initial:
+            stability_ok = False
+            if verbose:
+                print(
+                    f"[bold red]⚠️  Stability Alert: Tank {tank_name} has final level {level_final:.3f} < initial level {level_initial:.3f}[/bold red]"
+                )
+        else:
+            if verbose:
+                print(
+                    f"[bold green]✅ Stability OK: Tank {tank_name} has final level {level_final:.3f} >= initial level {level_initial:.3f}[/bold green]"
+                )
+
+    if verbose:
+        if stability_ok:
+            print("[bold green]All tank levels are stable within acceptable limits.[/bold green]\n")
+        else:
+            print("[bold red]Some tank levels are unstable and do not meet the required thresholds.[/bold red]\n")
+
+    return stability_ok
 
 
 def bbsolver():
@@ -272,7 +384,6 @@ def bbsolver():
 
         is_feasible = cost < cost_min
         if not is_feasible:
-            # Use a warning icon with styled text for pruning due to cost
             print("[bold yellow]⚠️  Pruned: cost[/bold yellow]")
             # Can prune the entire level
             counter.jump_to_end(h)
@@ -280,13 +391,22 @@ def bbsolver():
 
         is_feasible = check_pressures(out, h, True)
         if not is_feasible:
-            # Use a warning icon with styled text for pruning due to cost
             print("[bold yellow]⚠️  Pruned: pressure[/bold yellow]")
             continue
 
-        if h == hmax and cost < cost_min:
+        is_feasible = check_levels(out, h, True)
+        if not is_feasible:
+            print("[bold yellow]⚠️  Pruned: level[/bold yellow]")
+            continue
+
+        if h == hmax:  # last hour
+            # Check stability
+            is_feasible = check_stability(out, h, verbose=True)
+            if not is_feasible:
+                print("[bold yellow]⚠️  Pruned: stability[/bold yellow]")
+                continue
+
             cost_min = cost
-            # Use a checkmark icon with styled text for updating cost_min
             print(f"[bold red]💰 cost_min updated: {cost_min:.2f}[/bold red]")
 
 

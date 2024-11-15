@@ -1,3 +1,5 @@
+# bbsolver_patterns.py
+
 # Standard Library Imports
 from copy import deepcopy
 
@@ -8,12 +10,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import wntr
 from wntr.network import LinkStatus, WaterNetworkModel
-from wntr.network.controls import (
-    ControlAction,
-    Control,
-    Comparison,
-    TimeOfDayCondition,
-)
 from wntr.sim import EpanetSimulator
 from rich import print
 
@@ -21,57 +17,13 @@ from rich import print
 import economic_custom as ec
 from economic_custom import pump_cost
 
-
-def parse_y(y: list, max_actuations=3):
-    num_activations = len(y)
-    x = [
-        [1, 0, 0],  # 1,1
-        [1, 1, 0],  # 2,2
-        [1, 0, 0],  # 1,3
-        [1, 0, 1],  # 2,4
-        [1, 0, 0],  # 1,5
-        [1, 0, 0],  # 1,6
-        [1, 0, 0],  # 1,7
-        [1, 0, 0],  # 1,8
-        [0, 0, 0],  # 0,9
-        [0, 0, 0],  # 0,10
-        [1, 1, 0],  # 2,11
-        [1, 1, 0],  # 2,12
-        [1, 1, 0],  # 2,13
-        [1, 1, 0],  # 2,14
-        [1, 1, 0],  # 2,15
-        [1, 0, 0],  # 1,16
-        [1, 0, 1],  # 2,17
-        [1, 0, 0],  # 1,18
-        [0, 0, 0],  # 0,19
-        [0, 0, 0],  # 0,20
-        [0, 0, 0],  # 0,21
-        [1, 1, 0],  # 2,22
-        [1, 0, 0],  # 1,23
-        [0, 0, 0],  # 0,24
-    ]
-
-    for i in range(len(y)):
-        assert y[i] == sum(x[i]), f"The schedule is incompatible"
-
-    return x
+from typing import Dict, List
 
 
-def sim_run(
-    wn: WaterNetworkModel,
-    duration_hour: int,
-    node_name_list: list,
-    tank_name_list: list,
-    fn_prefix: str,
-    verbose: bool = False,
-):
-    wn.options.time.duration = duration_hour * 3600  # seconds
+def sim_run(wn: WaterNetworkModel, h: int, verbose: bool = False):
+    wn.options.time.duration = 3600 * h  # seconds
     sim = EpanetSimulator(wn)
     out = sim.run_sim()
-    pressures = out.node["pressure"].to_dict()
-    tank_levels = out.node["head"].to_dict()
-    if not verbose:
-        return pressures, tank_levels
     return out
 
 
@@ -199,6 +151,29 @@ def update_x(x: np.ndarray, y: np.ndarray, h: int, max_actuations: int, verbose:
         return False
 
 
+def update_pumps(wn: WaterNetworkModel, h: int, x: np.ndarray, verbose: bool):
+    pumps: List[str] = ["PMP111", "PMP222", "PMP333"]
+    multipliers: Dict[str, np.ndarray] = {pump: wn.get_pattern(pump).multipliers for pump in pumps}
+    for pump_id, pump_name in enumerate(pumps):
+        pump_mult = multipliers[pump_name]
+        pump_mult[:h] = x[1 : h + 1, pump_id]
+        if verbose:
+            print(f"   PUMP={pump_name}")
+            print(f"   MULT={pump_mult[:h]}")
+
+
+def check_pressures(out, h: int):
+    pass
+
+
+def check_levels(out, h: int):
+    pass
+
+
+def check_stability(out, h: int):
+    pass
+
+
 def bbsolver():
     wn = WaterNetworkModel("networks/any-town.inp")
     node_name_list = ["55", "90", "170"]
@@ -210,18 +185,41 @@ def bbsolver():
 
     is_feasible = True
     niter = 0
+    cost_min = np.inf
     while counter.update_y(is_feasible):
         niter += 1
-        print(f"iter: {niter}")
         y, h = counter.y, counter.h
-        is_feasible = update_x(x, y, h, max_actuations)
+        is_feasible = update_x(x, y, h, max_actuations, verbose=False)
+
+        # Display iteration details using Rich
+        print(f"[bold blue]Iteration: {niter}[/bold blue]")
         print(f"y:{y[1:h+1]}, h: {h}, is_feasible: {is_feasible}")
         show_x(x, h)
 
-        if is_feasible:
-            assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
-        else:
+        if not is_feasible:
+            # Use a warning icon with styled text for pruning due to max_actuations
+            print("[bold yellow]⚠️  Pruned: max_actuations[/bold yellow]")
             continue
+
+        assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
+
+        # Update pump statuses without verbosity
+        update_pumps(wn, h, x, False)
+
+        out = sim_run(wn, h, verbose=False)
+        cost = pump_cost(out, wn)
+        print(f"cost={cost}, cost_min={cost_min}")
+
+        is_feasible = cost < cost_min
+        if not is_feasible:
+            # Use a warning icon with styled text for pruning due to cost
+            print("[bold yellow]⚠️  Pruned: cost[/bold yellow]")
+            continue
+
+        if h == hmax and cost < cost_min:
+            cost_min = cost
+            # Use a checkmark icon with styled text for updating cost_min
+            print(f"[bold green]✅ cost_min updated: {cost_min}[/bold green]")
 
 
 if __name__ == "__main__":

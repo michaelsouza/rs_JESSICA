@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import wntr
 from wntr.network import LinkStatus, WaterNetworkModel
 from wntr.sim import EpanetSimulator
+from wntr.sim.results import SimulationResults
 from rich import print
 
 # Local Application/Library Imports
@@ -54,6 +55,9 @@ class BBCounter:
             return True
 
         return False
+        
+    def jump_to_end(self, h: int):
+        self.y[h] = self.num_pumps
 
 
 def show_x(x: np.ndarray, h: int):
@@ -162,16 +166,71 @@ def update_pumps(wn: WaterNetworkModel, h: int, x: np.ndarray, verbose: bool):
             print(f"   MULT={pump_mult[:h]}")
 
 
-def check_pressures(out, h: int):
-    pass
+def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bool:
+    """
+    Check if the pressures at specified nodes meet the minimum required thresholds.
+
+    Parameters:
+    - out: SimulationResults instance containing simulation outputs.
+    - h: Current hour in the simulation.
+    - verbose: If True, print detailed pressure checks with styled messages.
+
+    Returns:
+    - True if all pressures meet or exceed their thresholds.
+    - False if any pressure is below its threshold.
+    """
+    node_name_list: List[str] = ["55", "90", "170"]
+
+    # Define pressure thresholds for each node
+    pressure_thresholds: dict = {"55": 42, "90": 51, "170": 30}
+
+    # Get pressures
+    pressures = out.node["pressure"]
+
+    # Calculate the simulation step corresponding to the current hour
+    simulation_step = 3600 * h
+
+    # Flag to track overall pressure feasibility
+    pressures_ok = True
+
+    if verbose:
+        print(f"\n[bold blue]Checking Pressures at Hour {h}[/bold blue]")
+
+    for node_name in node_name_list:
+        # Retrieve the pressure value for the current node and simulation step
+        try:
+            pressure = pressures.loc[simulation_step, node_name]
+        except KeyError:
+            if verbose:
+                print(f"[bold red]❌ Error: Node '{node_name}' not found in simulation results.[/bold red]")
+            pressures_ok = False
+            continue
+
+        # Get the minimum required pressure for the current node
+        threshold = pressure_thresholds.get(node_name, 0)
+
+        # Check if the pressure meets the threshold
+        if pressure < threshold:
+            pressures_ok = False
+            if verbose:
+                print(
+                    f"[bold red]⚠️  Pressure Alert: Node {node_name} has pressure {pressure:.2f} < {threshold}[/bold red]"
+                )
+        else:
+            if verbose:
+                print(
+                    f"[bold green]✅ Pressure OK: Node {node_name} has pressure {pressure:.2f} >= {threshold}[/bold green]"
+                )
+
+    return pressures_ok
 
 
 def check_levels(out, h: int):
-    pass
+    return True
 
 
 def check_stability(out, h: int):
-    pass
+    return True
 
 
 def bbsolver():
@@ -188,12 +247,13 @@ def bbsolver():
     cost_min = np.inf
     while counter.update_y(is_feasible):
         niter += 1
+        print("-" * 120)
         y, h = counter.y, counter.h
         is_feasible = update_x(x, y, h, max_actuations, verbose=False)
 
         # Display iteration details using Rich
         print(f"[bold blue]Iteration: {niter}[/bold blue]")
-        print(f"y:{y[1:h+1]}, h: {h}, is_feasible: {is_feasible}")
+        print(f"h={h}, y{y[1:h+1]}")
         show_x(x, h)
 
         if not is_feasible:
@@ -208,18 +268,26 @@ def bbsolver():
 
         out = sim_run(wn, h, verbose=False)
         cost = pump_cost(out, wn)
-        print(f"cost={cost}, cost_min={cost_min}")
+        print(f"cost={cost:.2f}, cost_min={cost_min:.2f}")
 
         is_feasible = cost < cost_min
         if not is_feasible:
             # Use a warning icon with styled text for pruning due to cost
             print("[bold yellow]⚠️  Pruned: cost[/bold yellow]")
+            # Can prune the entire level
+            counter.jump_to_end(h)
+            continue
+
+        is_feasible = check_pressures(out, h, True)
+        if not is_feasible:
+            # Use a warning icon with styled text for pruning due to cost
+            print("[bold yellow]⚠️  Pruned: pressure[/bold yellow]")
             continue
 
         if h == hmax and cost < cost_min:
             cost_min = cost
             # Use a checkmark icon with styled text for updating cost_min
-            print(f"[bold green]✅ cost_min updated: {cost_min}[/bold green]")
+            print(f"[bold red]💰 cost_min updated: {cost_min:.2f}[/bold red]")
 
 
 if __name__ == "__main__":

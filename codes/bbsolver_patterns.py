@@ -1,23 +1,20 @@
 # bbsolver_patterns.py
 
 # Standard Library Imports
+import time
 from copy import deepcopy
+import cProfile
 
 # Third-Party Imports
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import wntr
-from wntr.network import LinkStatus, WaterNetworkModel
+from wntr.network import WaterNetworkModel
 from wntr.sim import EpanetSimulator
 from wntr.sim.results import SimulationResults
 from rich import print
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 
 
 # Local Application/Library Imports
-import economic_custom as ec
 from economic_custom import pump_cost
 
 from typing import Dict, List
@@ -458,12 +455,86 @@ def check_stability(out: SimulationResults, h: int, verbose: bool = False) -> bo
     return stability_ok
 
 
-def bbsolver():
-    wn = WaterNetworkModel("networks/any-town.inp")
-    node_name_list = ["55", "90", "170"]
-    max_actuations = 3
-    hmax = 24  # last hour
+class BBStatistics:
+    def __init__(self, hmax):
+        self.hmax = hmax
+        # Track pruning counts per hour for each reason
+        self.prune_keys = ["actuations", "cost", "pressure", "level", "stability"]
+        self.prune_counts_by_hour = {h: {reason: 0 for reason in self.prune_keys} for h in range(hmax + 1)}
+        # Track feasible/infeasible solutions per hour
+        self.solutions_per_hour = {h: {"feasible": 0, "infeasible": 0} for h in range(hmax + 1)}
+
+    def record_pruning(self, reason: str, h: int):
+        """Record a pruning event for both overall counts and hour-specific counts."""
+        if reason in self.prune_keys:
+            self.prune_counts_by_hour[h][reason] += 1
+            self.record_solution(h, False)
+        else:
+            raise ValueError(f"Invalid pruning reason: {reason}")
+
+    def record_solution(self, h, is_feasible):
+        """Record whether a solution at hour h was feasible."""
+        key = "feasible" if is_feasible else "infeasible"
+        self.solutions_per_hour[h][key] += 1
+
+    def get_stats(self):
+        df = {col: [] for col in self.prune_keys}
+        df["infeasible"] = []
+        df["feasible"] = []
+        for h in range(1, self.hmax + 1):
+            df["feasible"].append(self.solutions_per_hour[h]["feasible"])
+            df["infeasible"].append(self.solutions_per_hour[h]["infeasible"])
+            for reason in self.prune_keys:
+                df[reason].append(self.prune_counts_by_hour[h][reason])
+        df = pd.DataFrame(df, index=pd.Index(range(1, self.hmax + 1), name="hour"))
+        df["total"] = df["feasible"] + df["infeasible"]
+        # Convert all columns, but total, to %
+        for col in [col for col in df.columns if col != "total"]:
+            df[col] = 100 * df[col] / df["total"]
+        # Round to 2 decimal places
+        df = df.round(1)
+        return df
+
+    def print_summary(self):
+        """Print a comprehensive statistical summary using pandas and rich."""
+        console = Console()
+
+        df = self.get_stats()
+
+        # Table with pruning reasons per hour
+        # Create a rich table
+        table = Table(title="Pruning Statistics by Hour")
+
+        # Add columns
+        table.add_column("Hour", justify="right", style="cyan")
+        for column in df.columns:
+            if column == "total":
+                style = "bold dim"
+            elif column == "feasible":
+                style = "bold green"
+            else:
+                style = "bold red"
+            table.add_column(column, justify="right", style=style)
+
+        # Add rows
+        for idx, row in df.iterrows():
+            table.add_row(str(idx), *[str(val) for val in row])
+
+        console.print(table)
+
+
+def bbsolver(hmax: int = 24, max_actuations: int = 3, verbose: bool = False):
+    fn_inp = "networks/any-town.inp"
+    wn = WaterNetworkModel(fn_inp)
     verbose = False
+
+    # Show config
+    print(f"Network: {fn_inp}")
+    print(f"Max actuations: {max_actuations}")
+    print(f"Last hour: {hmax}")
+    print(f"Verbose: {verbose}\n")
+
+    # Initialize x and counter
     x = np.zeros((hmax + 1, 3), dtype=int)
     counter = BBCounter(hmax, max_actuations)
 
@@ -471,83 +542,148 @@ def bbsolver():
     niter = 0
     cost_min = np.inf
 
-    # Initialize Rich Progress
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TextColumn("[bold blue]{task.completed}[/bold blue] Iterations"),
-        TimeElapsedColumn(),
-        console=Console(),
-    ) as progress:
-        task = progress.add_task("Running bbsolver...", start=False)
+    # Add timer
+    start_time = time.time()
 
-        while counter.update_y(is_feasible):
-            niter += 1
-            progress.start_task(task)
-            progress.update(task, advance=1, description=f"Iteration {niter}")
+    # Initialize statistics tracker
+    stats = BBStatistics(hmax)
 
-            y, h = counter.y, counter.h
-            is_feasible = update_x(x, y, h, max_actuations, verbose=False)
+    while counter.update_y(is_feasible):
+        niter += 1
+        elapsed_time = time.time() - start_time
+        avg_time_per_iter = elapsed_time / niter
+        print(
+            f"[bold blue]⏱  Iter: {niter} | Time: {elapsed_time:.2f}s | Avg: {avg_time_per_iter:.4f}s[/bold blue]",
+            end="\r",
+        )
 
-            # Display iteration details using Rich (if verbose)
+        y, h = counter.y, counter.h
+        is_feasible = update_x(x, y, h, max_actuations, verbose=False)
+
+        if not is_feasible:
+            stats.record_pruning("actuations", h)
             if verbose:
-                print(f"[bold blue]Iteration: {niter}[/bold blue]")
-                print(f"h={h}, y{y[1:h+1]}")
-                show_x(x, h)
+                print("[bold yellow]⚠️  Pruned: max_actuations[/bold yellow]")
+            continue
 
-            if not is_feasible:
-                if verbose:
-                    print("[bold yellow]⚠️  Pruned: max_actuations[/bold yellow]")
-                continue
+        # Check that the number of actuations matches the number of 1s in y
+        assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
 
-            assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
+        # Display iteration details using Rich (if verbose)
+        if verbose:
+            print(f"\n\nh[{h:2d}], y{y[1:h+1]}")
+            show_x(x, h)
 
-            # Update pump statuses without verbosity
-            update_pumps(wn, h, x, False)
+        # Update pump statuses without verbosity
+        update_pumps(wn, h, x, verbose=False)
 
-            # Run the simulation
-            out = sim_run(wn, h, verbose=False)
-            cost = pump_cost(out, wn)
+        # Run the simulation
+        out = sim_run(wn, h, verbose=verbose)
+        cost = pump_cost(out, wn)
+        if verbose:
+            print(f"\ncost={cost:.2f}, cost_min={cost_min:.2f}")
+
+        # Determine feasibility based on cost
+        is_feasible = cost < cost_min
+        if not is_feasible:
+            stats.record_pruning("cost", h)
             if verbose:
-                print(f"cost={cost:.2f}, cost_min={cost_min:.2f}")
+                print(f"\n[bold yellow]⚠️  Pruned: cost[/bold yellow]")
+            # Can prune the entire level
+            counter.jump_to_end(h)
+            continue
 
-            # Determine feasibility based on cost
-            is_feasible = cost < cost_min
-            if not is_feasible:
-                if verbose:
-                    print("[bold yellow]⚠️  Pruned: cost[/bold yellow]")
-                # Can prune the entire level
-                counter.jump_to_end(h)
-                continue
+        # Check pressures
+        is_feasible = check_pressures(out, h, verbose=verbose)
+        if not is_feasible:
+            stats.record_pruning("pressure", h)
+            if verbose:
+                print("[bold yellow]⚠️  Pruned: pressure[/bold yellow]")
+            continue
 
-            # Check pressures
-            is_feasible = check_pressures(out, h, verbose=False)
-            if not is_feasible:
-                if verbose:
-                    print("[bold yellow]⚠️  Pruned: pressure[/bold yellow]")
-                continue
+        # Check levels
+        is_feasible = check_levels(out, h, verbose=verbose)
+        if not is_feasible:
+            stats.record_pruning("level", h)
+            if verbose:
+                print("[bold yellow]⚠️  Pruned: level[/bold yellow]")
+            continue
 
-            # Check levels
-            is_feasible = check_levels(out, h, verbose=False)
-            if not is_feasible:
-                if verbose:
-                    print("[bold yellow]⚠️  Pruned: level[/bold yellow]")
-                continue
+        # Check stability
+        is_feasible = True if h < hmax else check_stability(out, h, verbose=verbose)
+        if not is_feasible:
+            stats.record_pruning("stability", h)
+            if verbose:
+                print("[bold yellow]⚠️  Pruned: stability[/bold yellow]")
+            continue
 
-            if h == hmax:  # last hour
-                # Check stability
-                is_feasible = check_stability(out, h, verbose=False)
-                if not is_feasible:
-                    if verbose:
-                        print("[bold yellow]⚠️  Pruned: stability[/bold yellow]")
-                    continue
+        # Record solution feasibility for this hour
+        stats.record_solution(h, True)
+        if h == hmax:  # last hour
+            cost_min = cost
+            y_min = deepcopy(y)
+            print(f"\n[bold green]💰 [{niter}] cost_min updated: {cost_min:.2f}[/bold green]")
+            print(f"y_min={y_min[1:]}")
 
-                cost_min = cost
-                print(f"\n[bold green]💰 [{niter}] cost_min updated: {cost_min:.2f}[/bold green]")
+    # Calculate and print timing details
+    end_time = time.time()
+    total_time = end_time - start_time
+    time_per_iter = total_time / niter if niter > 0 else 0
 
+    print(f"\n\nTiming Details:")
+    print(f"Total runtime: {total_time:.2f} seconds")
+    print(f"Average time per iteration: {time_per_iter:.4f} seconds")
     print(f"\nCompleted in {niter} iterations with a minimum cost of {cost_min:.2f}.")
+    print(f"Optimal solution: y={y_min[1:]}")
+
+    # Print statistics at the end
+    stats.print_summary()
+
+
+def profile_bbsolver():
+    profiler = cProfile.Profile()
+    profiler.enable()
+    bbsolver(hmax=6, max_actuations=3, verbose=False)
+    profiler.disable()
+    # Dump stats to file
+    profiler.dump_stats("bbsolver_profile.stats")
+
+
+def test_cost():
+    # Solution from Cost2015
+    y = [1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0]
+    print(f"len(y)={len(y)}, y={y}")
+
+    # Add initial zero to match the expected input
+    y = [0] + y
+    x = np.zeros((len(y), 3), dtype=int)
+    for h in range(1, 25):
+        is_feasible = update_x(x, y, h, 3, verbose=False)
+        assert y[h] == sum(x[h]), f"y={y[h]} != sum(x)={sum(x[h])}"
+        if not is_feasible:
+            raise ValueError(f"h={h:2d}, is_feasible={is_feasible}")
+    print(f"h={h:2d}, is_feasible={is_feasible}")
+    show_x(x, h)
+
+    fn_inp = "networks/any-town.inp"
+    wn = WaterNetworkModel(fn_inp)
+    out = sim_run(wn, 24, verbose=False)
+    cost = pump_cost(out, wn)
+    print(f"cost={cost:.2f}")
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run the B&B solver for the given network.")
+    parser.add_argument("--hmax", type=int, default=24, help="Maximum number of hours to simulate.")
+    parser.add_argument("--max_actuations", type=int, default=3, help="Maximum number of actuations per hour.")
+    parser.add_argument("--verbose", action="store_true", help="Print verbose output.")
+    args = parser.parse_args()
+    bbsolver(hmax=args.hmax, max_actuations=args.max_actuations, verbose=args.verbose)
 
 
 if __name__ == "__main__":
-    bbsolver()
+    # profile_bbsolver()
+    test_cost()
+    # main()

@@ -46,6 +46,7 @@ class Pattern: public Element
     int            size() { return factors.size(); }
     double         factor(int i) { return factors[i]; }
     double         currentFactor();
+    int            currentIdx() { return currentIndex; }
     virtual void   init(int intrvl, int tstart) = 0;
     virtual int    nextTime(int t) = 0;
     virtual void   advance(int t) = 0;
@@ -78,6 +79,7 @@ class FixedPattern : public Pattern
     void   init(int intrvl, int tstart);
     int    nextTime(int t);
     void   advance(int t);
+    void   setFactor(int idx, double f) { factors[idx] = f; }
 
   private:
     int    startTime;   //!< offset from time 0 when the pattern begins (sec)

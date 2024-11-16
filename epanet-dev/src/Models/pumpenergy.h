@@ -27,6 +27,7 @@ class PumpEnergy
     // Methods
     void   init();
     double updateEnergyUsage(Pump* pump, Network* network, int dt);
+    double getCost(){ return adjustedTotalCost; }
 
     // Computed Properties
     double hrsOnLine;        //!< hours pump is online
@@ -35,6 +36,7 @@ class PumpEnergy
     double kwHrs;            //!< total kw-hrs consumed
     double maxKwatts;        //!< max. kw consumed
     double totalCost;        //!< total pumping cost
+    double adjustedTotalCost; //!< total pumping cost adjusted for efficiency
 
   private:
 

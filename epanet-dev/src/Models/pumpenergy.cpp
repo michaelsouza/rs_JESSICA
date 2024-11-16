@@ -36,6 +36,7 @@ void PumpEnergy::init()
     kwHrs = 0.0;
     maxKwatts = 0.0;
     totalCost = 0.0;
+    adjustedTotalCost = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -79,6 +80,10 @@ double PumpEnergy::updateEnergyUsage(Pump* pump, Network* network, int dt)
 
     hrsOnLine = totalHrs;
     if ( kw > maxKwatts ) maxKwatts = kw;
+
+    // Calculate the total cost using the adjusted power (the patterns is in cents)
+    adjustedTotalCost += kw * hrs * findCostFactor(pump, network) / 100.0;
+
     return kw;
 }
 

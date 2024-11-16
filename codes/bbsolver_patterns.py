@@ -168,7 +168,7 @@ def update_pumps(wn: WaterNetworkModel, h: int, x: np.ndarray, verbose: bool):
             print(f"   MULT={pump_mult[:h]}")
 
 
-def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bool:
+def check_pressures(out: SimulationResults, h: int, verbose: bool = False) -> bool: 
     """
     Check if the pressures at specified nodes meet the minimum required thresholds.
 

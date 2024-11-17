@@ -18,6 +18,25 @@
 //! \class Utilities
 //! \brief Utility functions used throughout EPANET.
 
+class TempFile {
+public:
+    TempFile(); // Constructor
+    ~TempFile(); // Destructor
+
+    const std::string& getFileName() const; // Accessor for the file name
+
+    // Disable copying
+    TempFile(const TempFile&) = delete;
+    TempFile& operator=(const TempFile&) = delete;
+
+    // Allow moving
+    TempFile(TempFile&& other) noexcept;
+    TempFile& operator=(TempFile&& other) noexcept;
+
+private:
+    std::string fileName;
+};
+
 class Utilities
 {
   public:

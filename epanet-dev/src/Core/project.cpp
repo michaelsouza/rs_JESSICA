@@ -30,7 +30,6 @@ namespace Epanet
     Project::Project():
         inpFileName(""),
         outFileName(""),
-        tmpFileName(""),
         rptFileName(""),
         networkEmpty(true),
     	hydEngineOpened(false),
@@ -38,9 +37,7 @@ namespace Epanet
         outputFileOpened(false),
         solverInitialized(false),
         runQuality(false)
-    {
-        Utilities::getTmpFileName(tmpFileName);
-    }
+    {}
 
     //  Destructor
 
@@ -50,7 +47,6 @@ namespace Epanet
 
         closeReport();
         outputFile.close();
-        remove(tmpFileName.c_str());
 
         //cout << "\nProject destructed.\n";
     }
@@ -240,27 +236,14 @@ namespace Epanet
     int Project::openOutput(const char* fname)
     {
         //... close an already opened output file
-        if ( networkEmpty ) return 0;
+        if (networkEmpty) return 0;
         outputFile.close();
         outputFileOpened = false;
-
-        // ... save the name of the output file
-        outFileName = fname;
-        if ( strlen(fname) == 0 ) outFileName = tmpFileName;
-
-        // ... open the file
-        try
-        {
-            outputFile.open(outFileName, &network);
-            outputFileOpened = true;
-            return 0;
-        }
-        catch (ENerror const& e)
-        {
-            writeMsg(e.msg);
-            return e.code;
-        }
+        outputFile.open(tempFile, &network);
+        outputFileOpened = true;
+        return 0;
     }
+
 
 //-----------------------------------------------------------------------------
 

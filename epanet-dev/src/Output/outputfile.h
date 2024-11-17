@@ -14,6 +14,8 @@
 #include <fstream>
 #include <string>
 
+#include "Utilities/utilities.h"
+
 class Network;
 class ReportWriter;
 
@@ -33,7 +35,9 @@ class OutputFile
     OutputFile();
     ~OutputFile();
 
-    int    open(const std::string fileName, Network* nw);
+    //int    open(const std::string fileName, Network* nw);
+    int    open(const TempFile& tempFile, Network* nw);
+    
     void   close();
 
     int    initWriter();

@@ -46,12 +46,12 @@ OutputFile::~OutputFile()
 
 //-----------------------------------------------------------------------------
 
-int OutputFile::open(const string fileName, Network* nw)
+int OutputFile::open(const TempFile& tempFile, Network* nw)
 {
     close();
-    fwriter.open(fileName.c_str(), ios::out | ios::binary | ios::trunc);
+    fwriter.open(tempFile.getFileName().c_str(), ios::out | ios::binary | ios::trunc);
     if ( !fwriter.is_open() ) return FileError::CANNOT_OPEN_OUTPUT_FILE;
-    fname = fileName;
+    fname = tempFile.getFileName();
     network = nw;
     return 0;
 }

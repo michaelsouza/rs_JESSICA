@@ -66,7 +66,7 @@ void ObjectParser::parseLine(string& line, int section)
     // ... read first string token from input line
 
     if (network == 0) return;
-    int i = 0;
+    size_t i = 0;
     for (; i < line.length(); i++)
     {
         char chLine = line[i];

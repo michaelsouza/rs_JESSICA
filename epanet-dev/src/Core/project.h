@@ -25,6 +25,8 @@
 #include "Core/hydengine.h"
 #include "Core/qualengine.h"
 #include "Output/outputfile.h"
+#include "Utilities/utilities.h"
+
 
 #include <string>
 #include <fstream>
@@ -76,7 +78,8 @@ namespace Epanet
         OutputFile     outputFile;     //!< binary output file for saved results.
         std::string    inpFileName;    //!< name of project's input file.
         std::string    outFileName;    //!< name of project's binary output file.
-        std::string    tmpFileName;    //!< name of project's temporary binary output file.
+        // std::string    tmpFileName;    //!< name of project's temporary binary output file.
+        TempFile       tempFile;       //!< Replace std::string tmpFileName
         std::string    rptFileName;    //!< name of project's report file.
         std::ofstream  rptFile;        //!< reporting file stream.
 

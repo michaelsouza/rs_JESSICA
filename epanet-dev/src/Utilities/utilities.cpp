@@ -7,6 +7,13 @@
 
 #include "utilities.h"
 
+#include <cstdio>
+#include <stdexcept>
+#include <unistd.h> // For mkstemp
+#include <filesystem>  // Ensure this is included
+
+namespace fs = std::filesystem;  // Add a namespace alias for clarity
+
 #include <cstdlib>
 #include <algorithm>
 #include <iterator>
@@ -26,6 +33,39 @@ static const string  s_Minute = "MIN";
 static const string  s_Second = "SEC";
 static const string  s_AM     = "AM";
 static const string  s_PM     = "PM";
+
+
+TempFile::TempFile() {
+    char tmpName[] = "/tmp/epanetXXXXXX";
+    int fd = mkstemp(tmpName);
+    if (fd == -1) {
+        throw std::runtime_error("Failed to create temporary file.");
+    }
+    fileName = tmpName;
+    close(fd); // Close the file descriptor; only the name is needed.
+}
+
+TempFile::~TempFile() {
+    if (!fileName.empty() && fs::exists(fileName)) {
+        fs::remove(fileName);
+    }
+}
+
+const std::string& TempFile::getFileName() const {
+    return fileName;
+}
+
+TempFile::TempFile(TempFile&& other) noexcept : fileName(std::move(other.fileName)) {
+    other.fileName.clear();
+}
+
+TempFile& TempFile::operator=(TempFile&& other) noexcept {
+    if (this != &other) {
+        fileName = std::move(other.fileName);
+        other.fileName.clear();
+    }
+    return *this;
+}
 
 //-----------------------------------------------------------------------------
 //  Gets the name of a temporary file
@@ -76,7 +116,7 @@ string Utilities::getFileName(const std::string s)
 void Utilities::split(vector<string>& tokens, const string& str)
 {
     string token;
-    for (int i = 0; i < str.length(); i++)
+    for (size_t i = 0; i < str.length(); i++)
     {
         if (str[i] == ' ' || str[i] == '\t')
         {

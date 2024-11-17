@@ -6,6 +6,7 @@
 #include "BBCounter.h"
 #include "BBStats.h"
 #include "Helper.h"
+#include "ColorStream.h" // Include ColorStream header
 
 #include <algorithm>
 #include <chrono>
@@ -25,6 +26,7 @@ int main(int argc, char *argv[]) {
     int h_max = 24;
     int max_actuations = 3;
     bool verbose = false;
+    unsigned int maxiter = std::numeric_limits<unsigned int>::max(); // Default: unlimited
 
     // Command-line parameter parsing
     for (int i = 1; i < argc; ++i) {
@@ -38,6 +40,12 @@ int main(int argc, char *argv[]) {
             max_actuations = std::atoi(argv[++i]);
         } else if (std::strcmp(argv[i], "--verbose") == 0) {
             verbose = true;
+        } else if (std::strcmp(argv[i], "--maxiter") == 0 && i + 1 < argc) {
+            maxiter = std::atoi(argv[++i]);
+            if (maxiter == 0) {
+                std::cerr << "Error: maxiter must be greater than 0." << std::endl;
+                return EXIT_FAILURE;
+            }
         } else {
             std::cerr << "Unknown argument: " << argv[i] << std::endl;
             return EXIT_FAILURE;
@@ -48,6 +56,7 @@ int main(int argc, char *argv[]) {
         printf("inpFile          %s\n", inpFile);
         printf("h_max            %d\n", h_max);
         printf("max_actuations   %d\n", max_actuations);
+        printf("maxiter          %u\n", maxiter);
         printf("verbose          %s\n", verbose ? "true" : "false");
     }
 
@@ -81,6 +90,11 @@ int main(int argc, char *argv[]) {
     // Branch-and-bound loop
     while (counter.update_y(is_feasible)) {
         niter++;
+        if (niter > maxiter) {
+            ColorStream::println("\nMaximum iterations reached (" + std::to_string(maxiter) + "). Terminating.", ColorStream::Color::RED);
+            break;
+        }
+
         show_timer(niter, tic);
 
         is_feasible = counter.update_x(verbose);

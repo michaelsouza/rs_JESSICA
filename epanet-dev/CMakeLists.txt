@@ -5,6 +5,10 @@ cmake_minimum_required(VERSION 3.10)  # Updated to a more recent version for bet
 # Project Name
 project(EPANET3)
 
+# Find MPI
+find_package(MPI REQUIRED)
+include_directories(${MPI_INCLUDE_PATH})
+
 # Set C++ Standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -221,6 +225,7 @@ endif()
 
 # Link the EPANET3 Library to the Executable
 target_link_libraries(run-epanet3 PUBLIC epanet3)
+target_link_libraries(run-epanet3 PRIVATE MPI::MPI_CXX)
 
 # -------------------------
 # Optional: Link Additional Libraries

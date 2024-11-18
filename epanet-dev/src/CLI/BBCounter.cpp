@@ -184,7 +184,6 @@ bool BBCounter::set_y(const std::vector<int> &y)
     bool updated = this->update_x(false);
     if (!updated)
       return false;
-    this->show_xy(true);
   }
 
   return true;

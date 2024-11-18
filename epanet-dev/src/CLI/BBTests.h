@@ -26,6 +26,7 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <mpi.h>
 
 // Generic test function to avoid code duplication
 bool run_cost_test(std::vector<int> &y, double expected_cost_min, double tolerance, const std::string &test_name,
@@ -152,10 +153,61 @@ bool test_cost_4()
   return run_cost_test(y, expected_cost_min, tolerance, test_name, max_actuations, verbose, save_project);
 }
 
+
+bool test_mpi(){
+  printf("Testing MPI...\n");
+  const char *inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
+  int h_max = 24;
+  bool verbose = false;
+  bool save_project = false;
+  int max_actuations = 3;
+  
+  std::map<std::string, int> nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
+  std::map<std::string, int> tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
+  std::vector<std::string> pump_names = {"111", "222", "333"};
+
+  get_nodes_and_tanks_ids(inpFile, nodes, tanks, verbose);
+  show_nodes_pumps_tanks(nodes, pump_names, tanks, verbose);
+
+  
+  BBCounter counter(nodes.size(), h_max, max_actuations, pump_names.size());
+  BBStats stats(h_max, max_actuations);
+  
+  std::vector<int> y = {0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
+  counter.set_y(y);
+  
+  auto start = std::chrono::high_resolution_clock::now();
+  int rank, size;
+  MPI_Init(NULL, NULL);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  int iterations_per_rank = 256 / size;
+  int start_iter = rank * iterations_per_rank;
+  int end_iter = (rank == size-1) ? 256 : (rank + 1) * iterations_per_rank;
+
+  for(int i = start_iter; i < end_iter; i++){
+    double cost = 0.0;
+    process_node(inpFile, counter, stats, nodes, tanks, pump_names, cost, verbose, save_project);     
+    // assert cost close to 3578.67
+    assert(std::abs(cost - 3578.67) < 0.01);
+  }
+
+  printf("Rank %d finished processing iterations %d to %d\n", rank, start_iter, end_iter - 1);
+
+  MPI_Finalize();
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  printf("Time taken: %ld ms\n", duration.count());
+  
+  return true;
+}
+
 void test_all()
 {
   // test_cost_1();
   // test_cost_2();
   // test_cost_3();
-  test_cost_4();
+  // test_cost_4();
+  test_mpi();
 }

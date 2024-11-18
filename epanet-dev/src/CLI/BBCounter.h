@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-class BBCounter {
+class BBCounter
+{
 public:
   BBCounter(int y_max, int h_max, int max_actuations, int num_pumps);
 
@@ -13,6 +14,7 @@ public:
   bool update_x(bool verbose = false);
   void show_xy(bool verbose = false);
   void jump_to_end();
+  bool set_y(const std::vector<int> &y);
 
   int h;
   int y_max;
@@ -24,6 +26,5 @@ public:
 
 private:
   bool update_x_core(bool verbose = false);
-  void calc_actuations_csum(int *actuations_csum, const std::vector<int> &x,
-                            int h);
+  void calc_actuations_csum(int *actuations_csum, const std::vector<int> &x, int h);
 };

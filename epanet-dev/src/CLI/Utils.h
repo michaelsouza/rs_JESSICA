@@ -9,5 +9,4 @@
 void CHK(int err, const std::string &message);
 
 // Function to display a timer
-void show_timer(unsigned int niter,
-                std::chrono::high_resolution_clock::time_point tic);
+void show_timer(unsigned int niter, std::chrono::high_resolution_clock::time_point tic, int interval = 100);

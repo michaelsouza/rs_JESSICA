@@ -24,54 +24,71 @@
 #include <string>
 #include <vector>
 
-int bbsolver(int argc, char *argv[]) {
+int bbsolver(int argc, char *argv[])
+{
   // Default values
-  const char *inpFile =
-      "/home/michael/github/rs_JESSICA/networks/any-town.inp";
+  const char *inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
   int h_max = 24;
   int max_actuations = 3;
   bool verbose = false;
-  unsigned int maxiter =
-      std::numeric_limits<unsigned int>::max(); // Default: unlimited
+  bool save_project = false; 
+  unsigned int maxiter = std::numeric_limits<unsigned int>::max(); // Default: unlimited
 
   // Command-line parameter parsing
-  for (int i = 1; i < argc; ++i) {
-    if (std::strcmp(argv[i], "--h_max") == 0 && i + 1 < argc) {
+  for (int i = 1; i < argc; ++i)
+  {
+    if (std::strcmp(argv[i], "--h_max") == 0 && i + 1 < argc)
+    {
       h_max = std::atoi(argv[++i]);
-      if (h_max < 3 || h_max > 24) {
+      if (h_max < 3 || h_max > 24)
+      {
         std::cerr << "Error: h_max must be between 3 and 24." << std::endl;
         return EXIT_FAILURE;
       }
-    } else if (std::strcmp(argv[i], "--max_actuations") == 0 && i + 1 < argc) {
+    }
+    else if (std::strcmp(argv[i], "--max_actuations") == 0 && i + 1 < argc)
+    {
       max_actuations = std::atoi(argv[++i]);
-    } else if (std::strcmp(argv[i], "--verbose") == 0) {
+    }
+    else if (std::strcmp(argv[i], "--verbose") == 0)
+    {
       verbose = true;
-    } else if (std::strcmp(argv[i], "--maxiter") == 0 && i + 1 < argc) {
+    }
+    else if (std::strcmp(argv[i], "--maxiter") == 0 && i + 1 < argc)
+    {
       maxiter = std::atoi(argv[++i]);
-      if (maxiter == 0) {
+      if (maxiter == 0)
+      {
         std::cerr << "Error: maxiter must be greater than 0." << std::endl;
         return EXIT_FAILURE;
       }
-    } else {
+    }
+    else if (std::strcmp(argv[i], "--save_project") == 0)
+    {
+      save_project = true;
+    }
+    else
+    {
       std::cerr << "Unknown argument: " << argv[i] << std::endl;
       return EXIT_FAILURE;
     }
   }
 
-  if (verbose) {
+  if (verbose)
+  {
     printf("inpFile          %s\n", inpFile);
     printf("h_max            %d\n", h_max);
     printf("max_actuations   %d\n", max_actuations);
     printf("maxiter          %u\n", maxiter);
     printf("verbose          %s\n", verbose ? "true" : "false");
+    printf("save_project     %s\n", save_project ? "true" : "false");
   }
 
   // Check if the inpFile exists
   std::ifstream fileCheck(inpFile);
-  if (!fileCheck) {
-    ColorStream::println("Error: Input file " + std::string(inpFile) +
-                             " does not exist.",
-                         ColorStream::Color::RED);
+  if (!fileCheck)
+  {
+    ColorStream::println("Error: Input file " + std::string(inpFile) + " does not exist.", ColorStream::Color::RED);
     return false;
   }
 
@@ -92,15 +109,17 @@ int bbsolver(int argc, char *argv[]) {
 
   bool is_feasible = true;
   unsigned int niter = 0;
+  double cost = 0;
 
   auto tic = std::chrono::high_resolution_clock::now();
 
   // Branch-and-bound loop
-  while (counter.update_y(is_feasible)) {
+  while (counter.update_y(is_feasible))
+  {
     niter++;
-    if (niter > maxiter) {
-      ColorStream::println("\nMaximum iterations reached (" +
-                               std::to_string(maxiter) + "). Terminating.",
+    if (niter > maxiter)
+    {
+      ColorStream::println("\nMaximum iterations reached (" + std::to_string(maxiter) + "). Terminating.",
                            ColorStream::Color::RED);
       break;
     }
@@ -110,19 +129,26 @@ int bbsolver(int argc, char *argv[]) {
     is_feasible = counter.update_x(verbose);
     counter.show_xy(verbose);
 
-    if (!is_feasible) {
-      if (verbose) {
-        printf("⚠️ actuations: %d >= %d\n", counter.y[counter.h],
-               counter.max_actuations);
+    if (!is_feasible)
+    {
+      if (verbose)
+      {
+        printf("❌ actuations: %d >= %d\n", counter.y[counter.h], counter.max_actuations);
       }
       stats.record_pruning("actuations", counter.h);
       continue;
     }
 
-    is_feasible = process_node(inpFile, counter, stats, nodes, tanks,
-                               pump_names, verbose);
-    if (verbose) {
+    is_feasible = process_node(inpFile, counter, stats, nodes, tanks, pump_names, cost, verbose, save_project);
+    if (verbose)
+    {
       std::cout << "\nis_feasible: " << is_feasible << "\n" << std::endl;
+    }
+
+    if (is_feasible && counter.h == counter.h_max)
+    {
+      show_timer(niter, tic, 1); // Ensure the timer is shown
+      stats.record_solution(cost, counter.y);
     }
   }
 

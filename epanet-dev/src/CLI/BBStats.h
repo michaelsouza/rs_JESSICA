@@ -7,7 +7,8 @@
 #include <string>
 #include <vector>
 
-class BBStats {
+class BBStats
+{
 public:
   BBStats(int h_max, int max_actuations);
 
@@ -20,4 +21,5 @@ public:
   std::vector<std::map<std::string, int>> prunings;
   std::vector<int> feasible_counter;
   std::vector<std::string> prune_keys;
+  void summary();
 };

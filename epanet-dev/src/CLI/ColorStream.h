@@ -6,12 +6,14 @@
 #include <iostream>
 #include <string>
 
-class ColorStream {
+class ColorStream
+{
 public:
   /**
    * @brief Enumeration for different color codes.
    */
-  enum class Color {
+  enum class Color
+  {
     RESET = 0,
     RED = 31,
     GREEN = 32,

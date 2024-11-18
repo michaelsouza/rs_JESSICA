@@ -41,7 +41,7 @@ endif()
 # -------------------------
 
 # EPANET3 Library Sources
-set(epanet_lib_sources 
+set(epanet_lib_sources
     src/Core/datamanager.cpp
     src/Core/diagnostics.cpp
     src/Core/epanet3.cpp
@@ -102,7 +102,7 @@ set(epanet_lib_sources
 )
 
 # EPANET3 Library Headers
-set(epanet_lib_headers 
+set(epanet_lib_headers
     src/Core/constants.h
     src/Core/datamanager.h
     src/Core/diagnostics.h
@@ -191,6 +191,7 @@ set(run_epanet3_sources
     src/CLI/BBStats.cpp
     src/CLI/ColorStream.cpp
     src/CLI/Helper.cpp
+    src/CLI/BBSolver.cpp
 )
 
 # Include Directories for CLI (if separate headers are used)

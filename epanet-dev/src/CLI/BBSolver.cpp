@@ -27,7 +27,7 @@
 int bbsolver(int argc, char *argv[]) {
   // Default values
   const char *inpFile =
-      "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
+      "/home/michael/github/rs_JESSICA/networks/any-town.inp";
   int h_max = 24;
   int max_actuations = 3;
   bool verbose = false;

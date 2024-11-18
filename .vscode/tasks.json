@@ -1,6 +1,7 @@
 {
     "version": "2.0.0",
     "tasks": [
+        // Generates prompts from a YAML file using prompt-generator tool
         {
             "label": "pgen",
             "type": "shell",
@@ -11,6 +12,7 @@
             },
             "problemMatcher": []
         },
+        // Same as pgen but includes git diff information in the prompt
         {
             "label": "pgen git",
             "type": "shell",
@@ -21,6 +23,8 @@
             },
             "problemMatcher": []
         },
+        // Formats Python code using Black formatter with 120 character line length
+        // Runs silently in the background
         {
             "label": "black!",
             "type": "shell",
@@ -44,6 +48,7 @@
                 "clear": false
             },
         },
+        // Formats Django/HTML templates using djlint formatter
         {
             "label": "djlint format",
             "type": "shell",
@@ -58,6 +63,7 @@
             },
             "problemMatcher": []
         },
+        // Checks Django/HTML templates for errors using djlint
         {
             "label": "djlint check",
             "type": "shell",
@@ -70,6 +76,54 @@
                 "isDefault": false
             },
             "problemMatcher": []
+        },
+        // Formats all C/C++ files in the epanet-dev/src/CLI directory using clang-format
+        // Uses style from .clang-format file and runs silently in the background
+        {
+            "label": "clang-format CLI",
+            "type": "shell",
+            "command": "find epanet-dev/src/CLI -iname '*.cpp' -o -iname '*.h' -o -iname '*.c' | xargs clang-format -i -style=file",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        // Build run-epanet3 in Release mode
+        {
+            "label": "build-release",
+            "type": "shell",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Release -B build/release && cmake --build build/release",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": ["$gcc", "$msCompile"],
+            "options": {
+                "cwd": "${workspaceFolder}/epanet-dev"
+            }
+        },
+        // Build run-epanet3 in Debug mode
+        {
+            "label": "build-debug",
+            "type": "shell",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Debug -B build/debug && cmake --build build/debug",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": ["$gcc", "$msCompile"],
+            "options": {
+                "cwd": "${workspaceFolder}/epanet-dev"
+            }
         }
     ]
 }

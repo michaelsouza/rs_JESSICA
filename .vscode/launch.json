@@ -24,13 +24,12 @@
             "name": "Run EPANET3 (Debug)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/epanet-dev/build/x64-Debug/bin/run-epanet3",
+            "program": "${workspaceFolder}/epanet-dev/build/debug/bin/run-epanet3",
             "args": [
-                "${workspaceFolder}/dataset/any-town.inp", 
-                "${workspaceFolder}/dataset/any-town.rpt",
-                "${workspaceFolder}/dataset/any-town.out"
+                "--max_actuations", "1",
+                "--h_max", "24",
             ],
-            "stopAtEntry": true,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,

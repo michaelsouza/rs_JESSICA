@@ -237,7 +237,7 @@ bool test_top_level_free()
     }
 
     // Call top_level_free
-    int result = counter.top_level_free();
+    int result = counter.get_free_level();
 
     // Verify the result
     if (result == expected_top_level_free)
@@ -405,7 +405,7 @@ bool test_split()
       }
 
       // Update top_level_free with data from all ranks
-      int top_level_free_loc = counter.top_level_free();
+      int top_level_free_loc = counter.get_free_level();
       mpi_error = MPI_Allgather(&top_level_free_loc, 1, MPI_INT, top_level_free.data(), 1, MPI_INT, MPI_COMM_WORLD);
       if (mpi_error != MPI_SUCCESS)
       {

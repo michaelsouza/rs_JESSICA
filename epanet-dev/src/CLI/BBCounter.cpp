@@ -189,7 +189,7 @@ bool BBCounter::set_y(const std::vector<int> &y)
   return true;
 }
 
-int BBCounter::top_level_free()
+int BBCounter::get_free_level()
 {
   if (this->y[this->top_level] < this->top_cut)
   {
@@ -307,4 +307,13 @@ void BBCounter::read_buffer(const std::vector<int> &recv_buffer)
   // Read x vector
   x.resize(num_pumps * (h_max + 1));
   std::copy(recv_buffer.begin() + 6 + y.size(), recv_buffer.begin() + 6 + y.size() + x.size(), x.begin());
+}
+
+void BBCounter::split(std::vector<int> &recv_buffer)
+{  
+  write_buffer(recv_buffer);
+  int free_level = get_free_level();
+  int free_level_cut = this->y[free_level];
+  recv_buffer[4] = free_level;
+  recv_buffer[5] = free_level_cut;
 }

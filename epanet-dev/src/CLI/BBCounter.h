@@ -68,7 +68,7 @@ public:
    *
    * @return The top level index that can accept more actuations.
    */
-  int top_level_free();
+  int get_free_level();
 
   /**
    * @brief Displays the current state of the counter.
@@ -88,6 +88,13 @@ public:
    * @param recv_buffer The vector containing the current state.
    */
   void read_buffer(const std::vector<int> &recv_buffer);
+
+  /**
+   * @brief Splits the current state of the counter into two parts.
+   *
+   * @param recv_buffer The vector to fill with the split state.
+   */
+  void split(std::vector<int> &recv_buffer);
 
   // Public member variables
   int h;              ///< Current time period index.

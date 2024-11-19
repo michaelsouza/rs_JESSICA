@@ -1,6 +1,8 @@
 // src/CLI/BBCounter.cpp
 #include "BBCounter.h"
+#include "ColorStream.h"
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
@@ -14,6 +16,8 @@ BBCounter::BBCounter(int y_max, int h_max, int max_actuations, int num_pumps)
   this->y = std::vector<int>(h_max + 1, 0);
   this->x = std::vector<int>(num_pumps * (h_max + 1), 0);
   this->h = 0;
+  this->top_cut = 0;
+  this->top_level = 0;
 }
 
 bool BBCounter::update_y(bool is_feasible)
@@ -23,8 +27,7 @@ bool BBCounter::update_y(bool is_feasible)
     throw std::out_of_range("ERR: h (" + std::to_string(this->h) + ") is out of range in update_y");
   }
 
-  if (this->h == 0 && !is_feasible)
-    return false;
+  if (this->h == 0 && !is_feasible) return false;
 
   if (is_feasible && this->h < this->h_max)
   {
@@ -70,8 +73,7 @@ bool BBCounter::update_x(bool verbose)
 
 void BBCounter::show_xy(bool verbose)
 {
-  if (!verbose)
-    return;
+  if (!verbose) return;
   std::cout << "\n";
   for (int i = 1; i <= this->h; i++)
   {
@@ -126,8 +128,7 @@ bool BBCounter::update_x_core(bool verbose)
       const int pump = pumps_sorted[i];
       if (x_new[pump] == 0)
       {
-        if (actuations_csum[pump] >= max_actuations)
-          return false;
+        if (actuations_csum[pump] >= max_actuations) return false;
         x_new[pump] = 1;
         --num_actuations;
       }
@@ -165,8 +166,7 @@ void BBCounter::calc_actuations_csum(int *actuations_csum, const std::vector<int
     const int *x_new = &x[this->num_pumps * i];
     for (int j = 0; j < this->num_pumps; j++)
     {
-      if (x_new[j] > x_old[j])
-        ++actuations_csum[j];
+      if (x_new[j] > x_old[j]) ++actuations_csum[j];
     }
   }
 }
@@ -182,9 +182,116 @@ bool BBCounter::set_y(const std::vector<int> &y)
   {
     this->h++;
     bool updated = this->update_x(false);
-    if (!updated)
-      return false;
+    if (!updated) return false;
   }
 
   return true;
+}
+
+int BBCounter::top_level_free()
+{
+  if (this->y[this->top_level] < this->top_cut)
+  {
+    return this->top_level;
+  }
+
+  // Consider only the levels in the range [top_level + 1, h]
+  for (int level = this->top_level + 1; level <= this->h; level++)
+  {
+    if (this->y[level] < this->max_actuations) return level;
+  }
+  return this->h_max;
+}
+
+void BBCounter::show() const
+{
+  // Get MPI rank
+  int rank = 0;
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  // Print Header with MPI rank
+  ColorStream::println("=== BBCounter Current State (Rank " + std::to_string(rank) + ") ===",
+                       ColorStream::Color::BRIGHT_CYAN);
+
+  // Display Current Time Period
+  std::string time_period_label = "Current Time Period (h): ";
+  ColorStream::print(time_period_label, ColorStream::Color::YELLOW);
+  std::cout << this->h << std::endl;
+
+  // Display y vector up to current h
+  ColorStream::println("Actuations (y):", ColorStream::Color::BRIGHT_BLUE);
+  for (int i = 0; i <= this->h && i <= this->h_max; ++i)
+  {
+    std::cout << "  h[" << std::setw(2) << i << "]: y = " << this->y[i] << std::endl;
+  }
+
+  // Display x vector for current h
+  ColorStream::println("Pump States (x) at Current Time Period:", ColorStream::Color::BRIGHT_BLUE);
+  const int *x_current = &this->x[this->num_pumps * this->h];
+  for (int j = 0; j < this->num_pumps; ++j)
+  {
+    std::string pump_label = "  Pump " + std::to_string(j + 1) + ": ";
+    ColorStream::print(pump_label, ColorStream::Color::YELLOW);
+    if (x_current[j] == 1)
+    {
+      ColorStream::println("Active", ColorStream::Color::GREEN);
+    }
+    else
+    {
+      ColorStream::println("Inactive", ColorStream::Color::RED);
+    }
+  }
+
+  // Display Top Level and Top Cut
+  ColorStream::println("Top Level: " + std::to_string(this->top_level), ColorStream::Color::BRIGHT_MAGENTA);
+  ColorStream::println("Top Cut: " + std::to_string(this->top_cut), ColorStream::Color::BRIGHT_MAGENTA);
+
+  // Optional: Display Additional Metrics or Information
+  // For example, cumulative actuations, remaining actuations, etc.
+  // ...
+
+  // Print Footer
+  ColorStream::println("================================", ColorStream::Color::BRIGHT_CYAN);
+}
+
+void BBCounter::write_buffer(std::vector<int> &recv_buffer) const
+{
+  // Calculate required buffer size: scalar values + y vector + x vector
+  size_t buffer_size = 6 + y.size() + x.size();
+  recv_buffer.resize(buffer_size);
+
+  // Write scalar values
+  recv_buffer[0] = h;
+  recv_buffer[1] = y_max;
+  recv_buffer[2] = h_max;
+  recv_buffer[3] = max_actuations;
+  recv_buffer[4] = top_level;
+  recv_buffer[5] = top_cut;
+
+  // Write y vector
+  std::copy(y.begin(), y.end(), recv_buffer.begin() + 6);
+
+  // Write x vector
+  std::copy(x.begin(), x.end(), recv_buffer.begin() + 6 + y.size());
+}
+
+void BBCounter::read_buffer(const std::vector<int> &recv_buffer)
+{
+  // Read scalar values
+  h = recv_buffer[0];
+  y_max = recv_buffer[1];
+  h_max = recv_buffer[2];
+  max_actuations = recv_buffer[3];
+  top_level = recv_buffer[4];
+  top_cut = recv_buffer[5];
+
+  // Read y vector
+  y.resize(h_max + 1);
+  std::copy(recv_buffer.begin() + 6, recv_buffer.begin() + 6 + y.size(), y.begin());
+
+  // Read x vector
+  x.resize(num_pumps * (h_max + 1));
+  std::copy(recv_buffer.begin() + 6 + y.size(), recv_buffer.begin() + 6 + y.size() + x.size(), x.begin());
 }

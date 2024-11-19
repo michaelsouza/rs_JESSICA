@@ -1,8 +1,6 @@
 # system:
-- Python 3.11
-- EPANET 2.2
-- WNTR 1.2.0 (python package)
-- rich 13.9.2 (python package)
+- EPANET 3
+- CMake 3.22
 
 # sources:
 paper: no
@@ -12,14 +10,21 @@ networks: no
   any-town.inp: all
   any-town.md: none
 
-codes: yes
+codes: no
   bbsolver.py: all  
   economic_custom.py: all
+
+epanet-dev/src/CLI: yes
+  BBTests.h: all
+  BBCounter.h: all
+  BBCounter.cpp: all
+  ColorStream.h: none
+  ColorStream.cpp: none
 
 .venv/lib/python3.10/site-packages/wntr: no
   network/controls.py: all
 
 # user_request
 """
-I need to export data with the number of feasible and infeasible solutions for each hour. In the case of infeasible solutions, I need to know the reason why it is infeasible. I'm going to use this data to create and graphs. Also, for each complete feasible solution, I need to save them including the cost along the 24 hours. I think we could get it from the tree and node's lower bound.
+Pls, in BBCounter class, add a method to fill a vector<int> recv_buffer with the current state of the counter. This recv_buffer will be used to send the counter state to other ranks.
 """

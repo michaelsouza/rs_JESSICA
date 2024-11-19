@@ -4,3 +4,4 @@ IndentWidth: 2
 ColumnLimit: 120
 AllowShortFunctionsOnASingleLine: None
 BreakBeforeBraces: Allman
+AllowShortIfStatementsOnASingleLine: true

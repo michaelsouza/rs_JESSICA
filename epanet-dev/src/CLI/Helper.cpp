@@ -2,9 +2,9 @@
 #include "Helper.h"
 #include <algorithm>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <iomanip>
 
 using Epanet::Project;
 
@@ -116,8 +116,7 @@ bool check_pressures(EN_Project p, const std::map<std::string, int> &nodes, bool
     {
       all_ok = false;
     }
-    if (verbose)
-      show_pressures(is_feasible, node_name, pressure, thresholds[node_name]);
+    if (verbose) show_pressures(is_feasible, node_name, pressure, thresholds[node_name]);
   }
   return all_ok;
 }
@@ -153,8 +152,7 @@ bool check_levels(EN_Project p, const std::map<std::string, int> &tanks, bool ve
     {
       all_ok = false;
     }
-    if (verbose)
-      show_levels(level >= level_min && level <= level_max, tank.first, level, level_min, level_max);
+    if (verbose) show_levels(level >= level_min && level <= level_max, tank.first, level, level_min, level_max);
   }
   return all_ok;
 }
@@ -190,8 +188,7 @@ bool check_stability(EN_Project p, const std::map<std::string, int> &tanks, bool
     {
       all_ok = false;
     }
-    if (verbose)
-      show_stability(level >= initial_level, tank_name, level, initial_level);
+    if (verbose) show_stability(level >= initial_level, tank_name, level, initial_level);
   }
   return all_ok;
 }
@@ -315,7 +312,9 @@ bool process_node(const char *inpFile, BBCounter &counter, BBStats &stats, const
       stats.record_pruning("cost", counter.h);
       counter.jump_to_end();
       break;
-    }else{
+    }
+    else
+    {
       if (verbose)
       {
         printf("\nChecking cost: ");
@@ -333,7 +332,8 @@ bool process_node(const char *inpFile, BBCounter &counter, BBStats &stats, const
     }
   } while (dt > 0);
 
-  if(is_feasible){
+  if (is_feasible)
+  {
     stats.record_feasible(counter.h);
   }
 
@@ -354,7 +354,7 @@ bool process_node(const char *inpFile, BBCounter &counter, BBStats &stats, const
     std::stringstream ss;
     ss << "output_" << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S") << ".inp";
     prj->save(ss.str().c_str());
-    ColorStream::println("Project saved to: " + ss.str(), ColorStream::Color::BRIGHT_GREEN);  
+    ColorStream::println("Project saved to: " + ss.str(), ColorStream::Color::BRIGHT_GREEN);
   }
 
   // Delete the project

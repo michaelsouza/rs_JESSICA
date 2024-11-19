@@ -31,7 +31,7 @@ int bbsolver(int argc, char *argv[])
   int h_max = 24;
   int max_actuations = 3;
   bool verbose = false;
-  bool save_project = false; 
+  bool save_project = false;
   unsigned int maxiter = std::numeric_limits<unsigned int>::max(); // Default: unlimited
 
   // Command-line parameter parsing

@@ -54,45 +54,48 @@ void BBStats::record_solution(double cost, const std::vector<int> &y)
   }
 }
 
-void BBStats::summary() 
+void BBStats::summary()
 {
-    // Header
-    ColorStream::println("\nBranch and Bound Statistics", ColorStream::Color::BRIGHT_WHITE);
-    ColorStream::println("═══════════════════════════", ColorStream::Color::BRIGHT_WHITE);
-    
-    // Best solution
-    ColorStream::print("Best cost: ", ColorStream::Color::WHITE);
-    ColorStream::println(std::to_string(cost_min), ColorStream::Color::BRIGHT_GREEN);
-    
-    // Table header
-    ColorStream::print("Level │ ", ColorStream::Color::BRIGHT_WHITE);
-    for (const auto& key : prune_keys) {
-        ColorStream::print(key + " │ ", ColorStream::Color::BRIGHT_WHITE);
+  // Header
+  ColorStream::println("\nBranch and Bound Statistics", ColorStream::Color::BRIGHT_WHITE);
+  ColorStream::println("═══════════════════════════", ColorStream::Color::BRIGHT_WHITE);
+
+  // Best solution
+  ColorStream::print("Best cost: ", ColorStream::Color::WHITE);
+  ColorStream::println(std::to_string(cost_min), ColorStream::Color::BRIGHT_GREEN);
+
+  // Table header
+  ColorStream::print("Level │ ", ColorStream::Color::BRIGHT_WHITE);
+  for (const auto &key : prune_keys)
+  {
+    ColorStream::print(key + " │ ", ColorStream::Color::BRIGHT_WHITE);
+  }
+  ColorStream::println("Feasible", ColorStream::Color::BRIGHT_WHITE);
+
+  // Separator line
+  ColorStream::print("------+", ColorStream::Color::WHITE);
+  for (size_t i = 0; i < prune_keys.size(); i++)
+  {
+    std::string separator(prune_keys[i].length() + 2, '-');
+    ColorStream::print(separator + "+", ColorStream::Color::WHITE);
+  }
+  ColorStream::println("---------", ColorStream::Color::WHITE);
+
+  // Data rows
+  for (size_t h = 0; h < prunings.size(); h++)
+  {
+    // Level number
+    ColorStream::print(std::to_string(h) + std::string(5 - std::to_string(h).length(), ' ') + " │ ",
+                       ColorStream::Color::YELLOW);
+
+    // Pruning counts
+    for (const auto &key : prune_keys)
+    {
+      std::string value = std::to_string(prunings[h][key]);
+      ColorStream::print(value + std::string(key.length() + 2 - value.length(), ' ') + "│ ", ColorStream::Color::CYAN);
     }
-    ColorStream::println("Feasible", ColorStream::Color::BRIGHT_WHITE);
-    
-    // Separator line
-    ColorStream::print("------+", ColorStream::Color::WHITE);
-    for (size_t i = 0; i < prune_keys.size(); i++) {
-        std::string separator(prune_keys[i].length() + 2, '-');
-        ColorStream::print(separator + "+", ColorStream::Color::WHITE);
-    }
-    ColorStream::println("---------", ColorStream::Color::WHITE);
-    
-    // Data rows
-    for (size_t h = 0; h < prunings.size(); h++) {
-        // Level number
-        ColorStream::print(std::to_string(h) + std::string(5 - std::to_string(h).length(), ' ') + " │ ", 
-                          ColorStream::Color::YELLOW);
-        
-        // Pruning counts
-        for (const auto& key : prune_keys) {
-            std::string value = std::to_string(prunings[h][key]);
-            ColorStream::print(value + std::string(key.length() + 2 - value.length(), ' ') + "│ ", 
-                             ColorStream::Color::CYAN);
-        }
-        
-        // Feasible solutions
-        ColorStream::println(std::to_string(feasible_counter[h]), ColorStream::Color::GREEN);
-    }
+
+    // Feasible solutions
+    ColorStream::println(std::to_string(feasible_counter[h]), ColorStream::Color::GREEN);
+  }
 }

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <mpi.h>
 #include <numeric>
 #include <stdexcept>
 
@@ -207,9 +208,7 @@ void BBCounter::show() const
 {
   // Get MPI rank
   int rank = 0;
-#ifdef USE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   // Print Header with MPI rank
   ColorStream::println("=== BBCounter Current State (Rank " + std::to_string(rank) + ") ===",
@@ -258,6 +257,13 @@ void BBCounter::show() const
 
 void BBCounter::write_buffer(std::vector<int> &recv_buffer) const
 {
+  // Retrieve the MPI rank
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // Log the start of buffer writing
+  ColorStream::println("Rank[" + std::to_string(rank) + "]: writing buffer.", ColorStream::Color::CYAN);
+
   // Calculate required buffer size: scalar values + y vector + x vector
   size_t buffer_size = 6 + y.size() + x.size();
   recv_buffer.resize(buffer_size);
@@ -279,6 +285,13 @@ void BBCounter::write_buffer(std::vector<int> &recv_buffer) const
 
 void BBCounter::read_buffer(const std::vector<int> &recv_buffer)
 {
+  // Retrieve the MPI rank
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // Log the start of buffer reading
+  ColorStream::println("Rank[" + std::to_string(rank) + "]: reading buffer.", ColorStream::Color::CYAN);
+
   // Read scalar values
   h = recv_buffer[0];
   y_max = recv_buffer[1];

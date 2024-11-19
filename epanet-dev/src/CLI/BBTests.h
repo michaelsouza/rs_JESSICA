@@ -362,9 +362,6 @@ bool test_split()
     return (sum_y % 7 != 0);
   };
 
-  // Optional: Define a maximum iteration limit to prevent infinite loops
-  const int MAX_ITERATIONS = 10000; // Example limit
-
   while (!done_all)
   {
     if (!done_loc)
@@ -450,23 +447,27 @@ bool test_split()
           // Receive a message from rank id_split
           if (id_avail == rank)
           {
-            printf("Rank[%d]: Receiving from rank %d\n", rank, id_split);            
-            mpi_error = MPI_Recv(recv_buffer.data(), recv_buffer.size(), MPI_INT, id_split, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            ColorStream::println("Rank[" + std::to_string(rank) + "]: Receiving from rank " + std::to_string(id_split),
+                                 ColorStream::Color::BRIGHT_MAGENTA);
+            mpi_error = MPI_Recv(recv_buffer.data(), recv_buffer.size(), MPI_INT, id_split, 0, MPI_COMM_WORLD,
+                                 MPI_STATUS_IGNORE);
             if (mpi_error != MPI_SUCCESS)
             {
               printf("Rank[%d]: MPI_Recv failed with error code %d.\n", rank, mpi_error);
               MPI_Abort(MPI_COMM_WORLD, mpi_error);
             }
-            // Reset the done flag for the rank that sent the message
+            // Set the current counter
             done_loc = 0;
             counter.read_buffer(recv_buffer);
             counter.show();
+            is_feasible = 1;
           }
 
           // Send a message to rank id_avail
           if (id_split == rank)
           {
-            printf("Rank[%d]: Sending to rank %d\n", rank, id_avail);
+            ColorStream::println("Rank[" + std::to_string(rank) + "]: Sending to rank " + std::to_string(id_avail),
+                                 ColorStream::Color::BRIGHT_MAGENTA);
             counter.write_buffer(recv_buffer);
             mpi_error = MPI_Send(recv_buffer.data(), recv_buffer.size(), MPI_INT, id_avail, 0, MPI_COMM_WORLD);
             if (mpi_error != MPI_SUCCESS)
@@ -481,10 +482,8 @@ bool test_split()
     }
   }
 
-  if (niters >= MAX_ITERATIONS)
-  {
-    printf("Rank[%d]: Reached maximum iterations without completion.\n", rank);
-  }
+  // Add MPI barrier to synchronize all processes
+  MPI_Barrier(MPI_COMM_WORLD);
 
   // Final log after exiting the loop
   auto toc = std::chrono::high_resolution_clock::now();

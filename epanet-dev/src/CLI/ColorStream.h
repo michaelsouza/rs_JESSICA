@@ -22,6 +22,7 @@ public:
     MAGENTA = 35,
     CYAN = 36,
     WHITE = 37,
+    ORANGE = 38,
     BRIGHT_RED = 91,
     BRIGHT_GREEN = 92,
     BRIGHT_YELLOW = 93,

@@ -8,21 +8,27 @@
 #include <numeric>
 #include <stdexcept>
 
-BBCounter::BBCounter(int y_max, int h_max, int max_actuations, int num_pumps)
+BBCounter::BBCounter(int h_max, int max_actuations, int num_pumps) : stats(h_max, max_actuations)
 {
-  this->y_max = y_max;
+  // Initialize scalar variables
   this->h_max = h_max;
   this->max_actuations = max_actuations;
   this->num_pumps = num_pumps;
-  this->y = std::vector<int>(h_max + 1, 0);
-  this->x = std::vector<int>(num_pumps * (h_max + 1), 0);
   this->h = 0;
   this->top_cut = 0;
   this->top_level = 0;
+
+  // Initialize y and x vectors
+  this->y = std::vector<int>(h_max + 1, 0);
+  this->x = std::vector<int>(num_pumps * (h_max + 1), 0);
+
+  // Calculate the buffer size
+  this->buffer_size = this->y.size() + this->x.size() + 6;
 }
 
-bool BBCounter::update_y(bool is_feasible)
+bool BBCounter::update_y()
 {
+  bool is_feasible = this->is_feasible;
   if (this->h < 0 || this->h > this->h_max)
   {
     throw std::out_of_range("ERR: h (" + std::to_string(this->h) + ") is out of range in update_y");
@@ -37,11 +43,13 @@ bool BBCounter::update_y(bool is_feasible)
     return true;
   }
 
+  // If the current state is at the maximum actuations, reset it and go back one level
   if (this->y[this->h] == this->y_max)
   {
     this->y[this->h] = 0;
     this->h--;
-    return this->update_y(false);
+    this->is_feasible = false;
+    return this->update_y();
   }
 
   if (this->y[this->h] < this->y_max)
@@ -50,6 +58,7 @@ bool BBCounter::update_y(bool is_feasible)
     return true;
   }
 
+  // There is no feasible state
   return false;
 }
 
@@ -60,15 +69,21 @@ void BBCounter::jump_to_end()
 
 bool BBCounter::update_x(bool verbose)
 {
+  // Record feasible if the current state is feasible
+  if (this->is_feasible) this->stats.record_feasible(this->h);
+
+  // Update x core
   bool is_feasible = this->update_x_core(verbose);
+
+  // Check consistency sum(x[h]) == y[h]
   if (is_feasible)
   {
-    // Check consistency
     const int *x_new = &this->x[this->num_pumps * this->h];
     int sum_x = std::accumulate(x_new, x_new + this->num_pumps, 0);
     if (sum_x != this->y[this->h])
       throw std::runtime_error("sum(x)=" + std::to_string(sum_x) + " != y=" + std::to_string(this->y[this->h]));
   }
+
   return is_feasible;
 }
 
@@ -177,6 +192,9 @@ bool BBCounter::set_y(const std::vector<int> &y)
   // Copy y to the internal y vector
   this->y = y;
 
+  // Start assuming the y vector is feasible
+  this->is_feasible = true;
+
   // Set y and update x
   this->h = 0;
   for (int i = 0; i < this->h_max; ++i)
@@ -211,48 +229,49 @@ void BBCounter::show() const
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Print Header with MPI rank
-  ColorStream::println("=== BBCounter Current State (Rank " + std::to_string(rank) + ") ===",
-                       ColorStream::Color::BRIGHT_CYAN);
+  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "=== BBCounter Current State (Rank %d) ===", rank);
 
   // Display Current Time Period
-  std::string time_period_label = "Current Time Period (h): ";
-  ColorStream::print(time_period_label, ColorStream::Color::YELLOW);
+  ColorStream::printf(ColorStream::Color::YELLOW, "Current Time Period (h): ");
   std::cout << this->h << std::endl;
 
   // Display y vector up to current h
-  ColorStream::println("Actuations (y):", ColorStream::Color::BRIGHT_BLUE);
+  ColorStream::printf(ColorStream::Color::BRIGHT_BLUE, "Actuations (y):");
   for (int i = 0; i <= this->h && i <= this->h_max; ++i)
   {
     std::cout << "  h[" << std::setw(2) << i << "]: y = " << this->y[i] << std::endl;
   }
 
   // Display x vector for current h
-  ColorStream::println("Pump States (x) at Current Time Period:", ColorStream::Color::BRIGHT_BLUE);
+  ColorStream::printf(ColorStream::Color::BRIGHT_BLUE, "Pump States (x) at Current Time Period:");
   const int *x_current = &this->x[this->num_pumps * this->h];
   for (int j = 0; j < this->num_pumps; ++j)
   {
-    std::string pump_label = "  Pump " + std::to_string(j + 1) + ": ";
-    ColorStream::print(pump_label, ColorStream::Color::YELLOW);
+    ColorStream::printf(ColorStream::Color::YELLOW, "  Pump %d: ", j + 1);
     if (x_current[j] == 1)
     {
-      ColorStream::println("Active", ColorStream::Color::GREEN);
+      ColorStream::printf(ColorStream::Color::GREEN, "Active");
     }
     else
     {
-      ColorStream::println("Inactive", ColorStream::Color::RED);
+      ColorStream::printf(ColorStream::Color::RED, "Inactive");
     }
   }
 
   // Display Top Level and Top Cut
-  ColorStream::println("Top Level: " + std::to_string(this->top_level), ColorStream::Color::BRIGHT_MAGENTA);
-  ColorStream::println("Top Cut: " + std::to_string(this->top_cut), ColorStream::Color::BRIGHT_MAGENTA);
+  ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Top Level: ");
+  std::cout << this->top_level << std::endl;
+  ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Top Cut: ");
+  std::cout << this->top_cut << std::endl;
 
   // Optional: Display Additional Metrics or Information
   // For example, cumulative actuations, remaining actuations, etc.
   // ...
 
   // Print Footer
-  ColorStream::println("================================", ColorStream::Color::BRIGHT_CYAN);
+  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "================================");
+
+  this->stats.summary();
 }
 
 void BBCounter::write_buffer(std::vector<int> &recv_buffer) const
@@ -262,19 +281,18 @@ void BBCounter::write_buffer(std::vector<int> &recv_buffer) const
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Log the start of buffer writing
-  ColorStream::println("Rank[" + std::to_string(rank) + "]: writing buffer.", ColorStream::Color::CYAN);
+  ColorStream::printf(ColorStream::Color::CYAN, "Rank[%d]: writing buffer.", rank);
 
-  // Calculate required buffer size: scalar values + y vector + x vector
-  size_t buffer_size = 6 + y.size() + x.size();
-  recv_buffer.resize(buffer_size);
+  // Resize the buffer
+  recv_buffer.resize(this->buffer_size);
 
   // Write scalar values
-  recv_buffer[0] = h;
-  recv_buffer[1] = y_max;
-  recv_buffer[2] = h_max;
-  recv_buffer[3] = max_actuations;
-  recv_buffer[4] = top_level;
-  recv_buffer[5] = top_cut;
+  recv_buffer[0] = top_level;
+  recv_buffer[1] = top_cut;
+  recv_buffer[2] = h;
+  recv_buffer[3] = y_max;
+  recv_buffer[4] = h_max;
+  recv_buffer[5] = max_actuations;
 
   // Write y vector
   std::copy(y.begin(), y.end(), recv_buffer.begin() + 6);
@@ -290,15 +308,15 @@ void BBCounter::read_buffer(const std::vector<int> &recv_buffer)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Log the start of buffer reading
-  ColorStream::println("Rank[" + std::to_string(rank) + "]: reading buffer.", ColorStream::Color::CYAN);
+  ColorStream::printf(ColorStream::Color::CYAN, "Rank[%d]: reading buffer.", rank);
 
   // Read scalar values
-  h = recv_buffer[0];
-  y_max = recv_buffer[1];
-  h_max = recv_buffer[2];
-  max_actuations = recv_buffer[3];
-  top_level = recv_buffer[4];
-  top_cut = recv_buffer[5];
+  top_level = recv_buffer[0];
+  top_cut = recv_buffer[1];
+  h = recv_buffer[2];
+  y_max = recv_buffer[3];
+  h_max = recv_buffer[4];
+  max_actuations = recv_buffer[5];
 
   // Read y vector
   y.resize(h_max + 1);
@@ -310,10 +328,22 @@ void BBCounter::read_buffer(const std::vector<int> &recv_buffer)
 }
 
 void BBCounter::split(std::vector<int> &recv_buffer)
-{  
+{
   write_buffer(recv_buffer);
-  int free_level = get_free_level();
-  int free_level_cut = this->y[free_level];
-  recv_buffer[4] = free_level;
-  recv_buffer[5] = free_level_cut;
+  const int free_level = get_free_level();
+  const int free_level_cut = this->y[free_level];
+
+  // Update the buffer with the free level and free level cut
+  recv_buffer[0] = free_level;
+  recv_buffer[1] = free_level_cut;
+
+  // Update this counter with last state of the free level and mark it as infeasible
+  this->h = free_level + 1;
+  this->y[this->h] = h_max;
+  this->prune(PruneReason::SPLIT);
+}
+
+void BBCounter::prune(PruneReason reason)
+{
+  this->stats.record_pruning(reason, this->h);
 }

@@ -1,6 +1,9 @@
 // src/CLI/BBCounter.h
 #pragma once
 
+#include "BBPruneReason.h"
+#include "BBStats.h"
+
 #include <map>
 #include <string>
 #include <vector>
@@ -20,20 +23,18 @@ public:
   /**
    * @brief Constructs a BBCounter instance with specified parameters.
    *
-   * @param y_max The maximum number of actuations allowed per time period.
    * @param h_max The total number of time periods (hours) to manage.
    * @param max_actuations The maximum number of actuations permitted for each pump.
    * @param num_pumps The total number of pumps being managed.
    */
-  BBCounter(int y_max, int h_max, int max_actuations, int num_pumps);
+  BBCounter(int h_max, int max_actuations, int num_pumps);
 
   /**
    * @brief Updates the y vector based on feasibility.
    *
-   * @param is_feasible Indicates whether the current state is feasible.
-   * @return true if the update is successful, false otherwise.
+   * @return true if the update is successful, false if there is no feasible state.
    */
-  bool update_y(bool is_feasible);
+  bool update_y();
 
   /**
    * @brief Updates the x vector based on the current y vector.
@@ -96,6 +97,8 @@ public:
    */
   void split(std::vector<int> &recv_buffer);
 
+  void prune(PruneReason reason);
+
   // Public member variables
   int h;              ///< Current time period index.
   int y_max;          ///< Maximum actuations per time period.
@@ -106,8 +109,12 @@ public:
   int num_pumps;      ///< Number of pumps being managed.
   int top_level;      ///< Current top level in the counter.
   int top_cut;        ///< Threshold for top level operations.
+  int buffer_size;    ///< Size of the buffer used for communication.
 
 private:
+  bool is_feasible; ///< Indicates whether the current state is feasible.
+  BBStats stats;    ///< Statistics object for tracking feasibility and pruning.
+
   /**
    * @brief Core function to update the x vector.
    *

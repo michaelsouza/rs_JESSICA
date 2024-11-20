@@ -1,8 +1,7 @@
 // src/CLI/ColorStream.h
+#pragma once
 
-#ifndef COLORSTREAM_H
-#define COLORSTREAM_H
-
+#include <cstdarg> // For variadic functions
 #include <iostream>
 #include <string>
 
@@ -33,20 +32,11 @@ public:
   };
 
   /**
-   * @brief Prints text with the specified color without a newline.
+   * @brief Prints formatted text with the specified color.
    *
-   * @param text Text to print.
    * @param color Color to apply.
+   * @param format Format string similar to printf.
+   * @param ... Variable arguments corresponding to the format specifiers.
    */
-  static void print(const std::string &text, Color color = Color::RESET);
-
-  /**
-   * @brief Prints text with the specified color followed by a newline.
-   *
-   * @param text Text to print.
-   * @param color Color to apply.
-   */
-  static void println(const std::string &text, Color color = Color::RESET);
+  static void printf(Color color, const char *format, ...);
 };
-
-#endif // COLORSTREAM_H

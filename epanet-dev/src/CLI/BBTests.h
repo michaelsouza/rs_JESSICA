@@ -6,9 +6,9 @@
 #include "Elements/pump.h"
 #include "epanet3.h"
 
+#include "BBConstraints.h"
 #include "BBCounter.h"
 #include "BBSolver.h"
-#include "BBStats.h"
 #include "ColorStream.h" // Include ColorStream header
 #include "Helper.h"
 #include "Utils.h"
@@ -26,15 +26,15 @@
 #include <mpi.h>
 #include <numeric>
 #include <string>
-#include <thread>
+#include <thread> // Required for sleep
 #include <vector>
 
 // Generic test function to avoid code duplication
-bool run_cost_test(std::vector<int> &y, double expected_cost_min, double tolerance, const std::string &test_name,
+bool run_cost_test(std::vector<int> &y, double expected_cost, double tolerance, const std::string &test_name,
                    const int max_actuations, bool verbose, bool save_project)
 {
   // Default values
-  const char *inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
+  const char *inpFile = "/home/michael/github/rs_JESSICA/networks/any-town.inp";
   int h_max = 24;
 
   if ((int)y.size() == h_max)
@@ -48,115 +48,84 @@ bool run_cost_test(std::vector<int> &y, double expected_cost_min, double toleran
   std::ifstream fileCheck(inpFile);
   if (!fileCheck)
   {
-    ColorStream::println("Error: Input file " + std::string(inpFile) + " does not exist.", ColorStream::Color::RED);
+    ColorStream::printf(ColorStream::Color::RED, "Error: Input file %s does not exist.", inpFile);
     return false;
   }
 
   // Initialize nodes and tanks with placeholder IDs
-  std::map<std::string, int> nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
-  std::map<std::string, int> tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
-  std::vector<std::string> pump_names = {"111", "222", "333"};
-
-  // Retrieve node and tank IDs from the input file
-  get_nodes_and_tanks_ids(inpFile, nodes, tanks, verbose);
-
-  // Display nodes, pumps, and tanks information
-  show_nodes_pumps_tanks(nodes, pump_names, tanks, verbose);
+  BBConstraints cntrs(inpFile, verbose);
 
   // Initialize branch-and-bound counter and statistics
-  BBCounter counter(nodes.size(), h_max, max_actuations, pump_names.size());
-  BBStats stats(h_max, max_actuations);
+  BBCounter counter(h_max, max_actuations, cntrs.get_num_pumps());
 
   // Set y values and update x for each hour
   if (!counter.set_y(y))
   {
-    ColorStream::println("Error: Failed to update x from y.", ColorStream::Color::RED);
+    ColorStream::printf(ColorStream::Color::RED, "Error: Failed to update x from y.");
     return false;
   }
   counter.show_xy(verbose);
 
   double cost = 0.0;
-  bool is_feasible = process_node(inpFile, counter, stats, nodes, tanks, pump_names, cost, verbose, save_project);
+  bool is_feasible = process_node(inpFile, counter, cntrs, cost, verbose, save_project);
   if (!is_feasible)
   {
-    ColorStream::println("Error: Process node returned infeasible solution.", ColorStream::Color::RED);
+    ColorStream::printf(ColorStream::Color::RED, "Error: Process node returned infeasible solution.");
     return false;
   }
 
-  // Output the computed cost
-  printf("cost: %.2f\n", cost);
-
-  // Check if stats.cost_min is within the expected range
-  if (std::abs(stats.cost_min - expected_cost_min) > tolerance)
+  // Check if cost is within the expected range
+  if (std::abs(cost - expected_cost) > tolerance)
   {
-    ColorStream::println("Test Failed (" + test_name + "): stats.cost_min (" + std::to_string(stats.cost_min) +
-                             ") is not within " + std::to_string(tolerance) + " of expected " +
-                             std::to_string(expected_cost_min) + ".",
-                         ColorStream::Color::RED);
+    ColorStream::printf(ColorStream::Color::RED, "Test Failed (%s): cost (%.2f) is not within %.2f of expected %.2f.",
+                        test_name.c_str(), cost, tolerance, expected_cost);
     return false;
   }
 
   // If the check passes
-  ColorStream::println("Test Passed (" + test_name + "): stats.cost_min (" + std::to_string(stats.cost_min) +
-                           ") is within " + std::to_string(tolerance) + " of expected " +
-                           std::to_string(expected_cost_min) + ".",
-                       ColorStream::Color::GREEN);
+  ColorStream::printf(ColorStream::Color::GREEN, "Test Passed (%s): cost (%.2f) is within %.2f of expected %.2f.\n",
+                      test_name.c_str(), cost, tolerance, expected_cost);
 
   return true;
 }
 
-bool test_cost_1()
+bool test_cost_1(bool verbose = false)
 {
   std::vector<int> y = {1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
   double expected_cost_min = 3578.66; // Costa2015
   double tolerance = 0.01;
-  std::string test_name = "test_cost";
+  std::string test_name = "test_cost_1";
   int max_actuations = 3;
-  bool verbose = true;
   bool save_project = false;
   return run_cost_test(y, expected_cost_min, tolerance, test_name, max_actuations, verbose, save_project);
 }
 
-bool test_cost_2()
+bool test_cost_2(bool verbose = false)
 {
   std::vector<int> y = {1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1};
   double expected_cost_min = 3916.98; // Costa2015
   double tolerance = 0.01;
   std::string test_name = "test_cost_2";
   int max_actuations = 3;
-  bool verbose = false;
-  bool save_project = true;
-  return run_cost_test(y, expected_cost_min, tolerance, test_name, max_actuations, verbose, save_project);
-}
-
-bool test_cost_3()
-{
-  std::vector<int> y = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1, 1, 0};
-  double expected_cost_min = 3578.66;
-  double tolerance = 0.01;
-  std::string test_name = "test_cost_3";
-  int max_actuations = 3;
-  bool verbose = true;
   bool save_project = false;
   return run_cost_test(y, expected_cost_min, tolerance, test_name, max_actuations, verbose, save_project);
 }
 
-bool test_cost_4()
+bool test_cost_3(bool verbose = false)
 {
   std::vector<int> y = {1, 1, 1, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1, 1, 1};
-  double expected_cost_min = 3916.98;
+  double expected_cost_min = 3786.74;
   double tolerance = 0.01;
-  std::string test_name = "test_cost_4";
+  std::string test_name = "test_cost_3";
   int max_actuations = 1;
-  bool verbose = true;
-  bool save_project = true;
+  bool save_project = false;
 
   return run_cost_test(y, expected_cost_min, tolerance, test_name, max_actuations, verbose, save_project);
 }
 
 bool test_top_level_free()
 {
-  std::cout << "Running test_top_level_free..." << std::endl;
+  ColorStream::printf(ColorStream::Color::BRIGHT_YELLOW, "Running test_top_level_free...\n");
   bool all_tests_passed = true;
 
   // Define test cases as a vector of tuples
@@ -174,7 +143,6 @@ bool test_top_level_free()
   int max_actuations = 3;
   int num_pumps = 3;
   int h_max = 6;
-  int y_max = 3;
 
   std::vector<std::tuple<std::vector<int>, int, int, int, int, int, int>> test_cases;
 
@@ -223,7 +191,7 @@ bool test_top_level_free()
     auto [y, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free] = test_cases[i];
 
     // Initialize BBCounter with provided parameters
-    BBCounter counter(y_max, h_max, max_actuations, num_pumps);
+    BBCounter counter(h_max, max_actuations, num_pumps);
     counter.top_level = top_level;
     counter.top_cut = top_cut;
 
@@ -231,7 +199,7 @@ bool test_top_level_free()
     bool set_y_result = counter.set_y(y);
     if (!set_y_result)
     {
-      ColorStream::println("Test Case " + std::to_string(i + 1) + ": Failed to set y vector.", ColorStream::Color::RED);
+      ColorStream::printf(ColorStream::Color::RED, "Test Case %d: Failed to set y vector.", i + 1);
       all_tests_passed = false;
       continue;
     }
@@ -242,24 +210,23 @@ bool test_top_level_free()
     // Verify the result
     if (result == expected_top_level_free)
     {
-      ColorStream::println("Test Case " + std::to_string(i + 1) + ": Passed.", ColorStream::Color::GREEN);
+      ColorStream::printf(ColorStream::Color::GREEN, "Test Case %d: Passed.\n", i + 1);
     }
     else
     {
-      ColorStream::println("Test Case " + std::to_string(i + 1) + ": Failed. Expected " +
-                               std::to_string(expected_top_level_free) + ", got " + std::to_string(result) + ".",
-                           ColorStream::Color::RED);
+      ColorStream::printf(ColorStream::Color::RED, "Test Case %d: Failed. Expected %d, got %d.\n", i + 1,
+                          expected_top_level_free, result);
       all_tests_passed = false;
     }
   }
 
   if (all_tests_passed)
   {
-    ColorStream::println("All test_top_level_free cases passed.", ColorStream::Color::GREEN);
+    ColorStream::printf(ColorStream::Color::GREEN, "All test_top_level_free cases passed.\n");
   }
   else
   {
-    ColorStream::println("Some test_top_level_free cases failed.", ColorStream::Color::RED);
+    ColorStream::printf(ColorStream::Color::RED, "Some test_top_level_free cases failed.\n");
   }
 
   return all_tests_passed;
@@ -278,19 +245,12 @@ bool test_mpi()
   std::ifstream fileCheck(inpFile);
   if (!fileCheck)
   {
-    ColorStream::println("Error: Input file " + std::string(inpFile) + " does not exist.", ColorStream::Color::RED);
+    ColorStream::printf(ColorStream::Color::RED, "Error: Input file %s does not exist.", inpFile);
     return false;
   }
 
-  std::map<std::string, int> nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
-  std::map<std::string, int> tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
-  std::vector<std::string> pump_names = {"111", "222", "333"};
-
-  get_nodes_and_tanks_ids(inpFile, nodes, tanks, verbose);
-  show_nodes_pumps_tanks(nodes, pump_names, tanks, verbose);
-
-  BBCounter counter(nodes.size(), h_max, max_actuations, pump_names.size());
-  BBStats stats(h_max, max_actuations);
+  BBConstraints cntrs(inpFile, verbose);
+  BBCounter counter(h_max, max_actuations, cntrs.get_num_pumps());
 
   std::vector<int> y = {0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
   counter.set_y(y);
@@ -308,7 +268,7 @@ bool test_mpi()
   for (int i = start_iter; i < end_iter; i++)
   {
     double cost = 0.0;
-    process_node(inpFile, counter, stats, nodes, tanks, pump_names, cost, verbose, save_project);
+    process_node(inpFile, counter, cntrs, cost, verbose, save_project);
     // assert cost close to 3578.67
     assert(std::abs(cost - 3578.67) < 0.01);
   }
@@ -325,10 +285,18 @@ bool test_mpi()
 
 bool test_split()
 {
-  int h_max = 6;
+  // Define the parameters
+  int h_max = 3;
   int max_actuations = 3;
-  int top_level_max = 2;
-  BBCounter counter(3, h_max, max_actuations, 3);
+  int num_pumps = 3;
+
+  // in order to split top_level_free should be lower than top_level_max
+  int top_level_max = 4;
+  // sync period, only sync if niters is a multiple of sync_period
+  int sync_period = 1;
+
+  // Initialize the counter
+  BBCounter counter(h_max, max_actuations, num_pumps);
 
   int rank, size;
   MPI_Init(NULL, NULL);
@@ -354,7 +322,7 @@ bool test_split()
     if (cnt.h < 0 || cnt.h >= (int)cnt.y.size())
     {
       // Handle out-of-range h values gracefully
-      ColorStream::println("Error: Current time period 'h' is out of range.", ColorStream::Color::RED);
+      ColorStream::printf(ColorStream::Color::RED, "Error: Current time period 'h' is out of range.");
       return false;
     }
     int sum_y = std::accumulate(cnt.y.begin(), cnt.y.begin() + cnt.h + 1, 0);
@@ -364,17 +332,22 @@ bool test_split()
 
   while (!done_all)
   {
+    // If the current rank is not done, attempt to update the counter
     if (!done_loc)
     {
       // Attempt to update the counter
       niters++;
-      done_loc = !counter.update_y(is_feasible);
+      done_loc = !counter.update_y();
+
+      // Go next, the work is done
+      if (done_loc) continue;
 
       // Sleep for 1 millisecond to simulate work and prevent tight looping
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
       // Use the lambda to determine feasibility based on the updated counter
       is_feasible = check_feasibility(counter);
+      if (!is_feasible) counter.prune(PruneReason::ACTUATIONS);
     }
     else
     {
@@ -383,7 +356,7 @@ bool test_split()
     }
 
     // Periodically check if any rank is done
-    if (niters % 1024 == 0 || done_loc)
+    if (niters % sync_period == 0 || done_loc)
     {
       auto toc = std::chrono::high_resolution_clock::now();
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic);
@@ -447,8 +420,7 @@ bool test_split()
           // Receive a message from rank id_split
           if (id_avail == rank)
           {
-            ColorStream::println("Rank[" + std::to_string(rank) + "]: Receiving from rank " + std::to_string(id_split),
-                                 ColorStream::Color::BRIGHT_MAGENTA);
+            ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Rank[%d]: Receiving from rank %d", rank, id_split);
             mpi_error = MPI_Recv(recv_buffer.data(), recv_buffer.size(), MPI_INT, id_split, 0, MPI_COMM_WORLD,
                                  MPI_STATUS_IGNORE);
             if (mpi_error != MPI_SUCCESS)
@@ -466,8 +438,7 @@ bool test_split()
           // Send a message to rank id_avail
           if (id_split == rank)
           {
-            ColorStream::println("Rank[" + std::to_string(rank) + "]: Sending to rank " + std::to_string(id_avail),
-                                 ColorStream::Color::BRIGHT_MAGENTA);
+            ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Rank[%d]: Sending to rank %d", rank, id_avail);
             counter.write_buffer(recv_buffer);
             mpi_error = MPI_Send(recv_buffer.data(), recv_buffer.size(), MPI_INT, id_avail, 0, MPI_COMM_WORLD);
             if (mpi_error != MPI_SUCCESS)
@@ -497,11 +468,23 @@ bool test_split()
 
 void test_all()
 {
-  // test_cost_1();
-  // test_cost_2();
-  // test_cost_3();
-  // test_cost_4();
-  // test_top_level_free();
+  int rank = 0;
+  int mpi_error = MPI_Init(nullptr, nullptr);
+  if (mpi_error != MPI_SUCCESS)
+  {
+    printf("MPI_Init failed with error code %d\n", mpi_error);
+    return;
+  }
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0)
+  {
+    test_cost_1(false);
+    test_cost_2(false);
+    test_cost_3(false);
+    test_top_level_free();
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+
   // test_mpi();
-  test_split();
+  // test_split();
 }

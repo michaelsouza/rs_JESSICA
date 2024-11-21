@@ -12,7 +12,7 @@
 #include <sstream>
 
 // Constructor
-BBConstraints::BBConstraints(std::string inpFile, bool verbose)
+BBConstraints::BBConstraints(std::string inpFile) : inpFile(inpFile)
 {
   // Initialize nodes and tanks with placeholder IDs
   this->nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
@@ -21,10 +21,7 @@ BBConstraints::BBConstraints(std::string inpFile, bool verbose)
   this->cost_max = std::numeric_limits<double>::max();
 
   // Retrieve node and tank IDs from the input file
-  get_nodes_and_tanks_ids(inpFile, verbose);
-
-  // Display nodes, pumps, and tanks information
-  show_nodes_pumps_and_tanks(verbose);
+  get_nodes_and_tanks_ids(inpFile);
 }
 
 // Destructor
@@ -54,7 +51,7 @@ void BBConstraints::show_nodes_pumps_and_tanks(bool verbose)
   }
 }
 
-void BBConstraints::get_nodes_and_tanks_ids(std::string inpFile, bool verbose)
+void BBConstraints::get_nodes_and_tanks_ids(std::string inpFile)
 {
   EN_Project p = EN_createProject();
   CHK(EN_loadProject(const_cast<char *>(inpFile.c_str()), p), "Load project");
@@ -170,11 +167,8 @@ void show_pattern(Pattern *p, const std::string &name)
 }
 
 // Function to update pump speed patterns based on counter
-void BBConstraints::update_pumps(BBCounter &counter, bool verbose)
+void BBConstraints::update_pumps(const int h, const std::vector<int> &x, bool verbose)
 {
-  const std::vector<int> &x = counter.x;
-  const int h = counter.h;
-
   size_t num_pumps = pumps.size();
   if (verbose)
   {
@@ -191,7 +185,7 @@ void BBConstraints::update_pumps(BBCounter &counter, bool verbose)
         std::cerr << "Error: Pump " << pump_id << " does not have a FixedPattern speed pattern." << std::endl;
         continue;
       }
-      const int *xi = &x[counter.num_pumps * i];
+      const int *xi = &x[num_pumps * i];
       double factor_new = static_cast<double>(xi[pump_id]);
       const int factor_id = i - 1; // pattern index is 0-based
       double factor_old = pattern->factor(factor_id);
@@ -205,7 +199,7 @@ void BBConstraints::update_pumps(BBCounter &counter, bool verbose)
 }
 
 // Function to retrieve pump objects from the network
-void BBConstraints::set_pumps(Network *nw, BBCounter &counter, bool verbose)
+void BBConstraints::set_pumps(Network *nw, const int h, const std::vector<int> &x, bool verbose)
 {
   // Retrieve pump objects from the network
   for (const std::string &name : pump_names)
@@ -220,7 +214,7 @@ void BBConstraints::set_pumps(Network *nw, BBCounter &counter, bool verbose)
   }
 
   // Update pump speed patterns based on counter
-  update_pumps(counter, verbose);
+  update_pumps(h, x, verbose);
 }
 
 // Function to check tank levels

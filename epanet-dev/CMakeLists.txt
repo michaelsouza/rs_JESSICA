@@ -202,12 +202,10 @@ add_library(epanet3 SHARED ${epanet_lib_sources} ${epanet_lib_headers})
 set(run_epanet3_sources
     src/CLI/main.cpp
     src/CLI/Utils.cpp
-    src/CLI/BBCounter.cpp
+    src/CLI/BBConstraints.cpp
+    src/CLI/BBSolver.cpp
     src/CLI/BBStats.cpp
     src/CLI/ColorStream.cpp
-    src/CLI/Helper.cpp
-    src/CLI/BBSolver.cpp
-    src/CLI/BBConstraints.cpp
 )
 
 # Include Directories for CLI (if separate headers are used)

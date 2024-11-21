@@ -7,10 +7,8 @@
 #include "epanet3.h"
 
 #include "BBConstraints.h"
-#include "BBCounter.h"
 #include "BBSolver.h"
 #include "ColorStream.h" // Include ColorStream header
-#include "Helper.h"
 #include "Utils.h"
 
 #include <algorithm>
@@ -40,7 +38,7 @@ bool run_cost_test(std::vector<int> &y, double expected_cost, double tolerance, 
   if ((int)y.size() == h_max)
   {
     // Insert a 0 at the beginning of y, because the
-    // counter expects the first element to be 0
+    // solver expects the first element to be 0
     y.insert(y.begin(), 0);
   }
 
@@ -52,22 +50,19 @@ bool run_cost_test(std::vector<int> &y, double expected_cost, double tolerance, 
     return false;
   }
 
-  // Initialize nodes and tanks with placeholder IDs
-  BBConstraints cntrs(inpFile, verbose);
-
-  // Initialize branch-and-bound counter and statistics
-  BBCounter counter(h_max, max_actuations, cntrs.get_num_pumps());
+  // Initialize branch-and-bound solver and statistics
+  BBSolver solver(inpFile, h_max, max_actuations);
 
   // Set y values and update x for each hour
-  if (!counter.set_y(y))
+  if (!solver.set_y(y))
   {
     ColorStream::printf(ColorStream::Color::RED, "Error: Failed to update x from y.");
     return false;
   }
-  counter.show_xy(verbose);
+  solver.show_xy(verbose);
 
   double cost = 0.0;
-  bool is_feasible = process_node(inpFile, counter, cntrs, cost, verbose, save_project);
+  bool is_feasible = solver.process_node(cost, verbose, save_project);
   if (!is_feasible)
   {
     ColorStream::printf(ColorStream::Color::RED, "Error: Process node returned infeasible solution.");
@@ -128,6 +123,8 @@ bool test_top_level_free()
   ColorStream::printf(ColorStream::Color::BRIGHT_YELLOW, "Running test_top_level_free...\n");
   bool all_tests_passed = true;
 
+  const char *inpFile = "/home/michael/github/rs_JESSICA/networks/any-town.inp";
+
   // Define test cases as a vector of tuples
   // Each tuple contains:
   // - y vector
@@ -141,62 +138,54 @@ bool test_top_level_free()
   int top_level = 1;
   int expected_top_level_free = 1;
   int max_actuations = 3;
-  int num_pumps = 3;
   int h_max = 6;
 
-  std::vector<std::tuple<std::vector<int>, int, int, int, int, int, int>> test_cases;
+  std::vector<std::tuple<std::vector<int>, int, int, int, int, int>> test_cases;
 
   // Test Case 1:
-  test_cases.push_back(
-      {{0, 1, 2, 1, 2, 1, 1}, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free});
+  test_cases.push_back({{0, 1, 2, 1, 2, 1, 1}, h_max, max_actuations, top_level, top_cut, expected_top_level_free});
 
   // Test Case 2:
   expected_top_level_free = 3;
-  test_cases.push_back(
-      {{0, 3, 3, 1, 2, 2, 3}, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free});
+  test_cases.push_back({{0, 3, 3, 1, 2, 2, 3}, h_max, max_actuations, top_level, top_cut, expected_top_level_free});
 
   // Test Case 3:
   expected_top_level_free = 6;
-  test_cases.push_back(
-      {{0, 3, 3, 3, 3, 3, 2}, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free});
+  test_cases.push_back({{0, 3, 3, 3, 3, 3, 2}, h_max, max_actuations, top_level, top_cut, expected_top_level_free});
 
   // Test Case 4:
   expected_top_level_free = 6;
-  test_cases.push_back(
-      {{0, 3, 3, 3, 3, 3, 3}, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free});
+  test_cases.push_back({{0, 3, 3, 3, 3, 3, 3}, h_max, max_actuations, top_level, top_cut, expected_top_level_free});
 
   // Test Case 5:
   top_level = 3;
   expected_top_level_free = 3;
-  test_cases.push_back(
-      {{0, 0, 0, 2, 1, 0, 0}, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free});
+  test_cases.push_back({{0, 0, 0, 2, 1, 0, 0}, h_max, max_actuations, top_level, top_cut, expected_top_level_free});
 
   // Test Case 6:
   top_level = 3;
   top_cut = 2;
   expected_top_level_free = 4;
-  test_cases.push_back(
-      {{0, 0, 0, 2, 1, 0, 0}, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free});
+  test_cases.push_back({{0, 0, 0, 2, 1, 0, 0}, h_max, max_actuations, top_level, top_cut, expected_top_level_free});
 
   // Test Case 7:
   top_level = 3;
   top_cut = 2;
   expected_top_level_free = 5;
-  test_cases.push_back(
-      {{0, 0, 0, 2, 3, 0, 0}, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free});
+  test_cases.push_back({{0, 0, 0, 2, 3, 0, 0}, h_max, max_actuations, top_level, top_cut, expected_top_level_free});
 
   // Iterate through each test case
   for (size_t i = 0; i < test_cases.size(); ++i)
   {
-    auto [y, h_max, max_actuations, num_pumps, top_level, top_cut, expected_top_level_free] = test_cases[i];
+    auto [y, h_max, max_actuations, top_level, top_cut, expected_top_level_free] = test_cases[i];
 
-    // Initialize BBCounter with provided parameters
-    BBCounter counter(h_max, max_actuations, num_pumps);
-    counter.top_level = top_level;
-    counter.top_cut = top_cut;
+    // Initialize BBsolver with provided parameters
+    BBSolver solver(inpFile, h_max, max_actuations);
+    solver.top_level = top_level;
+    solver.top_cut = top_cut;
 
     // Set the y vector
-    bool set_y_result = counter.set_y(y);
+    bool set_y_result = solver.set_y(y);
     if (!set_y_result)
     {
       ColorStream::printf(ColorStream::Color::RED, "Test Case %d: Failed to set y vector.", i + 1);
@@ -205,7 +194,7 @@ bool test_top_level_free()
     }
 
     // Call top_level_free
-    int result = counter.get_free_level();
+    int result = solver.get_free_level();
 
     // Verify the result
     if (result == expected_top_level_free)
@@ -232,12 +221,11 @@ bool test_top_level_free()
   return all_tests_passed;
 }
 
-bool test_mpi()
+bool test_mpi(bool verbose = false)
 {
   printf("Testing MPI...\n");
   const char *inpFile = "/home/michael/github/rs_JESSICA/networks/any-town.inp";
   int h_max = 24;
-  bool verbose = false;
   bool save_project = false;
   int max_actuations = 3;
 
@@ -249,37 +237,49 @@ bool test_mpi()
     return false;
   }
 
-  BBConstraints cntrs(inpFile, verbose);
-  BBCounter counter(h_max, max_actuations, cntrs.get_num_pumps());
+  BBConstraints cntrs(inpFile);
+  BBSolver solver(inpFile, h_max, max_actuations);
 
-  std::vector<int> y = {0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
-  counter.set_y(y);
+  // From Costa2015
+  std::vector<int> y = {1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
+
+  // Insert a 0 at the beginning of y, because the
+  // counter expects the first element to be 0
+  y.insert(y.begin(), 0);
+  solver.set_y(y);
 
   auto start = std::chrono::high_resolution_clock::now();
   int rank, size;
-  MPI_Init(NULL, NULL);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   int iterations_per_rank = 256 / size;
   int start_iter = rank * iterations_per_rank;
   int end_iter = (rank == size - 1) ? 256 : (rank + 1) * iterations_per_rank;
-
+  const double expected_cost = 3578.67;
   for (int i = start_iter; i < end_iter; i++)
   {
     double cost = 0.0;
-    process_node(inpFile, counter, cntrs, cost, verbose, save_project);
+    bool is_feasible = solver.process_node(cost, verbose, save_project);
+    if (!is_feasible)
+    {
+      ColorStream::printf(ColorStream::Color::RED, "Test Failed: cost=%.2f is not feasible", cost);
+      return false;
+    }
     // assert cost close to 3578.67
-    assert(std::abs(cost - 3578.67) < 0.01);
+    if (std::abs(cost - expected_cost) >= 0.01)
+    {
+      ColorStream::printf(ColorStream::Color::RED, "Test Failed: cost=%.2f if not close to expected_cost=%.2f", cost,
+                          expected_cost);
+      return false;
+    }
   }
-
-  printf("Rank %d finished processing iterations %d to %d\n", rank, start_iter, end_iter - 1);
-
-  MPI_Finalize();
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  printf("Time taken: %ld ms\n", duration.count());
-
+  if (verbose)
+  {
+    printf("Time taken: %ld ms\n", duration.count());
+  }
   return true;
 }
 
@@ -288,15 +288,15 @@ bool test_split()
   // Define the parameters
   int h_max = 3;
   int max_actuations = 3;
-  int num_pumps = 3;
 
   // in order to split top_level_free should be lower than top_level_max
   int top_level_max = 4;
   // sync period, only sync if niters is a multiple of sync_period
   int sync_period = 1;
 
-  // Initialize the counter
-  BBCounter counter(h_max, max_actuations, num_pumps);
+  // Initialize the solver
+  const char *inpFile = "/home/michael/github/rs_JESSICA/networks/any-town.inp";
+  BBSolver solver(inpFile, h_max, max_actuations);
 
   int rank, size;
   MPI_Init(NULL, NULL);
@@ -309,14 +309,14 @@ bool test_split()
   std::vector<int> done(size, 0);
   int is_feasible = 1; // Initialize as true
   int mpi_error;
-  std::vector<int> recv_buffer(6 + counter.y.size() + counter.x.size());
+  std::vector<int> recv_buffer(6 + solver.y.size() + solver.x.size());
 
   int niters = 0;
   auto tic = std::chrono::high_resolution_clock::now();
   std::vector<int> top_level_free(size, -1);
 
   // Define the lambda function to check feasibility
-  auto check_feasibility = [&](const BBCounter &cnt) -> bool
+  auto check_feasibility = [&](const BBSolver &cnt) -> bool
   {
     // Calculate the sum of the y vector up to the current time period (h)
     if (cnt.h < 0 || cnt.h >= (int)cnt.y.size())
@@ -332,12 +332,12 @@ bool test_split()
 
   while (!done_all)
   {
-    // If the current rank is not done, attempt to update the counter
+    // If the current rank is not done, attempt to update the solver
     if (!done_loc)
     {
-      // Attempt to update the counter
+      // Attempt to update the solver
       niters++;
-      done_loc = !counter.update_y();
+      done_loc = !solver.update_y();
 
       // Go next, the work is done
       if (done_loc) continue;
@@ -345,9 +345,9 @@ bool test_split()
       // Sleep for 1 millisecond to simulate work and prevent tight looping
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-      // Use the lambda to determine feasibility based on the updated counter
-      is_feasible = check_feasibility(counter);
-      if (!is_feasible) counter.prune(PruneReason::ACTUATIONS);
+      // Use the lambda to determine feasibility based on the updated solver
+      is_feasible = check_feasibility(solver);
+      if (!is_feasible) solver.prune(PruneReason::ACTUATIONS);
     }
     else
     {
@@ -378,7 +378,7 @@ bool test_split()
       }
 
       // Update top_level_free with data from all ranks
-      int top_level_free_loc = counter.get_free_level();
+      int top_level_free_loc = solver.get_free_level();
       mpi_error = MPI_Allgather(&top_level_free_loc, 1, MPI_INT, top_level_free.data(), 1, MPI_INT, MPI_COMM_WORLD);
       if (mpi_error != MPI_SUCCESS)
       {
@@ -428,10 +428,10 @@ bool test_split()
               printf("Rank[%d]: MPI_Recv failed with error code %d.\n", rank, mpi_error);
               MPI_Abort(MPI_COMM_WORLD, mpi_error);
             }
-            // Set the current counter
+            // Set the current solver
             done_loc = 0;
-            counter.read_buffer(recv_buffer);
-            counter.show();
+            solver.read_buffer(recv_buffer);
+            solver.show();
             is_feasible = 1;
           }
 
@@ -439,7 +439,7 @@ bool test_split()
           if (id_split == rank)
           {
             ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Rank[%d]: Sending to rank %d", rank, id_avail);
-            counter.write_buffer(recv_buffer);
+            solver.write_buffer(recv_buffer);
             mpi_error = MPI_Send(recv_buffer.data(), recv_buffer.size(), MPI_INT, id_avail, 0, MPI_COMM_WORLD);
             if (mpi_error != MPI_SUCCESS)
             {
@@ -476,6 +476,7 @@ void test_all()
     return;
   }
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  // Single rank
   if (rank == 0)
   {
     test_cost_1(false);
@@ -485,6 +486,6 @@ void test_all()
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  // test_mpi();
+  test_mpi();
   // test_split();
 }

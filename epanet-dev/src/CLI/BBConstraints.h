@@ -1,8 +1,6 @@
 // src/CLI/BBConstraints.h
 #pragma once
 
-#include "BBCounter.h"
-
 #include "Core/network.h"
 #include "Core/project.h"
 #include "Elements/pump.h"
@@ -15,7 +13,7 @@ using Epanet::Project;
 class BBConstraints
 {
 public:
-  BBConstraints(std::string inpFile, bool verbose);
+  BBConstraints(std::string inpFile);
   ~BBConstraints();
 
   // Function to check node pressures
@@ -30,7 +28,7 @@ public:
   // Function to check the cost
   bool check_cost(const double cost, bool verbose = false);
 
-  void get_nodes_and_tanks_ids(std::string inpFile, bool verbose = false);
+  void get_nodes_and_tanks_ids(std::string inpFile);
 
   // Function to calculate the total cost of pump operations
   double calc_cost() const;
@@ -48,11 +46,11 @@ public:
     return (int)pump_names.size();
   }
 
-  void set_project(EN_Project p, BBCounter &counter, bool verbose)
+  void set_project(EN_Project p, const int h, const std::vector<int> &x, bool verbose)
   {
     this->p = p;
     Network *nw = static_cast<Project *>(p)->getNetwork();
-    set_pumps(nw, counter, verbose);
+    set_pumps(nw, h, x, verbose);
   }
 
   std::vector<std::string> pump_names;
@@ -61,6 +59,7 @@ public:
   std::vector<Pump *> pumps;
   double cost_max;
   EN_Project p;
+  std::string inpFile;
 
 private:
   // Helper functions for displaying status
@@ -68,6 +67,6 @@ private:
   void show_levels(bool is_feasible, const std::string &tank_name, double level, double level_min, double level_max);
   void show_stability(bool is_feasible, const std::string &tank_name, double level, double initial_level);
   void show_nodes_pumps_and_tanks(bool verbose);
-  void set_pumps(Network *nw, BBCounter &counter, bool verbose = false);
-  void update_pumps(BBCounter &counter, bool verbose);
+  void set_pumps(Network *nw, const int h, const std::vector<int> &x, bool verbose = false);
+  void update_pumps(const int h, const std::vector<int> &x, bool verbose);
 };

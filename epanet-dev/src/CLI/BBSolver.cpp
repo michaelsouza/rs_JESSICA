@@ -230,7 +230,7 @@ void BBSolver::show() const
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Print Header with MPI rank
-  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "=== BBCounter Current State (Rank %d) ===", rank);
+  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "=== BBSolver (Rank %d) ===\n", rank);
 
   // Display Current Time Period
   ColorStream::printf(ColorStream::Color::YELLOW, "Current Time Period (h): ");
@@ -244,35 +244,31 @@ void BBSolver::show() const
   }
 
   // Display x vector for current h
-  ColorStream::printf(ColorStream::Color::BRIGHT_BLUE, "Pump States (x) at Current Time Period:");
+  ColorStream::printf(ColorStream::Color::BRIGHT_BLUE, "Pump States (x) at Current Time Period:\n");
   const int *x_current = &this->x[this->num_pumps * this->h];
   for (int j = 0; j < this->num_pumps; ++j)
   {
     ColorStream::printf(ColorStream::Color::YELLOW, "  Pump %d: ", j + 1);
     if (x_current[j] == 1)
     {
-      ColorStream::printf(ColorStream::Color::GREEN, "Active");
+      ColorStream::printf(ColorStream::Color::GREEN, "Active\n");
     }
     else
     {
-      ColorStream::printf(ColorStream::Color::RED, "Inactive");
+      ColorStream::printf(ColorStream::Color::RED, "Inactive\n");
     }
   }
 
   // Display Top Level and Top Cut
-  ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Top Level: ");
-  std::cout << this->top_level << std::endl;
-  ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Top Cut: ");
-  std::cout << this->top_cut << std::endl;
-
-  // Optional: Display Additional Metrics or Information
-  // For example, cumulative actuations, remaining actuations, etc.
-  // ...
+  ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Top Level: %d\n", this->top_level);
+  ColorStream::printf(ColorStream::Color::BRIGHT_MAGENTA, "Top Cut: %d\n", this->top_cut);
 
   // Print Footer
-  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "================================");
+  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "================================\n");
 
-  this->stats.summary();
+  this->stats.show();
+
+  this->cntrs.show();
 }
 
 void BBSolver::write_buffer(std::vector<int> &recv_buffer) const
@@ -356,20 +352,21 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   int t = 0, dt = 0, t_max = 3600 * this->h;
 
   EN_Project p = EN_createProject();
-  Project *prj = static_cast<Project *>(p);
 
   CHK(EN_loadProject(this->inpFile.c_str(), p), "Load project");
   CHK(EN_initSolver(EN_INITFLOW, p), "Initialize solver");
 
   // Set the project and constraints
-  set_project(p, verbose);
+  update_pumps(p, verbose);
+
+  if (verbose) show();
 
   do
   {
     // Run the solver
     CHK(EN_runSolver(&t, p), "Run solver");
 
-    if (verbose) printf("\nSimulation: t_max=%d, t: %d, dt: %d\n", t_max, t, dt);
+    if (verbose) printf("\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
 
     // Check node pressures
     is_feasible = cntrs.check_pressures(verbose);
@@ -413,10 +410,12 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
 
   if (save_project)
   {
+    // Create a file with timestamp based name
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
     ss << "output_" << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S") << ".inp";
+    Project *prj = static_cast<Project *>(p);
     prj->save(ss.str().c_str());
     ColorStream::printf(ColorStream::Color::BRIGHT_GREEN, "Project saved to: %s\n", ss.str().c_str());
   }
@@ -427,7 +426,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   return is_feasible;
 }
 
-void BBSolver::set_project(EN_Project p, bool verbose)
+void BBSolver::update_pumps(EN_Project p, bool verbose)
 {
-  cntrs.set_project(p, this->h, this->x, verbose);
+  cntrs.update_pumps(p, this->h, this->x, verbose);
 }

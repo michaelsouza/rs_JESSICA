@@ -9,8 +9,18 @@ BBStats::BBStats(int h_max, int max_actuations)
 {
   this->cost_min = std::numeric_limits<double>::infinity();
   this->y_min = std::vector<int>(h_max + 1, 0);
-  this->prunings = std::vector<std::map<PruneReason, int>>(h_max + 1);
   this->feasible_counter = std::vector<int>(h_max + 1, 0);
+  this->prunings = std::vector<std::map<PruneReason, int>>(h_max + 1);
+  // Initialize prunings
+  std::vector<PruneReason> reasons = {PruneReason::ACTUATIONS, PruneReason::COST, PruneReason::PRESSURES,
+                                      PruneReason::LEVELS, PruneReason::STABILITY};
+  for (int h = 0; h <= h_max; ++h)
+  {
+    for (auto &reason : reasons)
+    {
+      this->prunings[h][reason] = 0;
+    }
+  }
 }
 
 void BBStats::record_pruning(PruneReason reason, int h)
@@ -23,23 +33,21 @@ void BBStats::record_feasible(int h)
   this->feasible_counter[h]++;
 }
 
-void BBStats::summary() const
+void BBStats::show() const
 {
   // Get MPI rank
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Header with rank info
-  ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "Branch and Bound Statistics (Rank %d)", rank);
-  ColorStream::printf(ColorStream::Color::BRIGHT_WHITE,
-                      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
-                      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
-                      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
-                      ColorStream::Color::BRIGHT_WHITE);
+  ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "Statistics (Rank %d)\n", rank);
+  for (int i = 0; i < 10; i++)
+    ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "\u2550");
+  ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "\n");
 
   // Best solution
   ColorStream::printf(ColorStream::Color::WHITE, "Best cost: ");
-  ColorStream::printf(ColorStream::Color::BRIGHT_GREEN, "%f", cost_min);
+  ColorStream::printf(ColorStream::Color::BRIGHT_GREEN, "%f\n", cost_min);
 
   // Table header
   ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "Level \u2502 ");
@@ -68,6 +76,6 @@ void BBStats::summary() const
                         actuations.c_str(), cost.c_str(), pressures.c_str(), levels.c_str(), stability.c_str());
 
     // Feasible solutions
-    ColorStream::printf(ColorStream::Color::GREEN, "%d", feasible_counter[h]);
+    ColorStream::printf(ColorStream::Color::GREEN, "%d\n", feasible_counter[h]);
   }
 }

@@ -118,7 +118,7 @@ bool test_cost_3(bool verbose = false)
   return run_cost_test(y, expected_cost_min, tolerance, test_name, max_actuations, verbose, save_project);
 }
 
-bool test_top_level_free()
+bool test_top_level_free(bool verbose = false)
 {
   ColorStream::printf(ColorStream::Color::BRIGHT_YELLOW, "Running test_top_level_free...\n");
   bool all_tests_passed = true;
@@ -199,23 +199,24 @@ bool test_top_level_free()
     // Verify the result
     if (result == expected_top_level_free)
     {
-      ColorStream::printf(ColorStream::Color::GREEN, "Test Case %d: Passed.\n", i + 1);
+      if (verbose) ColorStream::printf(ColorStream::Color::GREEN, "  Test Case %d: Passed.\n", i + 1);
     }
     else
     {
-      ColorStream::printf(ColorStream::Color::RED, "Test Case %d: Failed. Expected %d, got %d.\n", i + 1,
-                          expected_top_level_free, result);
+      if (verbose)
+        ColorStream::printf(ColorStream::Color::RED, "  Test Case %d: Failed. Expected %d, got %d.\n", i + 1,
+                            expected_top_level_free, result);
       all_tests_passed = false;
     }
   }
 
   if (all_tests_passed)
   {
-    ColorStream::printf(ColorStream::Color::GREEN, "All test_top_level_free cases passed.\n");
+    ColorStream::printf(ColorStream::Color::GREEN, "All cases passed.\n");
   }
   else
   {
-    ColorStream::printf(ColorStream::Color::RED, "Some test_top_level_free cases failed.\n");
+    ColorStream::printf(ColorStream::Color::RED, "Some cases failed.\n");
   }
 
   return all_tests_passed;
@@ -223,64 +224,76 @@ bool test_top_level_free()
 
 bool test_mpi(bool verbose = false)
 {
-  printf("Testing MPI...\n");
+  std::string test_name = "test_mpi";
+
+  // Default values
   const char *inpFile = "/home/michael/github/rs_JESSICA/networks/any-town.inp";
   int h_max = 24;
-  bool save_project = false;
   int max_actuations = 3;
+  bool save_project = false;
+  double tolerance = 0.01;
+  double expected_cost = 3578.66;
+
+  std::vector<int> y = {1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
+  // Insert a 0 at the beginning of y, because the
+  // solver expects the first element to be 0
+  y.insert(y.begin(), 0);
 
   // Check if the inpFile exists
   std::ifstream fileCheck(inpFile);
   if (!fileCheck)
   {
-    ColorStream::printf(ColorStream::Color::RED, "Error: Input file %s does not exist.", inpFile);
+    ColorStream::printf(ColorStream::Color::RED, "test_mpi: Input file %s does not exist.", inpFile);
     return false;
   }
 
-  BBConstraints cntrs(inpFile);
+  // Get MPI rank
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // Initialize branch-and-bound solver and statistics
   BBSolver solver(inpFile, h_max, max_actuations);
 
-  // From Costa2015
-  std::vector<int> y = {1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
+  if (verbose) solver.show();
 
-  // Insert a 0 at the beginning of y, because the
-  // counter expects the first element to be 0
-  y.insert(y.begin(), 0);
-  solver.set_y(y);
+  // Set y values and update x for each hour
+  if (!solver.set_y(y))
+  {
+    ColorStream::printf(ColorStream::Color::RED, "test_mpi: Failed to update x from y.");
+    return false;
+  }
+  solver.show_xy(verbose);
 
-  auto start = std::chrono::high_resolution_clock::now();
-  int rank, size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  int iterations_per_rank = 256 / size;
-  int start_iter = rank * iterations_per_rank;
-  int end_iter = (rank == size - 1) ? 256 : (rank + 1) * iterations_per_rank;
-  const double expected_cost = 3578.67;
-  for (int i = start_iter; i < end_iter; i++)
+  bool all_tests_passed = true;
+  for (int i = 0; i < 128; ++i)
   {
     double cost = 0.0;
     bool is_feasible = solver.process_node(cost, verbose, save_project);
     if (!is_feasible)
     {
-      ColorStream::printf(ColorStream::Color::RED, "Test Failed: cost=%.2f is not feasible", cost);
-      return false;
+      ColorStream::printf(ColorStream::Color::RED, "test_mpi: Process node returned infeasible solution.");
+      all_tests_passed = false;
+      break;
     }
-    // assert cost close to 3578.67
-    if (std::abs(cost - expected_cost) >= 0.01)
+
+    // Check if cost is within the expected range
+    if (std::abs(cost - expected_cost) > tolerance)
     {
-      ColorStream::printf(ColorStream::Color::RED, "Test Failed: cost=%.2f if not close to expected_cost=%.2f", cost,
-                          expected_cost);
-      return false;
+      all_tests_passed = false;
+      break;
     }
   }
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  if (verbose)
+
+  if (all_tests_passed)
   {
-    printf("Time taken: %ld ms\n", duration.count());
+    ColorStream::printf(ColorStream::Color::GREEN, "test_mpi[rank=%d]: all tests passed.\n", rank);
   }
-  return true;
+  else
+  {
+    ColorStream::printf(ColorStream::Color::RED, "test_mpi[rank=%d]: failed.\n", rank);
+  }
+
+  return all_tests_passed;
 }
 
 bool test_split()
@@ -476,16 +489,19 @@ void test_all()
     return;
   }
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
   // Single rank
   if (rank == 0)
   {
     test_cost_1(false);
     test_cost_2(false);
     test_cost_3(false);
-    test_top_level_free();
+    test_top_level_free(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  test_mpi();
+  test_mpi(false);
   // test_split();
+
+  MPI_Finalize();
 }

@@ -101,7 +101,7 @@ public:
 
   bool process_node(double &cost, bool verbose, bool save_project);
 
-  void set_project(EN_Project p, bool verbose);
+  void update_pumps(EN_Project p, bool verbose);
 
   // Public member variables
   int h;               ///< Current time period index.

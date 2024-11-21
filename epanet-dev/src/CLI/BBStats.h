@@ -23,5 +23,5 @@ public:
   std::vector<std::map<PruneReason, int>> prunings;
   std::vector<int> feasible_counter;
   std::vector<PruneReason> prune_keys;
-  void summary() const;
+  void show() const;
 };

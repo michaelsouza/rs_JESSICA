@@ -1,10 +1,13 @@
 // src/CLI/BBConstraints.h
 #pragma once
 
+#include "ColorStream.h"
+
 #include "Core/network.h"
 #include "Core/project.h"
 #include "Elements/pump.h"
 #include "epanet3.h"
+
 #include <map>
 #include <string>
 
@@ -28,7 +31,7 @@ public:
   // Function to check the cost
   bool check_cost(const double cost, bool verbose = false);
 
-  void get_nodes_and_tanks_ids(std::string inpFile);
+  void get_nodes_tanks_ids(std::string inpFile);
 
   // Function to calculate the total cost of pump operations
   double calc_cost() const;
@@ -43,20 +46,16 @@ public:
   }
   int get_num_pumps() const
   {
-    return (int)pump_names.size();
+    return (int)pumps.size();
   }
 
-  void set_project(EN_Project p, const int h, const std::vector<int> &x, bool verbose)
-  {
-    this->p = p;
-    Network *nw = static_cast<Project *>(p)->getNetwork();
-    set_pumps(nw, h, x, verbose);
-  }
+  void show() const;
 
-  std::vector<std::string> pump_names;
+  void update_pumps(EN_Project p, const int h, const std::vector<int> &x, bool verbose);
+
   std::map<std::string, int> nodes;
   std::map<std::string, int> tanks;
-  std::vector<Pump *> pumps;
+  std::map<std::string, Pump *> pumps;
   double cost_max;
   EN_Project p;
   std::string inpFile;
@@ -66,7 +65,4 @@ private:
   void show_pressures(bool is_feasible, const std::string &node_name, double pressure, double threshold);
   void show_levels(bool is_feasible, const std::string &tank_name, double level, double level_min, double level_max);
   void show_stability(bool is_feasible, const std::string &tank_name, double level, double initial_level);
-  void show_nodes_pumps_and_tanks(bool verbose);
-  void set_pumps(Network *nw, const int h, const std::vector<int> &x, bool verbose = false);
-  void update_pumps(const int h, const std::vector<int> &x, bool verbose);
 };

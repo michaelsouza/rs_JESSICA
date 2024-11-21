@@ -17,11 +17,11 @@ BBConstraints::BBConstraints(std::string inpFile) : inpFile(inpFile)
   // Initialize nodes and tanks with placeholder IDs
   this->nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
   this->tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
-  this->pump_names = {"111", "222", "333"};
+  this->pumps = {{"111", nullptr}, {"222", nullptr}, {"333", nullptr}};
   this->cost_max = std::numeric_limits<double>::max();
 
   // Retrieve node and tank IDs from the input file
-  get_nodes_and_tanks_ids(inpFile);
+  get_nodes_tanks_ids(inpFile);
 }
 
 // Destructor
@@ -30,28 +30,25 @@ BBConstraints::~BBConstraints()
   // Clean up resources if necessary
 }
 
-void BBConstraints::show_nodes_pumps_and_tanks(bool verbose)
+void BBConstraints::show() const
 {
-  if (verbose)
-  {
-    std::cout << "\nNodes: [ ";
-    for (const auto &node : nodes)
-      std::cout << node.first << " ";
-    std::cout << "]" << std::endl;
+  std::cout << "\nNodes: [ ";
+  for (const auto &node : nodes)
+    std::cout << node.first << " ";
+  std::cout << "]" << std::endl;
 
-    std::cout << "Pumps: [ ";
-    for (const std::string &pump_name : pump_names)
-      std::cout << pump_name << " ";
-    std::cout << "]" << std::endl;
+  std::cout << "Pumps: [ ";
+  for (const auto &pump : pumps)
+    std::cout << pump.first << " ";
+  std::cout << "]" << std::endl;
 
-    std::cout << "Tanks: [ ";
-    for (const auto &tank : tanks)
-      std::cout << tank.first << " ";
-    std::cout << "]" << std::endl;
-  }
+  std::cout << "Tanks: [ ";
+  for (const auto &tank : tanks)
+    std::cout << tank.first << " ";
+  std::cout << "]" << std::endl;
 }
 
-void BBConstraints::get_nodes_and_tanks_ids(std::string inpFile)
+void BBConstraints::get_nodes_tanks_ids(std::string inpFile)
 {
   EN_Project p = EN_createProject();
   CHK(EN_loadProject(const_cast<char *>(inpFile.c_str()), p), "Load project");
@@ -110,10 +107,12 @@ bool BBConstraints::check_pressures(bool verbose)
 {
   if (verbose)
   {
-    std::cout << "\nChecking pressures: [";
+    ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "\nChecking pressures: [");
     for (const auto &node : nodes)
-      std::cout << node.first << " ";
-    std::cout << "]" << std::endl;
+    {
+      ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "%s ", node.first.c_str());
+    }
+    ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "]\n");
   }
 
   std::map<std::string, double> thresholds = {{"55", 42}, {"90", 51}, {"170", 30}};
@@ -164,57 +163,6 @@ void show_pattern(Pattern *p, const std::string &name)
     std::cout << p->factor(i) << " ";
   }
   std::cout << "]" << std::endl;
-}
-
-// Function to update pump speed patterns based on counter
-void BBConstraints::update_pumps(const int h, const std::vector<int> &x, bool verbose)
-{
-  size_t num_pumps = pumps.size();
-  if (verbose)
-  {
-    printf("\nUpdating pumps speed: h=%d, num_pumps=%zu\n", h, num_pumps);
-  }
-  for (int i = 1; i <= h; i++)
-  {
-    for (size_t pump_id = 0; pump_id < num_pumps; pump_id++)
-    {
-      Pump *pump = pumps[pump_id];
-      FixedPattern *pattern = dynamic_cast<FixedPattern *>(pump->speedPattern);
-      if (!pattern)
-      {
-        std::cerr << "Error: Pump " << pump_id << " does not have a FixedPattern speed pattern." << std::endl;
-        continue;
-      }
-      const int *xi = &x[num_pumps * i];
-      double factor_new = static_cast<double>(xi[pump_id]);
-      const int factor_id = i - 1; // pattern index is 0-based
-      double factor_old = pattern->factor(factor_id);
-      pattern->setFactor(factor_id, factor_new);
-      if (verbose)
-      {
-        std::cout << "   h[" << i << "]: pump[" << pump_id << "]: " << factor_old << " -> " << factor_new << std::endl;
-      }
-    }
-  }
-}
-
-// Function to retrieve pump objects from the network
-void BBConstraints::set_pumps(Network *nw, const int h, const std::vector<int> &x, bool verbose)
-{
-  // Retrieve pump objects from the network
-  for (const std::string &name : pump_names)
-  {
-    Pump *pump = dynamic_cast<Pump *>(nw->link(name));
-    if (pump == nullptr)
-      std::cout << "Pump " << name << " not found" << std::endl;
-    else
-    {
-      pumps.push_back(pump);
-    }
-  }
-
-  // Update pump speed patterns based on counter
-  update_pumps(h, x, verbose);
 }
 
 // Function to check tank levels
@@ -311,9 +259,70 @@ bool BBConstraints::check_cost(const double cost, bool verbose)
 double BBConstraints::calc_cost() const
 {
   double cost = 0.0;
-  for (Pump *pump : pumps)
+  for (const auto &pump : pumps)
   {
-    cost += pump->pumpEnergy.getCost();
+    cost += pump.second->pumpEnergy.getCost();
   }
   return cost;
+}
+
+void BBConstraints::update_pumps(EN_Project p, const int h, const std::vector<int> &x, bool verbose)
+{
+  if (verbose) ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "Updating pumps\n");
+
+  // Set project pointer. This is used by the "check" methods.
+  this->p = p;
+
+  // Get project network
+  Project *prj = static_cast<Project *>(p);
+  Network *nw = prj->getNetwork();
+
+  // Find pumps
+  for (auto &pump : pumps)
+  {
+    const std::string pump_name = pump.first;
+    Pump *link = (Pump *)nw->link(pump_name);
+    if (!link)
+    {
+      ColorStream::printf(ColorStream::Color::RED, "  The pump %s could not be found.\n", pump_name);
+      exit(EXIT_FAILURE);
+    }
+    // Update pointer
+    pump.second = link;
+  }
+
+  // Update pump speed patterns based on vector x
+  int j = 0;
+  const size_t num_pumps = get_num_pumps();
+  for (int i = 1; i <= h; i++)
+  {
+    const int *xi = &x[num_pumps * i];
+    j = 0;
+    for (auto &pump : pumps)
+    {
+      const auto &pump_name = pump.first;
+      const auto &pump_link = pump.second;
+      FixedPattern *pattern = dynamic_cast<FixedPattern *>(pump_link->speedPattern);
+      if (!pattern)
+      {
+        ColorStream::printf(ColorStream::Color::RED, "  Error: Pump %s does not have a FixedPattern speed pattern.\n",
+                            pump_name.c_str());
+        continue;
+      }
+
+      // Retrieve new speed factor
+      double factor_new = static_cast<double>(xi[j++]);
+      // Retrieve old speed factor
+      const int factor_id = i - 1; // pattern index is 0-based
+      double factor_old = pattern->factor(factor_id);
+      // Update speed factor
+      pattern->setFactor(factor_id, factor_new);
+
+      if (verbose)
+      {
+        ColorStream::printf(ColorStream::Color::CYAN, "  h[%d]: pump[%s]: %.0f -> %.0f\n", i, pump_name.c_str(),
+                            factor_old, factor_new);
+      }
+    }
+  }
 }

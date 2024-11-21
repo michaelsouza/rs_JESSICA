@@ -1,6 +1,6 @@
 // src/CLI/Utils.cpp
 #include "Utils.h"
-#include "ColorStream.h"
+#include "Console.h"
 #include <cstdlib>
 
 // Implementation of CHK function
@@ -26,11 +26,11 @@ void show_timer(unsigned int niter, std::chrono::high_resolution_clock::time_poi
   double avg_time_per_iter = elapsed_time / niter;
 
   std::cout << "\r"; // Move to the beginning of the line
-  ColorStream::printf(ColorStream::Color::BRIGHT_BLUE, "⏱  Iter: ");
-  ColorStream::printf(ColorStream::Color::BRIGHT_YELLOW, "%d", niter);
-  ColorStream::printf(ColorStream::Color::BRIGHT_BLUE, " | Time: ");
-  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "%.2f s", elapsed_time);
-  ColorStream::printf(ColorStream::Color::BRIGHT_BLUE, " | Avg: ");
-  ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "%.2f s", avg_time_per_iter);
+  Console::printf(Console::Color::BRIGHT_BLUE, "⏱  Iter: ");
+  Console::printf(Console::Color::BRIGHT_YELLOW, "%d", niter);
+  Console::printf(Console::Color::BRIGHT_BLUE, " | Time: ");
+  Console::printf(Console::Color::BRIGHT_CYAN, "%.2f s", elapsed_time);
+  Console::printf(Console::Color::BRIGHT_BLUE, " | Avg: ");
+  Console::printf(Console::Color::BRIGHT_CYAN, "%.2f s", avg_time_per_iter);
   std::cout.flush();
 }

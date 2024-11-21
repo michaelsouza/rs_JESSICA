@@ -2,7 +2,7 @@
 #pragma once
 
 #include "BBPruneReason.h"
-#include "ColorStream.h"
+#include "Console.h"
 #include "Utils.h"
 
 #include <map>

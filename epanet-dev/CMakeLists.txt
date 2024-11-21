@@ -205,7 +205,7 @@ set(run_epanet3_sources
     src/CLI/BBConstraints.cpp
     src/CLI/BBSolver.cpp
     src/CLI/BBStats.cpp
-    src/CLI/ColorStream.cpp
+    src/CLI/Console.cpp
 )
 
 # Include Directories for CLI (if separate headers are used)

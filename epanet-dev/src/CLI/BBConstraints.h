@@ -1,7 +1,7 @@
 // src/CLI/BBConstraints.h
 #pragma once
 
-#include "ColorStream.h"
+#include "Console.h"
 
 #include "Core/network.h"
 #include "Core/project.h"

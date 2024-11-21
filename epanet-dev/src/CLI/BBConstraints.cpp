@@ -84,8 +84,7 @@ void BBConstraints::show_pressures(bool is_feasible, const std::string &node_nam
 }
 
 // Function to display tank level status
-void BBConstraints::show_levels(bool is_feasible, const std::string &tank_name, double level, double level_min,
-                                double level_max)
+void BBConstraints::show_levels(bool is_feasible, const std::string &tank_name, double level, double level_min, double level_max)
 {
   if (!is_feasible)
     printf("  \u274C tank[%3s]: %.2f not in [%.2f, %.2f]\n", tank_name.c_str(), level, level_min, level_max);
@@ -107,12 +106,12 @@ bool BBConstraints::check_pressures(bool verbose)
 {
   if (verbose)
   {
-    ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "\nChecking pressures: [");
+    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking pressures: [");
     for (const auto &node : nodes)
     {
-      ColorStream::printf(ColorStream::Color::BRIGHT_CYAN, "%s ", node.first.c_str());
+      Console::printf(Console::Color::BRIGHT_CYAN, "%s ", node.first.c_str());
     }
-    ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "]\n");
+    Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
   }
 
   std::map<std::string, double> thresholds = {{"55", 42}, {"90", 51}, {"170", 30}};
@@ -268,7 +267,7 @@ double BBConstraints::calc_cost() const
 
 void BBConstraints::update_pumps(EN_Project p, const int h, const std::vector<int> &x, bool verbose)
 {
-  if (verbose) ColorStream::printf(ColorStream::Color::BRIGHT_WHITE, "Updating pumps\n");
+  if (verbose) Console::printf(Console::Color::BRIGHT_WHITE, "Updating pumps\n");
 
   // Set project pointer. This is used by the "check" methods.
   this->p = p;
@@ -284,7 +283,7 @@ void BBConstraints::update_pumps(EN_Project p, const int h, const std::vector<in
     Pump *link = (Pump *)nw->link(pump_name);
     if (!link)
     {
-      ColorStream::printf(ColorStream::Color::RED, "  The pump %s could not be found.\n", pump_name);
+      Console::printf(Console::Color::RED, "  The pump %s could not be found.\n", pump_name);
       exit(EXIT_FAILURE);
     }
     // Update pointer
@@ -305,8 +304,7 @@ void BBConstraints::update_pumps(EN_Project p, const int h, const std::vector<in
       FixedPattern *pattern = dynamic_cast<FixedPattern *>(pump_link->speedPattern);
       if (!pattern)
       {
-        ColorStream::printf(ColorStream::Color::RED, "  Error: Pump %s does not have a FixedPattern speed pattern.\n",
-                            pump_name.c_str());
+        Console::printf(Console::Color::RED, "  Error: Pump %s does not have a FixedPattern speed pattern.\n", pump_name.c_str());
         continue;
       }
 
@@ -320,8 +318,7 @@ void BBConstraints::update_pumps(EN_Project p, const int h, const std::vector<in
 
       if (verbose)
       {
-        ColorStream::printf(ColorStream::Color::CYAN, "  h[%d]: pump[%s]: %.0f -> %.0f\n", i, pump_name.c_str(),
-                            factor_old, factor_new);
+        Console::printf(Console::Color::CYAN, "  h[%d]: pump[%s]: %.0f -> %.0f\n", i, pump_name.c_str(), factor_old, factor_new);
       }
     }
   }

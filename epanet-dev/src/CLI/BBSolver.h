@@ -81,21 +81,14 @@ public:
    *
    * @param recv_buffer The vector to fill with the current state.
    */
-  void write_buffer(std::vector<int> &recv_buffer) const;
+  void write_buffer();
 
   /**
    * @brief Reads the current state of the counter from a vector.
    *
    * @param recv_buffer The vector containing the current state.
    */
-  void read_buffer(const std::vector<int> &recv_buffer);
-
-  /**
-   * @brief Splits the current state of the counter into two parts.
-   *
-   * @param recv_buffer The vector to fill with the split state.
-   */
-  void split(std::vector<int> &recv_buffer);
+  void read_buffer();
 
   void prune(PruneReason reason);
 
@@ -103,23 +96,32 @@ public:
 
   void update_pumps(EN_Project p, bool verbose);
 
+  void set_feasible();
+
+  void split(const std::vector<int> &done, const std::vector<int> &free_level, int free_level_max, bool verbose);
+
   // Public member variables
-  int h;               ///< Current time period index.
-  int y_max;           ///< Maximum actuations per time period.
-  int h_max;           ///< Total number of time periods.
-  std::vector<int> y;  ///< Vector tracking actuations per time period.
-  std::vector<int> x;  ///< Vector tracking pump states across time periods.
-  int max_actuations;  ///< Maximum actuations allowed per pump.
-  int num_pumps;       ///< Number of pumps being managed.
-  int top_level;       ///< Current top level in the counter.
-  int top_cut;         ///< Threshold for top level operations.
-  int buffer_size;     ///< Size of the buffer used for communication.
-  std::string inpFile; ///< Input file name.
-  BBConstraints cntrs; ///< Constraints object for the network.
+  int h;                       ///< Current time period index.
+  int h_max;                   ///< Total number of time periods.
+  std::vector<int> y;          ///< Vector tracking actuations per time period.
+  std::vector<int> x;          ///< Vector tracking pump states across time periods.
+  int max_actuations;          ///< Maximum actuations allowed per pump.
+  int num_pumps;               ///< Number of pumps being managed.
+  int top_level;               ///< Current top level in the counter.
+  int top_cut;                 ///< Threshold for top level operations.
+  std::string inpFile;         ///< Input file name.
+  BBConstraints cntrs;         ///< Constraints object for the network.
+  std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
+  int mpi_rank;                ///< Rank of the current process.
+  int mpi_size;                ///< Size of the MPI communicator.
 
 private:
   bool is_feasible; ///< Indicates whether the current state is feasible.
   BBStats stats;    ///< Statistics object for tracking feasibility and pruning.
+
+  void send_work(int recv_rank, const std::vector<int> &free_level, bool verbose);
+
+  void recv_work(int send_rank, const std::vector<int> &free_level, bool verbose);
 
   /**
    * @brief Core function to update the x vector.

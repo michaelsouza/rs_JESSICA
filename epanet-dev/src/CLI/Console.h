@@ -1,11 +1,14 @@
 // src/CLI/ColorStream.h
 #pragma once
 
+#include <chrono>
 #include <cstdarg> // For variadic functions
+#include <ctime>
+#include <fstream>
 #include <iostream>
 #include <string>
 
-class ColorStream
+class Console
 {
 public:
   /**
@@ -31,6 +34,18 @@ public:
     BRIGHT_WHITE = 97
   };
 
+  static bool use_file;
+  static std::string file_name;
+  static std::ofstream output_file;
+
+  static void open(int rank, bool use_file = true, bool verbose = false);
+
+  static void close()
+  {
+    output_file.close();
+    use_file = false;
+  }
+
   /**
    * @brief Prints formatted text with the specified color.
    *
@@ -39,4 +54,6 @@ public:
    * @param ... Variable arguments corresponding to the format specifiers.
    */
   static void printf(Color color, const char *format, ...);
+
+private:
 };

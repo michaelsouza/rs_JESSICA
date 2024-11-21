@@ -1,11 +1,31 @@
 // src/CLI/ColorStream.cpp
 
-#include "ColorStream.h"
+#include "Console.h"
 #include <cstdio> // For vsnprintf
 #include <memory> // For std::unique_ptr
 #include <vector> // For dynamic buffer
 
-void ColorStream::printf(Color color, const char *format, ...)
+bool Console::use_file = false;
+std::string Console::file_name;
+std::ofstream Console::output_file;
+
+void Console::open(int rank, bool use_file, bool verbose)
+{
+  Console::use_file = use_file;
+  if (!use_file) return;
+
+  file_name = "logger_RANK_" + std::to_string(rank) + ".log";
+
+  output_file.open(file_name);
+  if (!output_file.is_open())
+  {
+    std::cerr << "Failed to open file: " << file_name << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  if (verbose) std::cout << "Logging to " << file_name << std::endl;
+}
+
+void Console::printf(Color color, const char *format, ...)
 {
   // Initialize a variable argument list
   va_list args1;
@@ -42,5 +62,10 @@ void ColorStream::printf(Color color, const char *format, ...)
   else
   {
     std::cout << buffer.get();
+  }
+
+  if (use_file)
+  {
+    output_file << buffer.get();
   }
 }

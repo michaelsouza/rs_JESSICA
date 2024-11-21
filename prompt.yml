@@ -15,16 +15,28 @@ codes: no
   economic_custom.py: all
 
 epanet-dev/src/CLI: yes
-  BBTests.h: all
-  BBCounter.h: all
-  BBCounter.cpp: all
+  BBTests.h: none
+  BBCounter.h: none
+  BBCounter.cpp: none
+  BBStats.h: none
+  BBStats.cpp: none
+  main.cpp: none
+  BBSolver.h: none
+  BBSolver.cpp: none
+  BBConstraints.h: all
+  BBConstraints.cpp: all
+  Helper.h: none
+  Helper.cpp: none
   ColorStream.h: none
   ColorStream.cpp: none
+
+epanet-dev/src/Elements: yes
+  pump.h: all
 
 .venv/lib/python3.10/site-packages/wntr: no
   network/controls.py: all
 
 # user_request
 """
-Pls, in BBCounter class, add a method to fill a vector<int> recv_buffer with the current state of the counter. This recv_buffer will be used to send the counter state to other ranks.
+Is there any problem with the BBConstraints reference to the Pump class?
 """

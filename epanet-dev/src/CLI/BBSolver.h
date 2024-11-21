@@ -49,7 +49,7 @@ public:
    *
    * @param verbose If true, prints detailed information to the console.
    */
-  void show_xy(bool verbose = false);
+  void show_xy(bool verbose = false) const;
 
   /**
    * @brief Jumps the current y state to its maximum value.

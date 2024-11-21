@@ -32,20 +32,22 @@ BBConstraints::~BBConstraints()
 
 void BBConstraints::show() const
 {
-  std::cout << "\nNodes: [ ";
+  Console::hline(Console::Color::BRIGHT_WHITE);
+  Console::printf(Console::Color::BRIGHT_WHITE, "BBConstraints\n");
+  Console::printf(Console::Color::BRIGHT_WHITE, "Nodes: [ ");
   for (const auto &node : nodes)
-    std::cout << node.first << " ";
-  std::cout << "]" << std::endl;
+    Console::printf(Console::Color::BRIGHT_WHITE, "%s ", node.first.c_str());
+  Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
 
-  std::cout << "Pumps: [ ";
+  Console::printf(Console::Color::BRIGHT_WHITE, "Pumps: [ ");
   for (const auto &pump : pumps)
-    std::cout << pump.first << " ";
-  std::cout << "]" << std::endl;
+    Console::printf(Console::Color::BRIGHT_WHITE, "%s ", pump.first.c_str());
+  Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
 
-  std::cout << "Tanks: [ ";
+  Console::printf(Console::Color::BRIGHT_WHITE, "Tanks: [ ");
   for (const auto &tank : tanks)
-    std::cout << tank.first << " ";
-  std::cout << "]" << std::endl;
+    Console::printf(Console::Color::BRIGHT_WHITE, "%s ", tank.first.c_str());
+  Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
 }
 
 void BBConstraints::get_nodes_tanks_ids(std::string inpFile)

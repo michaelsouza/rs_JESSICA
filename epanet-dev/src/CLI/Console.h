@@ -55,5 +55,7 @@ public:
    */
   static void printf(Color color, const char *format, ...);
 
+  static void hline(Color color, size_t length = 10);
+
 private:
 };

@@ -98,7 +98,7 @@ bool BBSolver::update_x(bool verbose)
   return is_feasible;
 }
 
-void BBSolver::show_xy(bool verbose)
+void BBSolver::show_xy(bool verbose) const
 {
   if (!verbose) return;
   std::cout << "\n";
@@ -220,14 +220,26 @@ bool BBSolver::set_y(const std::vector<int> &y)
 int BBSolver::get_free_level()
 {
   // Return the top level if its value is lower than the top cut
-  if (y[top_level] < top_cut) return top_level;
+  if (y[top_level] < top_cut)
+  {
+    return top_level;
+  }
 
   // Consider only the levels in the range [top_level + 1, h]
   for (int level = top_level + 1; level <= h; level++)
   {
     // For the remaining levels, the cut is the number of pumps
-    if (y[level] < num_pumps) return level;
+    if (y[level] < num_pumps)
+    {
+      // Update the top level and top cut
+      top_level = level;
+      top_cut = num_pumps;
+
+      return top_level;
+    }
   }
+
+  // If no free level is found, return the maximum level
   return h_max;
 }
 
@@ -238,41 +250,20 @@ void BBSolver::show() const
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Print Header with MPI rank
-  Console::printf(Console::Color::BRIGHT_CYAN, "=== BBSolver (Rank %d) ===\n", rank);
+  Console::hline(Console::Color::BRIGHT_CYAN);
+  Console::printf(Console::Color::BRIGHT_CYAN, "BBSolver (Rank %d)\n", rank);
 
   // Display Current Time Period
-  Console::printf(Console::Color::YELLOW, "Current Time Period (h): ");
-  std::cout << this->h << std::endl;
-
-  // Display y vector up to current h
-  Console::printf(Console::Color::BRIGHT_BLUE, "Actuations (y):");
-  for (int i = 0; i <= this->h && i <= this->h_max; ++i)
-  {
-    std::cout << "  h[" << std::setw(2) << i << "]: y = " << this->y[i] << std::endl;
-  }
-
-  // Display x vector for current h
-  Console::printf(Console::Color::BRIGHT_BLUE, "Pump States (x) at Current Time Period:\n");
-  const int *x_current = &this->x[this->num_pumps * this->h];
-  for (int j = 0; j < this->num_pumps; ++j)
-  {
-    Console::printf(Console::Color::YELLOW, "  Pump %d: ", j + 1);
-    if (x_current[j] == 1)
-    {
-      Console::printf(Console::Color::GREEN, "Active\n");
-    }
-    else
-    {
-      Console::printf(Console::Color::RED, "Inactive\n");
-    }
-  }
+  Console::printf(Console::Color::YELLOW, "   h=%d, is_feasible=%d\n", h, is_feasible);
 
   // Display Top Level and Top Cut
-  Console::printf(Console::Color::BRIGHT_MAGENTA, "Top Level: %d\n", this->top_level);
-  Console::printf(Console::Color::BRIGHT_MAGENTA, "Top Cut: %d\n", this->top_cut);
+  Console::printf(Console::Color::BRIGHT_MAGENTA, "   Top: level=%d, cut=%d\n", top_level, top_cut);
+
+  // Display y and x vectors
+  show_xy(true);
 
   // Print Footer
-  Console::printf(Console::Color::BRIGHT_CYAN, "================================\n");
+  Console::printf(Console::Color::BRIGHT_CYAN, "\n");
 
   this->stats.show();
 
@@ -294,7 +285,7 @@ void BBSolver::write_buffer()
 
   // Write scalar values
   mpi_buffer[0] = top_level;
-  mpi_buffer[1] = top_cut;
+  mpi_buffer[1] = y[top_level]; // send the current top level value as top_cut
   mpi_buffer[2] = h;
 
   // Write y vector
@@ -434,9 +425,12 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &free_level, bool
     MPI_Abort(MPI_COMM_WORLD, mpi_error);
   }
 
-  // Update top level and top cut
-  top_level = free_level[mpi_rank];
-  top_cut = y[top_level] + 1;
+  // Update status
+  h = top_level;
+  is_feasible = false;
+  prune(PruneReason::SPLIT);
+
+  show();
 }
 
 void BBSolver::recv_work(int send_rank, const std::vector<int> &free_level, bool verbose)
@@ -449,10 +443,7 @@ void BBSolver::recv_work(int send_rank, const std::vector<int> &free_level, bool
     MPI_Abort(MPI_COMM_WORLD, mpi_error);
   }
   read_buffer();
-
-  // Update top level and top cut
-  top_level = free_level[send_rank];
-  top_cut = y[top_level] + 1;
+  show();
 }
 
 void BBSolver::split(const std::vector<int> &done, const std::vector<int> &free_level, int level_max, bool verbose)

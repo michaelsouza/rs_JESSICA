@@ -69,3 +69,10 @@ void Console::printf(Color color, const char *format, ...)
     output_file << buffer.get();
   }
 }
+
+void Console::hline(Color color, size_t length)
+{
+  for (size_t i = 0; i < length; i++)
+    Console::printf(color, "\u2550");
+  Console::printf(color, "\n");
+}

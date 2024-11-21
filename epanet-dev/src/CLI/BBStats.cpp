@@ -40,10 +40,8 @@ void BBStats::show() const
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Header with rank info
+  Console::hline(Console::Color::BRIGHT_WHITE);
   Console::printf(Console::Color::BRIGHT_WHITE, "Statistics (Rank %d)\n", rank);
-  for (int i = 0; i < 10; i++)
-    Console::printf(Console::Color::BRIGHT_WHITE, "\u2550");
-  Console::printf(Console::Color::BRIGHT_WHITE, "\n");
 
   // Best solution
   Console::printf(Console::Color::WHITE, "Best cost: ");

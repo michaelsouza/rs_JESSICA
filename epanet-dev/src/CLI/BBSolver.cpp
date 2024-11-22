@@ -239,7 +239,7 @@ int BBSolver::get_free_level()
     }
   }
 
-  // If no free level is found, return the maximum level
+  // If no free level is found, return the last level
   return h_max;
 }
 

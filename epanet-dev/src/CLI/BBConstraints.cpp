@@ -18,7 +18,7 @@ BBConstraints::BBConstraints(std::string inpFile) : inpFile(inpFile)
   this->nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
   this->tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
   this->pumps = {{"111", nullptr}, {"222", nullptr}, {"333", nullptr}};
-  this->cost_max = std::numeric_limits<double>::max();
+  this->cost_ub = std::numeric_limits<double>::max();
 
   // Retrieve node and tank IDs from the input file
   get_nodes_tanks_ids(inpFile);
@@ -244,14 +244,15 @@ bool BBConstraints::check_stability(bool verbose)
 // Function to check the cost
 bool BBConstraints::check_cost(const double cost, bool verbose)
 {
-  bool is_feasible = cost < cost_max;
+  bool is_feasible = cost < cost_ub;
   if (verbose)
   {
     Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking cost:\n");
+    std::string cost_max_str = (cost_ub > 999999999) ? "inf" : std::to_string(cost_ub);
     if (is_feasible)
-      Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%.2f\n", cost, cost_max);
+      Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%s\n", cost, cost_max_str.c_str());
     else
-      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%.2f\n", cost, cost_max);
+      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%s\n", cost, cost_max_str.c_str());
   }
   return is_feasible;
 }

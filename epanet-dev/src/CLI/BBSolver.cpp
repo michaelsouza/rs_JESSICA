@@ -19,7 +19,6 @@ BBSolver::BBSolver(std::string inpFile, int h_max, int max_actuations) : inpFile
   this->h_cut = 0;
   this->h_min = 0;
   this->is_feasible = true;
-  this->cost_best = std::numeric_limits<double>::max();
 
   // Initialize y and x vectors
   this->y = std::vector<int>(h_max + 1, 0);
@@ -54,7 +53,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     // Run the solver
     CHK(EN_runSolver(&t, p), "Run solver");
 
-    if (verbose) Console::printf(Console::Color::BRIGHT_WHITE, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
+    if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
 
     // Check node pressures
     is_feasible = cntrs.check_pressures(verbose);
@@ -425,7 +424,7 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free, bool ver
   add_prune(PruneReason::SPLIT);
 
   // Show the current state
-  if (verbose) show();
+  // if (verbose) show();
 }
 
 void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free, bool verbose)
@@ -444,7 +443,7 @@ void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free, bool ver
   read_buffer();
 
   // Show the current state
-  if (verbose) show();
+  // if (verbose) show();
 }
 
 bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose)
@@ -558,38 +557,39 @@ void parse_args(int argc, char *argv[], bool &verbose, int &h_max, int &max_actu
   }
 }
 
-void BBSolver::update_solution(double cost)
+void BBSolver::update_cost(double cost, bool update_xy)
 {
-  if (cost > cost_best)
+  if (cost > cntrs.cost_ub)
   {
-    Console::printf(Console::Color::RED, "ERR[rank=%d]: cost=%.2f > cost_best=%.2f\n", mpi_rank, cost, cost_best);
+    Console::printf(Console::Color::RED, "ERR[rank=%d]: cost=%.2f > cost_max=%.2f\n", mpi_rank, cost, cntrs.cost_ub);
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  cost_best = cost;
-  y_best = y;
-  x_best = x;
+  std::string cost_ub_str = (cntrs.cost_ub > 999999999) ? "inf" : std::to_string(cntrs.cost_ub);
+  Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (%s)\n", mpi_rank, cost, cost_ub_str.c_str());
 
-  // Update constraint
-  cntrs.cost_max = cost;
+  cntrs.cost_ub = cost;
 
-  Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_best=%.2f\n", mpi_rank, cost);
+  if (update_xy)
+  {
+    y_best = y;
+    x_best = x;
+  }
 }
 
 inline void solve_iteration(BBSolver &solver, int &done_loc, bool verbose, bool save_project)
 {
-  if (done_loc)
-  {
-    // Sleep for 1 second to avoid busy-waiting
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    return;
-  }
+  if (done_loc) return;
 
   double cost = 0.0;
 
   // Update y vector
   done_loc = !solver.update_y();
-  if (done_loc) return;
+  if (done_loc)
+  {
+    Console::printf(Console::Color::BRIGHT_RED, "\nRank[%d]: done_loc=true\n", solver.mpi_rank);
+    return;
+  }
 
   // Update x vector
   solver.update_x(verbose);
@@ -600,7 +600,8 @@ inline void solve_iteration(BBSolver &solver, int &done_loc, bool verbose, bool 
   }
 
   // Process node
-  solver.process_node(cost, verbose, save_project);
+  solver.process_node(cost, false, save_project);
+  // std::this_thread::sleep_for(std::chrono::milliseconds(300)); //TODO: remove
 
   // Update feasible counter
   if (solver.is_feasible)
@@ -610,39 +611,56 @@ inline void solve_iteration(BBSolver &solver, int &done_loc, bool verbose, bool 
     // New solution found
     if (solver.h == solver.h_max)
     {
-      solver.update_solution(cost);
+      solver.update_cost(cost, true);
     }
   }
 }
 
 inline void solve_sync(const int h_threshold, BBSolver &solver, int &done_loc, int &done_all, bool verbose)
 {
+  static int num_calls = 0;
+  num_calls++;
+  Console::hline(Console::Color::BRIGHT_CYAN);
+  Console::printf(Console::Color::BRIGHT_CYAN, "Rank[%d]: solve_sync #%d (done_loc=%d)\n", solver.mpi_rank, num_calls, done_loc);
+
   int mpi_error;
   std::vector<int> done(solver.mpi_size, 0);
   std::vector<int> h_free(solver.mpi_size, 0);
-  std::vector<double> cost_best(solver.mpi_size, 0.0);
+  std::vector<double> cost_ub(solver.mpi_size, 0.0);
 
   // Synchronize cost_best across all ranks ================================
-  mpi_error = MPI_Allgather(&solver.cost_best, 1, MPI_DOUBLE, cost_best.data(), 1, MPI_DOUBLE, MPI_COMM_WORLD);
+  mpi_error = MPI_Allgather(&solver.cntrs.cost_ub, 1, MPI_DOUBLE, cost_ub.data(), 1, MPI_DOUBLE, MPI_COMM_WORLD);
   if (mpi_error != MPI_SUCCESS) MPI_Abort(MPI_COMM_WORLD, mpi_error);
 
-  solver.cost_best = std::numeric_limits<double>::infinity();
+  double cost_min = std::numeric_limits<double>::infinity();
   int rank_min = 0;
   for (int rank = 0; rank < solver.mpi_size; ++rank)
   {
-    if (cost_best[rank] < solver.cost_best)
+    if (cost_ub[rank] < cost_min)
     {
-      solver.cost_best = cost_best[rank];
+      cost_min = cost_ub[rank];
       rank_min = rank;
     }
   }
 
-  // Update constraint
-  solver.cntrs.cost_max = solver.cost_best;
+  if (solver.cntrs.cost_ub > cost_min)
+  {
+    solver.update_cost(cost_min, false);
+  }
 
   // Broadcast the solution from the rank with the minimum cost
-  mpi_error = MPI_Bcast(&solver.y_best, solver.y_best.size(), MPI_INT, rank_min, MPI_COMM_WORLD);
-  mpi_error = MPI_Bcast(&solver.x_best, solver.x_best.size(), MPI_INT, rank_min, MPI_COMM_WORLD);
+  mpi_error = MPI_Bcast(solver.y_best.data(), solver.y_best.size(), MPI_INT, rank_min, MPI_COMM_WORLD);
+  if (mpi_error != MPI_SUCCESS)
+  {
+    Console::printf(Console::Color::RED, "Rank[%d]: MPI_Bcast failed with error code %d.\n", solver.mpi_rank, mpi_error);
+    MPI_Abort(MPI_COMM_WORLD, mpi_error);
+  }
+  mpi_error = MPI_Bcast(solver.x_best.data(), solver.x_best.size(), MPI_INT, rank_min, MPI_COMM_WORLD);
+  if (mpi_error != MPI_SUCCESS)
+  {
+    Console::printf(Console::Color::RED, "Rank[%d]: MPI_Bcast failed with error code %d.\n", solver.mpi_rank, mpi_error);
+    MPI_Abort(MPI_COMM_WORLD, mpi_error);
+  }
 
   // Synchronize done_all across all ranks =================================
   mpi_error = MPI_Allgather(&done_loc, 1, MPI_INT, done.data(), 1, MPI_INT, MPI_COMM_WORLD);
@@ -661,6 +679,8 @@ inline void solve_sync(const int h_threshold, BBSolver &solver, int &done_loc, i
   bool done_split = solver.try_split(done, h_free, h_threshold, verbose);
   if (done_loc) done_loc = !done_split;
 
+  Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: MPI_Barrier (h=%d, done_split=%d, done_loc=%d)\n", solver.mpi_rank, solver.h, done_split,
+                  done_loc);
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -692,23 +712,16 @@ void solve(int argc, char *argv[])
   int done_loc = (rank != 0); // Only rank 0 starts
   int done_all = 0;
 
-  // Start timing
-  auto tic = std::chrono::high_resolution_clock::now();
-  auto toc = tic;
-  double eta = 0.0; // elapsed time in millisecond
-
   // Main loop
+  static int niters = 0;
   while (!done_all)
   {
+    ++niters;
     solve_iteration(solver, done_loc, verbose, save_project);
-    toc = std::chrono::high_resolution_clock::now();
-    eta = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic).count();
-    if (eta > 1000)
-    {
-      solve_sync(h_threshold, solver, done_loc, done_all, verbose);
-      tic = toc; // reset timer
-    }
+    solve_sync(h_threshold, solver, done_loc, done_all, verbose);
   }
+
+  Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: 🎉 %d iterations, cost_ub=%.2f\n", rank, niters, solver.cntrs.cost_ub);
 
   // Close output file
   Console::close();

@@ -100,7 +100,7 @@ public:
 
   bool try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose);
 
-  void update_solution(double cost);
+  void update_cost(double cost, bool update_xy);
 
   // Public member variables
   int h;                       ///< Current time period index.
@@ -118,7 +118,6 @@ public:
   int mpi_size;                ///< Size of the MPI communicator.
   std::vector<int> y_best;     ///< Best y vector found.
   std::vector<int> x_best;     ///< Best x vector found.
-  double cost_best;            ///< Best cost found.
   int is_feasible;             ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
   BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
 

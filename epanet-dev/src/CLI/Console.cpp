@@ -5,19 +5,19 @@
 #include <memory> // For std::unique_ptr
 #include <vector> // For dynamic buffer
 
-bool Console::use_file = false;
+bool Console::use_logger = false;
 std::string Console::file_name;
-std::ofstream Console::output_file;
+std::ofstream Console::logger_file;
 
-void Console::open(int rank, bool use_file, bool verbose)
+void Console::open(int rank, bool use_logger, bool verbose)
 {
-  Console::use_file = use_file;
-  if (!use_file) return;
+  Console::use_logger = use_logger;
+  if (!use_logger) return;
 
   file_name = "logger_RANK_" + std::to_string(rank) + ".log";
 
-  output_file.open(file_name);
-  if (!output_file.is_open())
+  logger_file.open(file_name);
+  if (!logger_file.is_open())
   {
     std::cerr << "Failed to open file: " << file_name << std::endl;
     exit(EXIT_FAILURE);
@@ -64,10 +64,10 @@ void Console::printf(Color color, const char *format, ...)
     std::cout << buffer.get();
   }
 
-  if (use_file)
+  if (use_logger)
   {
-    output_file << buffer.get();
-    output_file.flush();
+    logger_file << buffer.get();
+    logger_file.flush();
   }
 }
 
@@ -93,9 +93,9 @@ void Console::hline(Color color, size_t length)
   }
 
   // Write to file if enabled
-  if (use_file)
+  if (use_logger)
   {
-    output_file << buffer;
-    output_file.flush();
+    logger_file << buffer;
+    logger_file.flush();
   }
 }

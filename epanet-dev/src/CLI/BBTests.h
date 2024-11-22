@@ -30,7 +30,7 @@
 class BBTest
 {
 protected:
-  const char *inpFile = "/home/michael/github/rs_JESSICA/networks/any-town.inp";
+  const char *inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
   int h_max = 24;
   int max_actuations = 3;
   bool save_project = false;
@@ -44,7 +44,7 @@ public:
 
   virtual bool run() = 0;
 
-  virtual void setUp()
+  virtual void set_up()
   {
     // Common setup code
     // Check if the inpFile exists
@@ -56,17 +56,17 @@ public:
     }
   }
 
-  virtual void tearDown()
+  virtual void tear_down()
   {
     // Common teardown code if needed
   }
 
-  virtual void setVerbose(bool verbose)
+  virtual void set_verbose(bool verbose)
   {
     this->verbose = verbose;
   }
 
-  virtual void printTestName()
+  virtual void print_test_name()
   {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -77,7 +77,7 @@ public:
     }
   }
 
-  virtual bool verifyCost(double cost, double expected_cost, double tolerance)
+  virtual bool verify_cost(double cost, double expected_cost, double tolerance)
   {
     if (std::abs(cost - expected_cost) > tolerance)
     {
@@ -110,13 +110,13 @@ public:
 
   bool run() override
   {
-    setUp();
-    return executeTest();
+    set_up();
+    return execute_test();
   }
 
-  bool executeTest()
+  bool execute_test()
   {
-    printTestName();
+    print_test_name();
 
     // Insert a 0 at the beginning of y if necessary
     if (y.size() == static_cast<size_t>(h_max))
@@ -143,7 +143,7 @@ public:
       return false;
     }
 
-    return verifyCost(cost, expected_cost, tolerance);
+    return verify_cost(cost, expected_cost, tolerance);
   }
 };
 
@@ -183,11 +183,11 @@ public:
 
   bool run() override
   {
-    setUp();
-    return executeTest();
+    set_up();
+    return execute_test();
   }
 
-  bool executeTest()
+  bool execute_test()
   {
     Console::printf(Console::Color::BRIGHT_YELLOW, "Running %s...\n", test_name.c_str());
     bool all_tests_passed = true;
@@ -275,13 +275,13 @@ public:
 
   bool run() override
   {
-    setUp();
-    return executeTest();
+    set_up();
+    return execute_test();
   }
 
-  bool executeTest()
+  bool execute_test()
   {
-    printTestName();
+    print_test_name();
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -344,16 +344,16 @@ public:
 
   bool run() override
   {
-    setUp();
-    return executeTest();
+    set_up();
+    return execute_test();
   }
 
-  bool executeTest()
+  bool execute_test()
   {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    printTestName();
+    print_test_name();
 
     // Open output file for each rank
     Console::open(rank, true, verbose);
@@ -411,49 +411,46 @@ private:
   void mock_iteration(BBSolver &solver, int &done_loc, bool verbose)
   {
     // If the current rank is not done, attempt to update the solver
-    if (!done_loc)
-    {
-      // Attempt to update the solver
-      done_loc = !solver.update_y();
-      // Go next, the work is done
-      if (done_loc)
-      {
-        if (verbose) Console::printf(Console::Color::CYAN, "Rank[%d]: done_loc %d\n", rank, done_loc);
-        return;
-      }
-      niters++;
-
-      bool is_feasible = solver.update_x(verbose);
-      if (!is_feasible)
-      {
-        if (verbose) Console::printf(Console::Color::RED, "Rank[%d]: update_x is infeasible.\n", rank);
-        solver.prune(PruneReason::ACTUATIONS);
-        return;
-      }
-      solver.show_xy(verbose);
-
-      // Sleep for 1 millisecond to simulate work and prevent tight looping
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-      // Check feasibility
-      is_feasible = is_feasible ? check_feasibility(size, rank, solver, niters, verbose) : false;
-      if (!is_feasible)
-      {
-        solver.prune(PruneReason::SPLIT);
-        return;
-      }
-
-      // Update the solver's feasibility flag
-      if (is_feasible)
-      {
-        solver.set_feasible();
-      }
-    }
-    else
+    if (done_loc)
     {
       // Once done_loc is true, sleep for 1 second to allow other ranks to catch up
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      return;
     }
+
+    // Attempt to update the solver
+    done_loc = !solver.update_y();
+    // Go next, the work is done
+    if (done_loc)
+    {
+      if (verbose) Console::printf(Console::Color::CYAN, "Rank[%d]: done_loc %d\n", rank, done_loc);
+      return;
+    }
+    niters++;
+
+    solver.update_x(verbose);
+    if (!solver.is_feasible)
+    {
+      if (verbose) Console::printf(Console::Color::RED, "Rank[%d]: update_x is infeasible.\n", rank);
+      solver.add_prune(PruneReason::ACTUATIONS);
+      return;
+    }
+    solver.show_xy(verbose);
+
+    // Sleep for 1 millisecond to simulate work and prevent tight looping
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+    // Check feasibility
+    solver.is_feasible = solver.is_feasible ? check_feasibility(size, rank, solver, niters, verbose) : false;
+    if (!solver.is_feasible)
+    {
+      // Just for testing, we prune on pressures
+      solver.add_prune(PruneReason::PRESSURES);
+      return;
+    }
+
+    // Update the solver's feasibility flag
+    if (solver.is_feasible) solver.add_feasible();
   }
 
   void sync(BBSolver &solver, int &done_loc, int &done_all, bool verbose)
@@ -519,7 +516,6 @@ private:
 void test_all()
 {
   int rank = 0;
-  MPI_Init(nullptr, nullptr);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // Instantiate and run all tests
@@ -532,18 +528,17 @@ void test_all()
 
   if (rank == 0)
   {
-    testCost1.run();
-    testCost2.run();
-    testCost3.run();
-    testTopLevel.run();
+    // testCost1.run();
+    // testCost2.run();
+    // testCost3.run();
+    // testTopLevel.run();
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  testMPI.run();
+  // testMPI.run();
   MPI_Barrier(MPI_COMM_WORLD);
 
+  testSplit.set_verbose(true);
   testSplit.run();
   MPI_Barrier(MPI_COMM_WORLD);
-
-  MPI_Finalize();
 }

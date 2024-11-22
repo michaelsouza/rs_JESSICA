@@ -1,4 +1,4 @@
-// src/CLI/BBCounter.cpp
+// src/CLI/BBSolver.cpp
 #include "BBSolver.h"
 #include "Console.h"
 #include <algorithm>
@@ -7,6 +7,7 @@
 #include <mpi.h>
 #include <numeric>
 #include <stdexcept>
+#include <thread>
 
 BBSolver::BBSolver(std::string inpFile, int h_max, int max_actuations) : inpFile(inpFile), cntrs(inpFile), stats(h_max, max_actuations)
 {
@@ -18,6 +19,7 @@ BBSolver::BBSolver(std::string inpFile, int h_max, int max_actuations) : inpFile
   this->h_cut = 0;
   this->h_min = 0;
   this->is_feasible = true;
+  this->cost_best = std::numeric_limits<double>::max();
 
   // Initialize y and x vectors
   this->y = std::vector<int>(h_max + 1, 0);
@@ -27,6 +29,113 @@ BBSolver::BBSolver(std::string inpFile, int h_max, int max_actuations) : inpFile
   this->mpi_buffer.resize(4 + y.size() + x.size());
   MPI_Comm_rank(MPI_COMM_WORLD, &this->mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &this->mpi_size);
+}
+
+/** Main functions */
+bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
+{
+  is_feasible = true;
+  int t = 0, dt = 0, t_max = 3600 * this->h;
+
+  EN_Project p = EN_createProject();
+
+  CHK(EN_loadProject(this->inpFile.c_str(), p), "Load project");
+  CHK(EN_initSolver(EN_INITFLOW, p), "Initialize solver");
+
+  // Set the project and constraints
+  update_pumps(p, verbose);
+
+  if (verbose) show();
+
+  do
+  {
+    // Run the solver
+    CHK(EN_runSolver(&t, p), "Run solver");
+
+    if (verbose) printf("\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
+
+    // Check node pressures
+    is_feasible = cntrs.check_pressures(verbose);
+    if (!is_feasible)
+    {
+      add_prune(PruneReason::PRESSURES);
+      break;
+    }
+
+    // Check tank levels
+    is_feasible = cntrs.check_levels(verbose);
+    if (!is_feasible)
+    {
+      add_prune(PruneReason::LEVELS);
+      break;
+    }
+
+    // Check cost
+    cost = cntrs.calc_cost();
+    is_feasible = cntrs.check_cost(cost, verbose);
+    if (!is_feasible)
+    {
+      add_prune(PruneReason::COST);
+      jump_to_end();
+      break;
+    }
+
+    // Advance the solver
+    CHK(EN_advanceSolver(&dt, p), "Advance solver");
+
+    // Check if we have reached the maximum simulation time
+    if (t + dt > t_max) break;
+  } while (dt > 0);
+
+  // Check stability for the last hour
+  if (is_feasible && this->h == this->h_max)
+  {
+    is_feasible = cntrs.check_stability(verbose);
+    if (!is_feasible) add_prune(PruneReason::STABILITY);
+  }
+
+  if (save_project)
+  {
+    // Create a file with timestamp based name
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << "output_" << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S") << ".inp";
+    Project *prj = static_cast<Project *>(p);
+    prj->save(ss.str().c_str());
+    Console::printf(Console::Color::BRIGHT_GREEN, "Project saved to: %s\n", ss.str().c_str());
+  }
+
+  // Delete the project
+  EN_deleteProject(p);
+
+  return is_feasible;
+}
+
+/** Update functions */
+void BBSolver::update_pumps(EN_Project p, bool verbose)
+{
+  cntrs.update_pumps(p, this->h, this->x, verbose);
+}
+
+bool BBSolver::set_y(const std::vector<int> &y)
+{
+  // Copy y to the internal y vector
+  this->y = y;
+
+  // Start assuming the y vector is feasible
+  this->is_feasible = true;
+
+  // Set y and update x
+  this->h = 0;
+  for (int i = 0; i < this->h_max; ++i)
+  {
+    this->h++;
+    bool updated = this->update_x(false);
+    if (!updated) return false;
+  }
+
+  return true;
 }
 
 bool BBSolver::update_y()
@@ -104,18 +213,13 @@ bool BBSolver::update_y()
   return false;
 }
 
-void BBSolver::jump_to_end()
-{
-  y[h] = num_pumps;
-}
-
 bool BBSolver::update_x(bool verbose)
 {
   // Record feasible if the current state is feasible
-  if (is_feasible) stats.record_feasible(h);
+  if (is_feasible) stats.add_feasible(h);
 
   // Update x core
-  bool is_feasible = this->update_x_core(verbose);
+  is_feasible = this->update_x_core(verbose);
 
   // Check consistency sum(x[h]) == y[h]
   if (is_feasible)
@@ -126,22 +230,6 @@ bool BBSolver::update_x(bool verbose)
   }
 
   return is_feasible;
-}
-
-void BBSolver::show_xy(bool verbose) const
-{
-  if (!verbose) return;
-  std::cout << "\n";
-  for (int i = 1; i <= this->h; i++)
-  {
-    Console::printf(Console::Color::BRIGHT_WHITE, "h[%2d]: y=%d, x=[ ", i, this->y[i]);
-    const int *x_i = &this->x[this->num_pumps * i];
-    for (int j = 0; j < this->num_pumps; j++)
-    {
-      Console::printf(Console::Color::YELLOW, "%d ", x_i[j]);
-    }
-    Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
-  }
 }
 
 bool BBSolver::update_x_core(bool verbose)
@@ -207,6 +295,14 @@ bool BBSolver::update_x_core(bool verbose)
   return true;
 }
 
+void BBSolver::jump_to_end()
+{
+  if (h == h_min)
+    y[h] = h_cut;
+  else
+    y[h] = num_pumps;
+}
+
 void BBSolver::calc_actuations_csum(int *actuations_csum, const std::vector<int> &x, int h)
 {
   // Set actuations_csum to 0
@@ -222,26 +318,6 @@ void BBSolver::calc_actuations_csum(int *actuations_csum, const std::vector<int>
       if (x_new[j] > x_old[j]) ++actuations_csum[j];
     }
   }
-}
-
-bool BBSolver::set_y(const std::vector<int> &y)
-{
-  // Copy y to the internal y vector
-  this->y = y;
-
-  // Start assuming the y vector is feasible
-  this->is_feasible = true;
-
-  // Set y and update x
-  this->h = 0;
-  for (int i = 0; i < this->h_max; ++i)
-  {
-    this->h++;
-    bool updated = this->update_x(false);
-    if (!updated) return false;
-  }
-
-  return true;
 }
 
 int BBSolver::get_free_level()
@@ -270,33 +346,19 @@ int BBSolver::get_free_level()
   return h_max;
 }
 
-void BBSolver::show() const
+/** Update Reason functions */
+void BBSolver::add_prune(PruneReason reason)
 {
-  // Get MPI rank
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  // Print Header with MPI rank
-  Console::hline(Console::Color::BRIGHT_CYAN);
-  Console::printf(Console::Color::BRIGHT_CYAN, "BBSolver (Rank %d)\n", rank);
-
-  // Display Current Time Period
-  Console::printf(Console::Color::YELLOW, "   h=%d, is_feasible=%d\n", h, is_feasible);
-
-  // Display Top Level and Top Cut
-  Console::printf(Console::Color::BRIGHT_MAGENTA, "   Top: level=%d, cut=%d\n", h_min, h_cut);
-
-  // Display y and x vectors
-  show_xy(true);
-
-  // Print Footer
-  Console::printf(Console::Color::BRIGHT_CYAN, "\n");
-
-  this->stats.show();
-
-  this->cntrs.show();
+  stats.add_pruning(reason, h);
 }
 
+void BBSolver::add_feasible()
+{
+  is_feasible = true;
+  stats.add_feasible(h);
+}
+
+/** MPI functions */
 void BBSolver::write_buffer()
 {
   // Retrieve the MPI rank
@@ -340,104 +402,7 @@ void BBSolver::read_buffer()
   std::copy(mpi_buffer.begin() + num_scalars + y.size(), mpi_buffer.begin() + num_scalars + y.size() + x.size(), x.begin());
 }
 
-void BBSolver::prune(PruneReason reason)
-{
-  this->stats.record_pruning(reason, this->h);
-}
-
-// Function to process a node in the branch-and-bound tree
-bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
-{
-  bool is_feasible = true;
-  int t = 0, dt = 0, t_max = 3600 * this->h;
-
-  EN_Project p = EN_createProject();
-
-  CHK(EN_loadProject(this->inpFile.c_str(), p), "Load project");
-  CHK(EN_initSolver(EN_INITFLOW, p), "Initialize solver");
-
-  // Set the project and constraints
-  update_pumps(p, verbose);
-
-  if (verbose) show();
-
-  do
-  {
-    // Run the solver
-    CHK(EN_runSolver(&t, p), "Run solver");
-
-    if (verbose) printf("\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
-
-    // Check node pressures
-    is_feasible = cntrs.check_pressures(verbose);
-    if (!is_feasible)
-    {
-      prune(PruneReason::PRESSURES);
-      break;
-    }
-
-    // Check tank levels
-    is_feasible = cntrs.check_levels(verbose);
-    if (!is_feasible)
-    {
-      prune(PruneReason::LEVELS);
-      break;
-    }
-
-    // Check cost
-    cost = cntrs.calc_cost();
-    is_feasible = cntrs.check_cost(cost, verbose);
-    if (!is_feasible)
-    {
-      prune(PruneReason::COST);
-      jump_to_end();
-      break;
-    }
-
-    // Advance the solver
-    CHK(EN_advanceSolver(&dt, p), "Advance solver");
-
-    // Check if we have reached the maximum simulation time
-    if (t + dt > t_max) break;
-  } while (dt > 0);
-
-  // Check stability for the last hour
-  if (is_feasible && this->h == this->h_max)
-  {
-    is_feasible = cntrs.check_stability(verbose);
-    if (!is_feasible) prune(PruneReason::STABILITY);
-  }
-
-  if (save_project)
-  {
-    // Create a file with timestamp based name
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << "output_" << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S") << ".inp";
-    Project *prj = static_cast<Project *>(p);
-    prj->save(ss.str().c_str());
-    Console::printf(Console::Color::BRIGHT_GREEN, "Project saved to: %s\n", ss.str().c_str());
-  }
-
-  // Delete the project
-  EN_deleteProject(p);
-
-  return is_feasible;
-}
-
-void BBSolver::update_pumps(EN_Project p, bool verbose)
-{
-  cntrs.update_pumps(p, this->h, this->x, verbose);
-}
-
-void BBSolver::set_feasible()
-{
-  is_feasible = true;
-  stats.record_feasible(h);
-}
-
-void BBSolver::send_work(int recv_rank, const std::vector<int> &free_level, bool verbose)
+void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free, bool verbose)
 {
   if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Sending to rank %d\n", mpi_rank, recv_rank);
 
@@ -455,13 +420,13 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &free_level, bool
   // Update status
   h = h_min;
   is_feasible = false;
-  prune(PruneReason::SPLIT);
+  add_prune(PruneReason::SPLIT);
 
   // Show the current state
   if (verbose) show();
 }
 
-void BBSolver::recv_work(int send_rank, const std::vector<int> &free_level, bool verbose)
+void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free, bool verbose)
 {
   if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Receiving from rank %d\n", mpi_rank, send_rank);
 
@@ -480,7 +445,7 @@ void BBSolver::recv_work(int send_rank, const std::vector<int> &free_level, bool
   if (verbose) show();
 }
 
-bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &free_level, int level_max, bool verbose)
+bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose)
 {
   // Count the number of sending ranks
   int count_send = 0, count_recv = 0;
@@ -490,7 +455,7 @@ bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &f
     if (done[send_rank]) continue;
 
     // Skip if there is not enough work to send (high level)
-    if (free_level[send_rank] > level_max) continue;
+    if (h_free[send_rank] > h_threshold) continue;
 
     // Count the number of sending ranks
     ++count_send;
@@ -511,18 +476,236 @@ bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &f
       // This rank is a sender
       if (send_rank == mpi_rank)
       {
-        send_work(recv_rank, free_level, verbose);
+        send_work(recv_rank, h_free, verbose);
         return true;
       }
 
       // This rank is a receiver
       if (recv_rank == mpi_rank)
       {
-        recv_work(send_rank, free_level, verbose);
+        recv_work(send_rank, h_free, verbose);
         return true;
       }
     }
   }
 
   return false;
+}
+
+/** Show functions */
+void BBSolver::show_xy(bool verbose) const
+{
+  if (!verbose) return;
+  std::cout << "\n";
+  for (int i = 1; i <= this->h; i++)
+  {
+    Console::printf(Console::Color::BRIGHT_WHITE, "h[%2d]: y=%d, x=[ ", i, this->y[i]);
+    const int *x_i = &this->x[this->num_pumps * i];
+    for (int j = 0; j < this->num_pumps; j++)
+    {
+      Console::printf(Console::Color::YELLOW, "%d ", x_i[j]);
+    }
+    Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
+  }
+}
+
+void BBSolver::show() const
+{
+  // Get MPI rank
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // Print Header with MPI rank
+  Console::hline(Console::Color::BRIGHT_CYAN);
+  Console::printf(Console::Color::BRIGHT_CYAN, "BBSolver (Rank %d)\n", rank);
+
+  // Display Current Time Period
+  Console::printf(Console::Color::YELLOW, "   h=%d, is_feasible=%d\n", h, is_feasible);
+
+  // Display Top Level and Top Cut
+  Console::printf(Console::Color::BRIGHT_MAGENTA, "   Top: level=%d, cut=%d\n", h_min, h_cut);
+
+  // Display y and x vectors
+  show_xy(true);
+
+  // Print Footer
+  Console::printf(Console::Color::BRIGHT_CYAN, "\n");
+
+  this->stats.show();
+
+  this->cntrs.show();
+}
+
+void parse_args(int argc, char *argv[], bool &verbose, int &h_max, int &max_actuations, bool &save_project, bool &use_logger, int &h_threshold)
+{
+  // Parse command line arguments
+  for (int i = 1; i < argc; ++i)
+  {
+    std::string arg = argv[i];
+    if (arg == "-v" || arg == "--verbose")
+      verbose = true;
+    else if (arg == "-h" || arg == "--h_max")
+      h_max = std::stoi(argv[++i]);
+    else if (arg == "-a" || arg == "--max_actuations")
+      max_actuations = std::stoi(argv[++i]);
+    else if (arg == "-s" || arg == "--save")
+      save_project = true;
+    else if (arg == "-l" || arg == "--log")
+      use_logger = true;
+    else if (arg == "-t" || arg == "--h_threshold")
+      h_threshold = std::stoi(argv[++i]);
+  }
+}
+
+void BBSolver::update_solution(double cost)
+{
+  if (cost > cost_best)
+  {
+    Console::printf(Console::Color::RED, "ERR[rank=%d]: cost=%.2f > cost_best=%.2f\n", mpi_rank, cost, cost_best);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  cost_best = cost;
+  y_best = y;
+  x_best = x;
+
+  // Update constraint
+  cntrs.cost_max = cost;
+
+  Console::printf(Console::Color::GREEN, "Rank[%d]: solution cost=%.2f\n", mpi_rank, cost);
+}
+
+inline void solve_iteration(BBSolver &solver, int &done_loc, bool verbose, bool save_project)
+{
+  if (done_loc)
+  {
+    // Sleep for 1 second to avoid busy-waiting
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    return;
+  }
+
+  double cost = 0.0;
+
+  // Update y vector
+  done_loc = solver.update_y();
+  if (done_loc) return;
+
+  // Update x vector
+  solver.update_x(verbose);
+  if (!solver.is_feasible)
+  {
+    solver.add_prune(PruneReason::ACTUATIONS);
+    return;
+  }
+
+  // Process node
+  solver.process_node(cost, verbose, save_project);
+
+  // Update feasible counter
+  if (solver.is_feasible)
+  {
+    solver.add_feasible();
+
+    // New solution found
+    if (solver.h == solver.h_max)
+    {
+      solver.update_solution(cost);
+    }
+  }
+}
+
+inline void solve_sync(const int h_threshold, BBSolver &solver, int &done_loc, int &done_all, bool verbose)
+{
+  int mpi_error;
+  std::vector<int> done(solver.mpi_size, 0);
+  std::vector<int> h_free(solver.mpi_size, 0);
+  std::vector<double> cost_best(solver.mpi_size, 0.0);
+
+  // Synchronize cost_best across all ranks ================================
+  mpi_error = MPI_Allgather(&solver.cost_best, 1, MPI_DOUBLE, cost_best.data(), 1, MPI_DOUBLE, MPI_COMM_WORLD);
+  if (mpi_error != MPI_SUCCESS) MPI_Abort(MPI_COMM_WORLD, mpi_error);
+
+  solver.cost_best = std::numeric_limits<double>::infinity();
+  int rank_min = 0;
+  for (int rank = 0; rank < solver.mpi_size; ++rank)
+  {
+    if (cost_best[rank] < solver.cost_best)
+    {
+      solver.cost_best = cost_best[rank];
+      rank_min = rank;
+    }
+  }
+
+  // Broadcast the solution from the rank with the minimum cost
+  mpi_error = MPI_Bcast(&solver.y_best, solver.y_best.size(), MPI_INT, rank_min, MPI_COMM_WORLD);
+  mpi_error = MPI_Bcast(&solver.x_best, solver.x_best.size(), MPI_INT, rank_min, MPI_COMM_WORLD);
+
+  // Synchronize done_all across all ranks =================================
+  mpi_error = MPI_Allgather(&done_loc, 1, MPI_INT, done.data(), 1, MPI_INT, MPI_COMM_WORLD);
+  if (mpi_error != MPI_SUCCESS) MPI_Abort(MPI_COMM_WORLD, mpi_error);
+
+  // Check if all ranks are done, if so, break
+  done_all = std::all_of(done.begin(), done.end(), [](int i) { return i == 1; });
+  if (done_all) return;
+
+  // Update h_free with data from all ranks ================================
+  int h_free_loc = solver.get_free_level();
+  mpi_error = MPI_Allgather(&h_free_loc, 1, MPI_INT, h_free.data(), 1, MPI_INT, MPI_COMM_WORLD);
+  if (mpi_error != MPI_SUCCESS) MPI_Abort(MPI_COMM_WORLD, mpi_error);
+
+  // The work is not done if the task has been split
+  bool done_split = solver.try_split(done, h_free, h_threshold, verbose);
+  if (done_loc) done_loc = !done_split;
+
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void solve(int argc, char *argv[])
+{
+  // Get MPI rank and size
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // Default input file
+  const char *inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
+
+  // Parse command line arguments
+  int h_max = 24;
+  int max_actuations = 3;
+  bool verbose = false;
+  bool save_project = false;
+  bool use_logger = false;
+  int h_threshold = 18;
+  parse_args(argc, argv, verbose, h_max, max_actuations, save_project, use_logger, h_threshold);
+
+  // Open logger file for each rank
+  Console::open(rank, use_logger, verbose);
+
+  // Initialize solver
+  BBSolver solver(inpFile, h_max, max_actuations);
+
+  // Initialize iteration variables
+  int done_loc = (rank != 0); // Only rank 0 starts
+  int done_all = 0;
+
+  // Start timing
+  auto tic = std::chrono::high_resolution_clock::now();
+  auto toc = tic;
+  double eta = 0.0; // elapsed time in millisecond
+
+  // Main loop
+  while (!done_all)
+  {
+    solve_iteration(solver, done_loc, verbose, save_project);
+    toc = std::chrono::high_resolution_clock::now();
+    eta = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic).count();
+    if (eta > 1000)
+    {
+      solve_sync(h_threshold, solver, done_loc, done_all, verbose);
+      tic = toc; // reset timer
+    }
+  }
+
+  // Close output file
+  Console::close();
 }

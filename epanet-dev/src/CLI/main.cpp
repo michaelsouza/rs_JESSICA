@@ -3,9 +3,15 @@
 #include "BBSolver.h"
 #include "BBTests.h"
 
+#include <mpi.h>
+
 int main(int argc, char *argv[])
 {
-  // bbsolver(argc, argv);
+  MPI_Init(nullptr, nullptr);
+
+  // solve(argc, argv);
   test_all();
-  return 0;
+
+  MPI_Finalize();
+  return EXIT_SUCCESS;
 }

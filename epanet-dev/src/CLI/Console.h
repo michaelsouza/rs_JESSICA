@@ -34,16 +34,16 @@ public:
     BRIGHT_WHITE = 97
   };
 
-  static bool use_file;
+  static bool use_logger;
   static std::string file_name;
-  static std::ofstream output_file;
+  static std::ofstream logger_file;
 
   static void open(int rank, bool use_file = true, bool verbose = false);
 
   static void close()
   {
-    output_file.close();
-    use_file = false;
+    logger_file.close();
+    use_logger = false;
   }
 
   /**

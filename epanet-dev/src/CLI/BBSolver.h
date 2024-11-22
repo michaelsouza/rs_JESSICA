@@ -90,15 +90,17 @@ public:
    */
   void read_buffer();
 
-  void prune(PruneReason reason);
+  void add_prune(PruneReason reason);
 
   bool process_node(double &cost, bool verbose, bool save_project);
 
   void update_pumps(EN_Project p, bool verbose);
 
-  void set_feasible();
+  void add_feasible();
 
-  bool try_split(const std::vector<int> &done, const std::vector<int> &free_level, int free_level_max, bool verbose);
+  bool try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose);
+
+  void update_solution(double cost);
 
   // Public member variables
   int h;                       ///< Current time period index.
@@ -114,14 +116,16 @@ public:
   std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
   int mpi_rank;                ///< Rank of the current process.
   int mpi_size;                ///< Size of the MPI communicator.
+  std::vector<int> y_best;     ///< Best y vector found.
+  std::vector<int> x_best;     ///< Best x vector found.
+  double cost_best;            ///< Best cost found.
+  int is_feasible;             ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
+  BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
 
 private:
-  int is_feasible; ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
-  BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
+  void send_work(int recv_rank, const std::vector<int> &h_free, bool verbose);
 
-  void send_work(int recv_rank, const std::vector<int> &free_level, bool verbose);
-
-  void recv_work(int send_rank, const std::vector<int> &free_level, bool verbose);
+  void recv_work(int send_rank, const std::vector<int> &h_free, bool verbose);
 
   /**
    * @brief Core function to update the x vector.
@@ -140,3 +144,5 @@ private:
    */
   void calc_actuations_csum(int *actuations_csum, const std::vector<int> &x, int h);
 };
+
+void solve(int argc, char *argv[]);

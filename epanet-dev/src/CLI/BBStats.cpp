@@ -7,10 +7,11 @@
 
 BBStats::BBStats(int h_max, int max_actuations)
 {
-  this->cost_min = std::numeric_limits<double>::infinity();
-  this->y_min = std::vector<int>(h_max + 1, 0);
-  this->feasible_counter = std::vector<int>(h_max + 1, 0);
-  this->prunings = std::vector<std::map<PruneReason, int>>(h_max + 1);
+  cost_min = std::numeric_limits<double>::infinity();
+  y_min = std::vector<int>(h_max + 1, 0);
+  feasible_counter = std::vector<int>(h_max + 1, 0);
+  split_counter = 0;
+  prunings = std::vector<std::map<PruneReason, int>>(h_max + 1);
   // Initialize prunings
   std::vector<PruneReason> reasons = {PruneReason::ACTUATIONS, PruneReason::COST, PruneReason::PRESSURES, PruneReason::LEVELS,
                                       PruneReason::STABILITY};
@@ -18,19 +19,21 @@ BBStats::BBStats(int h_max, int max_actuations)
   {
     for (auto &reason : reasons)
     {
-      this->prunings[h][reason] = 0;
+      prunings[h][reason] = 0;
     }
   }
 }
 
-void BBStats::record_pruning(PruneReason reason, int h)
+void BBStats::add_pruning(PruneReason reason, int h)
 {
-  this->prunings[h][reason]++;
+  prunings[h][reason]++;
+  // Increment split counter if the reason is SPLIT
+  if (reason == PruneReason::SPLIT) split_counter++;
 }
 
-void BBStats::record_feasible(int h)
+void BBStats::add_feasible(int h)
 {
-  this->feasible_counter[h]++;
+  feasible_counter[h]++;
 }
 
 void BBStats::show() const

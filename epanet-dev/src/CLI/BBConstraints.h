@@ -56,7 +56,7 @@ public:
   std::map<std::string, int> nodes;
   std::map<std::string, int> tanks;
   std::map<std::string, Pump *> pumps;
-  double cost_max;
+  double cost_max; ///< Maximum cost allowed (upper bound).
   EN_Project p;
   std::string inpFile;
 

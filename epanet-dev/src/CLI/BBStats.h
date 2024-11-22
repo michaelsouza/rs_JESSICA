@@ -19,9 +19,11 @@ public:
 
   double cost_min;
   std::vector<int> y_min;
+  std::vector<int> x_min;
   std::vector<std::map<PruneReason, int>> prunings;
   std::vector<int> feasible_counter;
   int split_counter;
   std::vector<PruneReason> prune_keys;
   void show() const;
+  void to_json();
 };

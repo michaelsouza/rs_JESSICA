@@ -1,9 +1,15 @@
 // src/CLI/BBStats.cpp
 #include "BBStats.h"
 #include "Utils.h" // For ColorStream
+
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <mpi.h>
+#include <nlohmann/json.hpp>
+#include <sstream>
+
+using json = nlohmann::json;
 
 BBStats::BBStats(int h_max, int max_actuations)
 {
@@ -78,4 +84,69 @@ void BBStats::show() const
     // Feasible solutions
     Console::printf(Console::Color::GREEN, "%d\n", feasible_counter[h]);
   }
+}
+
+void BBStats::to_json()
+{
+  // Create a JSON object
+  json j;
+
+  // Add basic statistics
+  j["cost_min"] = cost_min;
+
+  // Add y_min vector
+  j["y_min"] = y_min;
+
+  // Add feasible_counter
+  j["feasible_counter"] = feasible_counter;
+
+  // Add split_counter
+  j["split_counter"] = split_counter;
+
+  // Add prunings
+  // Convert PruneReason enum to string for JSON
+  std::map<std::string, std::map<std::string, int>> prunings_json;
+  for (size_t h = 0; h < prunings.size(); h++)
+  {
+    std::map<std::string, int> reasons_map;
+    for (const auto &pair : prunings[h])
+    {
+      reasons_map[to_string(pair.first)] = pair.second;
+    }
+    prunings_json["Level_" + std::to_string(h)] = reasons_map;
+  }
+  j["prunings"] = prunings_json;
+
+  // Get MPI rank
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // Get current date and time
+  auto now = std::chrono::system_clock::now();
+  std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+  std::tm tm_struct;
+#if defined(_MSC_VER) || defined(__MINGW32__)
+  localtime_s(&tm_struct, &now_time); // For MSVC
+#else
+  localtime_r(&now_time, &tm_struct); // For POSIX
+#endif
+  std::stringstream ss;
+  ss << std::put_time(&tm_struct, "%Y%m%d_%H%M%S");
+
+  // Construct filename with date, time, and rank
+  std::string filename = "BBStats_rank" + std::to_string(rank) + "_" + ss.str() + ".json";
+
+  // Write JSON to file
+  std::ofstream ofs(filename);
+  if (!ofs.is_open())
+  {
+    Console::printf(Console::Color::RED, "Rank[%d]: Failed to open file %s for writing JSON stats.\n", rank, filename.c_str());
+    return;
+  }
+
+  ofs << std::setw(4) << j << std::endl;
+  ofs.close();
+
+  // Optional: Print confirmation
+  Console::printf(Console::Color::GREEN, "Rank[%d]: Statistics written to %s\n", rank, filename.c_str());
 }

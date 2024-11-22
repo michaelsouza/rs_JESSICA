@@ -27,6 +27,8 @@ inline std::string to_string(const PruneReason &reason)
     return "levels";
   case PruneReason::STABILITY:
     return "stability";
+  case PruneReason::SPLIT:
+    return "split";
   default:
     return "unknown";
   }

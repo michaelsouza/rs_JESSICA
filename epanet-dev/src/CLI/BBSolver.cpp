@@ -565,8 +565,14 @@ void BBSolver::update_cost(double cost, bool update_xy)
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  std::string cost_ub_str = (cntrs.cost_ub > 999999999) ? "inf" : std::to_string(cntrs.cost_ub);
-  Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (%s)\n", mpi_rank, cost, cost_ub_str.c_str());
+  if (cntrs.cost_ub > 999999999)
+  {
+    Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (inf) %s\n", mpi_rank, cost, update_xy ? "new" : "");
+  }
+  else
+  {
+    Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (%.2f) %s\n", mpi_rank, cost, cntrs.cost_ub, update_xy ? "new" : "");
+  }
 
   cntrs.cost_ub = cost;
 
@@ -587,7 +593,7 @@ inline void solve_iteration(BBSolver &solver, int &done_loc, bool verbose, bool 
   done_loc = !solver.update_y();
   if (done_loc)
   {
-    Console::printf(Console::Color::BRIGHT_RED, "\nRank[%d]: done_loc=true\n", solver.mpi_rank);
+    if (verbose) Console::printf(Console::Color::BRIGHT_RED, "\nRank[%d]: done_loc=true\n", solver.mpi_rank);
     return;
   }
 
@@ -620,8 +626,12 @@ inline void solve_sync(const int h_threshold, BBSolver &solver, int &done_loc, i
 {
   static int num_calls = 0;
   num_calls++;
-  Console::hline(Console::Color::BRIGHT_CYAN);
-  Console::printf(Console::Color::BRIGHT_CYAN, "Rank[%d]: solve_sync #%d (done_loc=%d)\n", solver.mpi_rank, num_calls, done_loc);
+
+  if (verbose)
+  {
+    Console::hline(Console::Color::BRIGHT_CYAN);
+    Console::printf(Console::Color::BRIGHT_CYAN, "Rank[%d]: solve_sync #%d (done_loc=%d)\n", solver.mpi_rank, num_calls, done_loc);
+  }
 
   int mpi_error;
   std::vector<int> done(solver.mpi_size, 0);
@@ -679,8 +689,11 @@ inline void solve_sync(const int h_threshold, BBSolver &solver, int &done_loc, i
   bool done_split = solver.try_split(done, h_free, h_threshold, verbose);
   if (done_loc) done_loc = !done_split;
 
-  Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: MPI_Barrier (h=%d, done_split=%d, done_loc=%d)\n", solver.mpi_rank, solver.h, done_split,
-                  done_loc);
+  if (verbose)
+  {
+    Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: MPI_Barrier\n");
+  }
+
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -711,18 +724,38 @@ void solve(int argc, char *argv[])
   // Initialize iteration variables
   int done_loc = (rank != 0); // Only rank 0 starts
   int done_all = 0;
+  auto tic = std::chrono::high_resolution_clock::now();
 
   // Main loop
   static int niters = 0;
   while (!done_all)
   {
     ++niters;
+
+    if (solver.mpi_rank == 0)
+    {
+      show_timer(niters, tic, 256);
+    }
+
     solve_iteration(solver, done_loc, verbose, save_project);
     solve_sync(h_threshold, solver, done_loc, done_all, verbose);
   }
 
-  Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: 🎉 %d iterations, cost_ub=%.2f\n", rank, niters, solver.cntrs.cost_ub);
+  Console::printf(Console::Color::BRIGHT_GREEN, "\nRank[%d]: 🎉 %d iterations, cost_ub=%.2f\n", rank, niters, solver.cntrs.cost_ub);
+
+  // Write stats to json
+  solver.to_json();
 
   // Close output file
   Console::close();
+}
+
+void BBSolver::to_json()
+{
+  // Update stats
+  stats.y_min = y_best;
+  stats.x_min = x_best;
+  stats.cost_min = cntrs.cost_ub;
+
+  stats.to_json();
 }

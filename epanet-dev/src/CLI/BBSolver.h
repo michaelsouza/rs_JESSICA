@@ -102,6 +102,8 @@ public:
 
   void update_cost(double cost, bool update_xy);
 
+  void to_json();
+
   // Public member variables
   int h;                       ///< Current time period index.
   int h_max;                   ///< Total number of time periods.

@@ -22,15 +22,15 @@ void show_timer(unsigned int niter, std::chrono::high_resolution_clock::time_poi
     return;
   }
   auto toc = std::chrono::high_resolution_clock::now();
-  double elapsed_time = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic).count();
-  double avg_time_per_iter = elapsed_time / niter;
+  double eta_secs = std::chrono::duration_cast<std::chrono::duration<double>>(toc - tic).count();
+  double avg_time_per_iter_ms = eta_secs / niter * 1000;
 
   std::cout << "\r"; // Move to the beginning of the line
   Console::printf(Console::Color::BRIGHT_BLUE, "⏱  Iter: ");
   Console::printf(Console::Color::BRIGHT_YELLOW, "%d", niter);
   Console::printf(Console::Color::BRIGHT_BLUE, " | Time: ");
-  Console::printf(Console::Color::BRIGHT_CYAN, "%.2f s", elapsed_time);
+  Console::printf(Console::Color::BRIGHT_CYAN, "%.2f secs", eta_secs);
   Console::printf(Console::Color::BRIGHT_BLUE, " | Avg: ");
-  Console::printf(Console::Color::BRIGHT_CYAN, "%.2f s", avg_time_per_iter);
+  Console::printf(Console::Color::BRIGHT_CYAN, "%.2f ms", avg_time_per_iter_ms);
   std::cout.flush();
 }

@@ -24,6 +24,8 @@ BBSolver::BBSolver(std::string inpFile, int h_max, int max_actuations) : inpFile
   // Initialize y and x vectors
   this->y = std::vector<int>(h_max + 1, 0);
   this->x = std::vector<int>(num_pumps * (h_max + 1), 0);
+  this->y_best = std::vector<int>(h_max + 1, 0);
+  this->x_best = std::vector<int>(num_pumps * (h_max + 1), 0);
 
   // Allocate the recv buffer
   this->mpi_buffer.resize(4 + y.size() + x.size());
@@ -52,7 +54,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     // Run the solver
     CHK(EN_runSolver(&t, p), "Run solver");
 
-    if (verbose) printf("\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
+    if (verbose) Console::printf(Console::Color::BRIGHT_WHITE, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
 
     // Check node pressures
     is_feasible = cntrs.check_pressures(verbose);
@@ -520,10 +522,8 @@ void BBSolver::show() const
   Console::printf(Console::Color::BRIGHT_CYAN, "BBSolver (Rank %d)\n", rank);
 
   // Display Current Time Period
-  Console::printf(Console::Color::YELLOW, "   h=%d, is_feasible=%d\n", h, is_feasible);
-
-  // Display Top Level and Top Cut
-  Console::printf(Console::Color::BRIGHT_MAGENTA, "   Top: level=%d, cut=%d\n", h_min, h_cut);
+  Console::printf(Console::Color::YELLOW, "   h_min=%d, h_max=%d, h_cut=%d\n", h_min, h_max, h_cut);
+  Console::printf(Console::Color::MAGENTA, "   h=%d, is_feasible=%d\n", h, is_feasible);
 
   // Display y and x vectors
   show_xy(true);
@@ -536,6 +536,7 @@ void BBSolver::show() const
   this->cntrs.show();
 }
 
+/** Main solve functions */
 void parse_args(int argc, char *argv[], bool &verbose, int &h_max, int &max_actuations, bool &save_project, bool &use_logger, int &h_threshold)
 {
   // Parse command line arguments
@@ -572,7 +573,7 @@ void BBSolver::update_solution(double cost)
   // Update constraint
   cntrs.cost_max = cost;
 
-  Console::printf(Console::Color::GREEN, "Rank[%d]: solution cost=%.2f\n", mpi_rank, cost);
+  Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_best=%.2f\n", mpi_rank, cost);
 }
 
 inline void solve_iteration(BBSolver &solver, int &done_loc, bool verbose, bool save_project)
@@ -587,7 +588,7 @@ inline void solve_iteration(BBSolver &solver, int &done_loc, bool verbose, bool 
   double cost = 0.0;
 
   // Update y vector
-  done_loc = solver.update_y();
+  done_loc = !solver.update_y();
   if (done_loc) return;
 
   // Update x vector
@@ -635,6 +636,9 @@ inline void solve_sync(const int h_threshold, BBSolver &solver, int &done_loc, i
       rank_min = rank;
     }
   }
+
+  // Update constraint
+  solver.cntrs.cost_max = solver.cost_best;
 
   // Broadcast the solution from the rank with the minimum cost
   mpi_error = MPI_Bcast(&solver.y_best, solver.y_best.size(), MPI_INT, rank_min, MPI_COMM_WORLD);

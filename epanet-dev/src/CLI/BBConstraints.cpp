@@ -80,27 +80,27 @@ void BBConstraints::get_nodes_tanks_ids(std::string inpFile)
 void BBConstraints::show_pressures(bool is_feasible, const std::string &node_name, double pressure, double threshold)
 {
   if (!is_feasible)
-    printf("  \u274C node[%3s]: %.2f < %.2f\n", node_name.c_str(), pressure, threshold);
+    Console::printf(Console::Color::RED, "  \u274C node[%3s]: %.2f < %.2f\n", node_name.c_str(), pressure, threshold);
   else
-    printf("  \u2705 node[%3s]: %.2f >= %.2f\n", node_name.c_str(), pressure, threshold);
+    Console::printf(Console::Color::GREEN, "  \u2705 node[%3s]: %.2f >= %.2f\n", node_name.c_str(), pressure, threshold);
 }
 
 // Function to display tank level status
 void BBConstraints::show_levels(bool is_feasible, const std::string &tank_name, double level, double level_min, double level_max)
 {
   if (!is_feasible)
-    printf("  \u274C tank[%3s]: %.2f not in [%.2f, %.2f]\n", tank_name.c_str(), level, level_min, level_max);
+    Console::printf(Console::Color::RED, "  \u274C tank[%3s]: %.2f not in [%.2f, %.2f]\n", tank_name.c_str(), level, level_min, level_max);
   else
-    printf("  \u2705 tank[%3s]: %.2f in [%.2f, %.2f]\n", tank_name.c_str(), level, level_min, level_max);
+    Console::printf(Console::Color::GREEN, "  \u2705 tank[%3s]: %.2f in [%.2f, %.2f]\n", tank_name.c_str(), level, level_min, level_max);
 }
 
 // Function to display stability status
 void BBConstraints::show_stability(bool is_feasible, const std::string &tank_name, double level, double initial_level)
 {
   if (!is_feasible)
-    printf("  \u274C tank[%3s]: %.2f < %.2f\n", tank_name.c_str(), level, initial_level);
+    Console::printf(Console::Color::RED, "  \u274C tank[%3s]: %.2f < %.2f\n", tank_name.c_str(), level, initial_level);
   else
-    printf("  \u2705 tank[%3s]: %.2f >= %.2f\n", tank_name.c_str(), level, initial_level);
+    Console::printf(Console::Color::GREEN, "  \u2705 tank[%3s]: %.2f >= %.2f\n", tank_name.c_str(), level, initial_level);
 }
 
 // Function to check node pressures
@@ -171,10 +171,10 @@ bool BBConstraints::check_levels(bool verbose)
 {
   if (verbose)
   {
-    std::cout << "\nChecking levels: [";
+    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking levels: [");
     for (const auto &tank : tanks)
-      std::cout << tank.first << " ";
-    std::cout << "]" << std::endl;
+      Console::printf(Console::Color::BRIGHT_WHITE, "%s ", tank.first.c_str());
+    Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
   }
 
   const double level_min = 66.53;
@@ -247,11 +247,11 @@ bool BBConstraints::check_cost(const double cost, bool verbose)
   bool is_feasible = cost < cost_max;
   if (verbose)
   {
-    printf("Checking cost:\n");
+    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking cost:\n");
     if (is_feasible)
-      printf("  \u2705 cost=%.2f < cost_max=%.2g\n", cost, cost_max);
+      Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%.2f\n", cost, cost_max);
     else
-      printf("  \u274C cost=%.2f >= cost_max=%.2g\n", cost, cost_max);
+      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%.2f\n", cost, cost_max);
   }
   return is_feasible;
 }
@@ -269,7 +269,7 @@ double BBConstraints::calc_cost() const
 
 void BBConstraints::update_pumps(EN_Project p, const int h, const std::vector<int> &x, bool verbose)
 {
-  if (verbose) Console::printf(Console::Color::BRIGHT_WHITE, "Updating pumps\n");
+  if (verbose) Console::printf(Console::Color::BRIGHT_WHITE, "\nUpdating pumps\n");
 
   // Set project pointer. This is used by the "check" methods.
   this->p = p;

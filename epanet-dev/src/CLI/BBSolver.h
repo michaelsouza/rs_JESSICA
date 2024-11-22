@@ -98,7 +98,7 @@ public:
 
   void set_feasible();
 
-  void split(const std::vector<int> &done, const std::vector<int> &free_level, int free_level_max, bool verbose);
+  bool try_split(const std::vector<int> &done, const std::vector<int> &free_level, int free_level_max, bool verbose);
 
   // Public member variables
   int h;                       ///< Current time period index.
@@ -107,8 +107,8 @@ public:
   std::vector<int> x;          ///< Vector tracking pump states across time periods.
   int max_actuations;          ///< Maximum actuations allowed per pump.
   int num_pumps;               ///< Number of pumps being managed.
-  int top_level;               ///< Current top level in the counter.
-  int top_cut;                 ///< Threshold for top level operations.
+  int h_min;                   ///< Current top level in the counter.
+  int h_cut;                   ///< Threshold for top level operations.
   std::string inpFile;         ///< Input file name.
   BBConstraints cntrs;         ///< Constraints object for the network.
   std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
@@ -116,8 +116,8 @@ public:
   int mpi_size;                ///< Size of the MPI communicator.
 
 private:
-  bool is_feasible; ///< Indicates whether the current state is feasible.
-  BBStats stats;    ///< Statistics object for tracking feasibility and pruning.
+  int is_feasible; ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
+  BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
 
   void send_work(int recv_rank, const std::vector<int> &free_level, bool verbose);
 

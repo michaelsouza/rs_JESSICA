@@ -67,12 +67,35 @@ void Console::printf(Color color, const char *format, ...)
   if (use_file)
   {
     output_file << buffer.get();
+    output_file.flush();
   }
 }
 
 void Console::hline(Color color, size_t length)
 {
+  // Create buffer for the line
+  std::string buffer;
+  buffer.reserve(length + 1);
   for (size_t i = 0; i < length; i++)
-    Console::printf(color, "\u2550");
-  Console::printf(color, "\n");
+  {
+    buffer += "\u2550";
+  }
+  buffer += "\n";
+
+  // Output to console with color
+  if (color != Color::RESET)
+  {
+    std::cout << "\033[" << static_cast<int>(color) << "m" << buffer << "\033[0m";
+  }
+  else
+  {
+    std::cout << buffer;
+  }
+
+  // Write to file if enabled
+  if (use_file)
+  {
+    output_file << buffer;
+    output_file.flush();
+  }
 }

@@ -214,8 +214,8 @@ public:
 
       // Initialize BBsolver with provided parameters
       BBSolver solver(inpFile, h_max, max_actuations);
-      solver.top_level = top_level;
-      solver.top_cut = top_cut;
+      solver.h_min = top_level;
+      solver.h_cut = top_cut;
 
       // Set the y vector
       bool set_y_result = solver.set_y(y);
@@ -383,8 +383,27 @@ public:
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic);
     Console::printf(Console::Color::CYAN, "Rank[%d]: niter %d after %ld ms (final)\n", rank, niters, duration.count());
 
+    // Sum niters across all ranks
+    int total_niters = 0;
+    MPI_Reduce(&niters, &total_niters, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0)
+    {
+      bool sum_correct = (total_niters == 48);
+      if (sum_correct)
+      {
+        Console::printf(Console::Color::GREEN, "Total iterations across all ranks: %d (correct)\n", total_niters);
+      }
+      else
+      {
+        Console::printf(Console::Color::RED, "Total iterations across all ranks: %d (expected 48)\n", total_niters);
+      }
+      return sum_correct;
+    }
+
     // Close output file
     Console::close();
+
     return true;
   }
 
@@ -462,7 +481,9 @@ private:
     mpi_error = MPI_Allgather(&free_level_loc, 1, MPI_INT, free_level.data(), 1, MPI_INT, MPI_COMM_WORLD);
     if (mpi_error != MPI_SUCCESS) MPI_Abort(MPI_COMM_WORLD, mpi_error);
 
-    solver.split(done, free_level, free_level_max, verbose);
+    // The work is not done if the task is split
+    bool split_done = solver.try_split(done, free_level, free_level_max, verbose);
+    if (done_loc) done_loc = !split_done;
 
     MPI_Barrier(MPI_COMM_WORLD);
   }
@@ -487,9 +508,9 @@ private:
     if (verbose)
     {
       if (is_feasible)
-        Console::printf(Console::Color::GREEN, "Rank[%d]: niters=%d, sum_y=%d is feasible.\n", rank, niters, sum_y);
+        Console::printf(Console::Color::GREEN, "Rank[%d]: niters=%d, sum_y=%d is feasible.\n\n", rank, niters, sum_y);
       else
-        Console::printf(Console::Color::RED, "Rank[%d]: niters=%d, sum_y=%d is not feasible.\n", rank, niters, sum_y);
+        Console::printf(Console::Color::RED, "Rank[%d]: niters=%d, sum_y=%d is not feasible.\n\n", rank, niters, sum_y);
     }
     return is_feasible;
   }
@@ -509,19 +530,18 @@ void test_all()
   TestMPI testMPI;
   TestSplit testSplit;
 
-  // if (rank == 0)
-  // {
-  //   testCost1.run();
-  //   testCost2.run();
-  //   testCost3.run();
-  //   testTopLevel.run();
-  // }
-  // MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == 0)
+  {
+    testCost1.run();
+    testCost2.run();
+    testCost3.run();
+    testTopLevel.run();
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
 
-  // testMPI.run();
-  // MPI_Barrier(MPI_COMM_WORLD);
+  testMPI.run();
+  MPI_Barrier(MPI_COMM_WORLD);
 
-  testSplit.setVerbose(true);
   testSplit.run();
   MPI_Barrier(MPI_COMM_WORLD);
 

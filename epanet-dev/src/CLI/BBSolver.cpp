@@ -15,8 +15,8 @@ BBSolver::BBSolver(std::string inpFile, int h_max, int max_actuations) : inpFile
   this->max_actuations = max_actuations;
   this->num_pumps = cntrs.get_num_pumps();
   this->h = 0;
-  this->top_cut = 0;
-  this->top_level = 0;
+  this->h_cut = 0;
+  this->h_min = 0;
   this->is_feasible = true;
 
   // Initialize y and x vectors
@@ -24,53 +24,83 @@ BBSolver::BBSolver(std::string inpFile, int h_max, int max_actuations) : inpFile
   this->x = std::vector<int>(num_pumps * (h_max + 1), 0);
 
   // Allocate the recv buffer
-  this->mpi_buffer.resize(3 + y.size() + x.size());
+  this->mpi_buffer.resize(4 + y.size() + x.size());
   MPI_Comm_rank(MPI_COMM_WORLD, &this->mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &this->mpi_size);
 }
 
 bool BBSolver::update_y()
 {
-  if (h < 0 || h > h_max)
+  if (h < h_min || h > h_max)
   {
-    throw std::out_of_range("ERR: h (" + std::to_string(h) + ") is out of range in update_y");
+    // pass: invalid hour
   }
-
-  // There is no additional work to do if h == 0 and the current level is infeasible
-  if (h == 0 && !is_feasible) return false;
-
-  // If the current level is feasible, increment the time period
-  if (is_feasible && h < h_max)
+  else if (is_feasible)
   {
-    h++;
-    y[h] = 0;
-    return true;
-  }
+    if (h < h_max)
+    {
+      y[++h] = 0;
+      return true;
+    }
 
-  // The level is finished, reset it and go back one level
-  if (y[h] == num_pumps)
+    // If the current level is the last level, there is no more work to do
+    if (h == h_max)
+    {
+      if (h == h_min)
+      {
+        // There is no more work to do
+        if (y[h] == h_cut) return false;
+
+        // Otherwise, increment the current level
+        y[h]++;
+        return true;
+      }
+
+      if (y[h] < num_pumps)
+      {
+        y[h]++;
+        return true;
+      }
+
+      // Otherwise, decrement the current level
+      --h;
+      is_feasible = false;
+      return update_y();
+    }
+  }
+  else // The current state is infeasible
   {
-    // Reset the current level
-    y[h] = 0;
+    if (h == h_min)
+    {
+      // Increment the current level
+      if (y[h] < h_cut)
+      {
+        y[h]++;
+        return true;
+      }
 
-    // Go back one level
-    h--;
+      // There is no more work to do
+      if (y[h] == h_cut) return false;
+    }
 
-    // Mark the current level as infeasible
-    is_feasible = false;
+    if (h_min < h && h <= h_max)
+    {
+      // The level is finished
+      if (y[h] == num_pumps)
+      {
+        --h;
+        return update_y();
+      }
 
-    // Try to update the y vector again
-    return update_y();
+      // Otherwise, increment the current level
+      y[h]++;
+      return true;
+    }
   }
-
-  // Increment the current level
-  if (y[h] < num_pumps)
-  {
-    y[h]++;
-    return true;
-  }
-
-  // There is no feasible level
+  // Raise an error if the current level is not in the proper range
+  Console::printf(Console::Color::RED, "ERR[rank=%d]: is_feasible=%d, h=%d, ", mpi_rank, is_feasible, h);
+  Console::printf(Console::Color::RED, "y[h]=%d, [h_min=%d, h_max=%d, h_cut=%d] are incompatible in update_y\n", y[h], h_min, h_max, h_cut);
+  MPI_Abort(MPI_COMM_WORLD, 1);
   return false;
 }
 
@@ -131,10 +161,7 @@ bool BBSolver::update_x_core(bool verbose)
   // Start by copying the previous state
   std::copy(x_old, x_old + this->num_pumps, x_new);
 
-  if (y_new == y_old)
-  {
-    return true;
-  }
+  if (y_new == y_old) return true;
 
   // Calculate the cumulative actuations up to hour h
   int actuations_csum[this->num_pumps];
@@ -220,22 +247,22 @@ bool BBSolver::set_y(const std::vector<int> &y)
 int BBSolver::get_free_level()
 {
   // Return the top level if its value is lower than the top cut
-  if (y[top_level] < top_cut)
+  if (y[h_min] < h_cut)
   {
-    return top_level;
+    return h_min;
   }
 
   // Consider only the levels in the range [top_level + 1, h]
-  for (int level = top_level + 1; level <= h; level++)
+  for (int level = h_min + 1; level <= h; level++)
   {
     // For the remaining levels, the cut is the number of pumps
     if (y[level] < num_pumps)
     {
       // Update the top level and top cut
-      top_level = level;
-      top_cut = num_pumps;
+      h_min = level;
+      h_cut = num_pumps;
 
-      return top_level;
+      return h_min;
     }
   }
 
@@ -257,7 +284,7 @@ void BBSolver::show() const
   Console::printf(Console::Color::YELLOW, "   h=%d, is_feasible=%d\n", h, is_feasible);
 
   // Display Top Level and Top Cut
-  Console::printf(Console::Color::BRIGHT_MAGENTA, "   Top: level=%d, cut=%d\n", top_level, top_cut);
+  Console::printf(Console::Color::BRIGHT_MAGENTA, "   Top: level=%d, cut=%d\n", h_min, h_cut);
 
   // Display y and x vectors
   show_xy(true);
@@ -276,17 +303,15 @@ void BBSolver::write_buffer()
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  // Log the start of buffer writing
-  Console::printf(Console::Color::CYAN, "Rank[%d]: writing buffer.\n", rank);
-
   // Resize the buffer
-  const size_t num_scalars = 3;
+  const size_t num_scalars = 4;
   mpi_buffer.resize(num_scalars + y.size() + x.size());
 
   // Write scalar values
-  mpi_buffer[0] = top_level;
-  mpi_buffer[1] = y[top_level]; // send the current top level value as top_cut
+  mpi_buffer[0] = h_min;
+  mpi_buffer[1] = y[h_min]; // send the current top level value as top_cut
   mpi_buffer[2] = h;
+  mpi_buffer[3] = is_feasible;
 
   // Write y vector
   std::copy(y.begin(), y.end(), mpi_buffer.begin() + num_scalars);
@@ -301,14 +326,12 @@ void BBSolver::read_buffer()
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  // Log the start of buffer reading
-  Console::printf(Console::Color::CYAN, "Rank[%d]: reading buffer.\n", rank);
-
   // Read scalar values
-  const size_t num_scalars = 3;
-  top_level = mpi_buffer[0];
-  top_cut = mpi_buffer[1];
+  const size_t num_scalars = 4;
+  h_min = mpi_buffer[0];
+  h_cut = mpi_buffer[1];
   h = mpi_buffer[2];
+  is_feasible = mpi_buffer[3];
 
   // Read y vector
   std::copy(mpi_buffer.begin() + num_scalars, mpi_buffer.begin() + num_scalars + y.size(), y.begin());
@@ -417,7 +440,11 @@ void BBSolver::set_feasible()
 void BBSolver::send_work(int recv_rank, const std::vector<int> &free_level, bool verbose)
 {
   if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Sending to rank %d\n", mpi_rank, recv_rank);
+
+  // Write the buffer
   write_buffer();
+
+  // Send the buffer
   auto mpi_error = MPI_Send(mpi_buffer.data(), mpi_buffer.size(), MPI_INT, recv_rank, 0, MPI_COMM_WORLD);
   if (mpi_error != MPI_SUCCESS)
   {
@@ -426,27 +453,34 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &free_level, bool
   }
 
   // Update status
-  h = top_level;
+  h = h_min;
   is_feasible = false;
   prune(PruneReason::SPLIT);
 
-  show();
+  // Show the current state
+  if (verbose) show();
 }
 
 void BBSolver::recv_work(int send_rank, const std::vector<int> &free_level, bool verbose)
 {
   if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Receiving from rank %d\n", mpi_rank, send_rank);
+
+  // Receive the buffer
   auto mpi_error = MPI_Recv(mpi_buffer.data(), mpi_buffer.size(), MPI_INT, send_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   if (mpi_error != MPI_SUCCESS)
   {
     if (verbose) Console::printf(Console::Color::RED, "Rank[%d]: MPI_Recv failed with error code %d.\n", mpi_rank, mpi_error);
     MPI_Abort(MPI_COMM_WORLD, mpi_error);
   }
+
+  // Read the buffer
   read_buffer();
-  show();
+
+  // Show the current state
+  if (verbose) show();
 }
 
-void BBSolver::split(const std::vector<int> &done, const std::vector<int> &free_level, int level_max, bool verbose)
+bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &free_level, int level_max, bool verbose)
 {
   // Count the number of sending ranks
   int count_send = 0, count_recv = 0;
@@ -455,7 +489,7 @@ void BBSolver::split(const std::vector<int> &done, const std::vector<int> &free_
     // Skip if the rank is done, it has nothing to send
     if (done[send_rank]) continue;
 
-    // Skip if the rank work is too small (high level)
+    // Skip if there is not enough work to send (high level)
     if (free_level[send_rank] > level_max) continue;
 
     // Count the number of sending ranks
@@ -475,10 +509,20 @@ void BBSolver::split(const std::vector<int> &done, const std::vector<int> &free_
       if (count_recv != count_send) continue;
 
       // This rank is a sender
-      if (send_rank == mpi_rank) send_work(recv_rank, free_level, verbose);
+      if (send_rank == mpi_rank)
+      {
+        send_work(recv_rank, free_level, verbose);
+        return true;
+      }
 
       // This rank is a receiver
-      if (recv_rank == mpi_rank) recv_work(send_rank, free_level, verbose);
+      if (recv_rank == mpi_rank)
+      {
+        recv_work(send_rank, free_level, verbose);
+        return true;
+      }
     }
   }
+
+  return false;
 }

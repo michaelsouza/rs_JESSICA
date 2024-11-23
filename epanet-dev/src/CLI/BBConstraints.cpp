@@ -268,16 +268,15 @@ double BBConstraints::calc_cost() const
   return cost;
 }
 
-void BBConstraints::update_pumps(EN_Project p, const int h, const std::vector<int> &x, bool verbose)
+void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose)
 {
   if (verbose) Console::printf(Console::Color::BRIGHT_WHITE, "\nUpdating pumps\n");
 
   // Set project pointer. This is used by the "check" methods.
-  this->p = p;
+  this->p = &p;
 
   // Get project network
-  Project *prj = static_cast<Project *>(p);
-  Network *nw = prj->getNetwork();
+  Network *nw = p.getNetwork();
 
   // Find pumps
   for (auto &pump : pumps)

@@ -64,14 +64,12 @@ public:
   {
     if (std::abs(cost - expected_cost) > tolerance)
     {
-      Console::printf(Console::Color::RED, "Test Failed (%s): cost (%.2f) is not within %.2f of expected %.2f.\n", test_name.c_str(), cost, tolerance,
-                      expected_cost);
+      Console::printf(Console::Color::RED, "Failed: cost=%.2f is not within %.2f of expected=%.2f.\n", cost, tolerance, expected_cost);
       return false;
     }
     else
     {
-      Console::printf(Console::Color::GREEN, "Test Passed (%s): cost (%.2f) is within %.2f of expected %.2f.\n", test_name.c_str(), cost, tolerance,
-                      expected_cost);
+      Console::printf(Console::Color::GREEN, "Passed: cost=%.2f is within %.2f of expected=%.2f.\n", cost, tolerance, expected_cost);
       return true;
     }
   }
@@ -523,19 +521,18 @@ public:
   bool execute_test()
   {
     print_test_name();
-    std::vector<std::tuple<std::vector<int>, int, bool>> test_cases = {
-      // test 1
-      {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true},
-      // test 2
-      {{0, 1, 3, 2, 2, 0, 1, 1, 1, 0, 3, 3, 3}, 9, true}, 
-      // test 3
-      {{0, 1, 3, 2, 2, 2, 2, 2, 3, 0, 0, 3, 3}, 10, true},
-      // test 4
-      {{0, 2, 0, 1, 1, 2, 2, 1, 1, 1, 2, 3, 3}, 10, true},
-      // test 5
-      {{0, 2, 1, 0, 0, 3, 3, 2, 2, 0, 3, 3, 3}, 9, true},
-      // test 6
-      {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true}};
+    std::vector<std::tuple<std::vector<int>, int, bool>> test_cases = {// test 1
+                                                                       {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true},
+                                                                       // test 2
+                                                                       {{0, 1, 3, 2, 2, 0, 1, 1, 1, 0, 3, 3, 3}, 9, true},
+                                                                       // test 3
+                                                                       {{0, 1, 3, 2, 2, 2, 2, 2, 3, 0, 0, 3, 3}, 10, true},
+                                                                       // test 4
+                                                                       {{0, 2, 0, 1, 1, 2, 2, 1, 1, 1, 2, 3, 3}, 10, true},
+                                                                       // test 5
+                                                                       {{0, 2, 1, 0, 0, 3, 3, 2, 2, 0, 3, 3, 3}, 9, true},
+                                                                       // test 6
+                                                                       {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true}};
 
     for (int i = 0; i < test_cases.size(); ++i)
     {
@@ -552,14 +549,147 @@ public:
       bool set_y_result = solver.set_y(y_test);
       if (set_y_result != expected_result)
       {
-        Console::printf(Console::Color::RED, "TestSetY[%d]: set_y returned %s, expected %s.\n", i + 1, set_y_result ? "true" : "false",
+        Console::printf(Console::Color::RED, "Failed[%d]: set_y returned %s, expected %s.\n", i + 1, set_y_result ? "true" : "false",
                         expected_result ? "true" : "false");
         return false;
       }
       else
       {
-        Console::printf(Console::Color::GREEN, "TestSetY[%d]: set_y returned true, y vector is feasible.\n", i + 1);
+        Console::printf(Console::Color::GREEN, "Passed[%d]: set_y returned true, y vector is feasible.\n", i + 1);
       }
+    }
+
+    return true;
+  }
+};
+
+class TestEpanetReuse : public BBTest
+{
+public:
+  TestEpanetReuse()
+  {
+    this->test_name = "test_epanet_reuse";
+  }
+
+  bool run(bool verbose) override
+  {
+    this->verbose = verbose;
+    set_up();
+    return execute_test();
+  }
+
+  void advance_solver(Project &p, BBSolver &solver, int &t, int &dt, int t_max, double &cost)
+  {
+    do
+    {
+      // Check if we have reached the maximum simulation time
+      if (t + dt > t_max) break;
+
+      // Run the solver
+      CHK(p.runSolver(&t), "Run solver");
+
+      if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
+
+      // Check node pressures
+      solver.is_feasible = solver.cntrs.check_pressures(verbose);
+      if (!solver.is_feasible)
+      {
+        solver.add_prune(PruneReason::PRESSURES);
+        break;
+      }
+
+      // Check tank levels
+      solver.is_feasible = solver.cntrs.check_levels(verbose);
+      if (!solver.is_feasible)
+      {
+        solver.add_prune(PruneReason::LEVELS);
+        break;
+      }
+
+      // Check cost
+      cost = solver.cntrs.calc_cost();
+      solver.is_feasible = solver.cntrs.check_cost(cost, verbose);
+      if (!solver.is_feasible)
+      {
+        solver.add_prune(PruneReason::COST);
+        solver.jump_to_end();
+        break;
+      }
+
+      // Advance the solver
+      CHK(p.advanceSolver(&dt), "Advance solver");
+
+    } while (dt > 0);
+  }
+
+  bool execute_test()
+  {
+    print_test_name();
+
+    // Set config
+    BBSolverConfig config(0, nullptr);
+    config.max_actuations = 1;
+    config.verbose = verbose;
+    config.h_max = 24;
+
+    double expected_cost = 4566.876225;
+
+    BBSolver solver(config);
+    solver.is_feasible = true;
+
+    // Set y vector
+    std::vector<int> y_full = {0, 3, 1, 0, 0, 1, 0, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
+    std::vector<int> y_partial_1(y_full.size(), 0);
+    std::vector<int> y_partial_2(y_full.size(), 0);
+    int h_max_1 = 2, h_max_2 = 8;
+
+    // Copy the first 3 elements of y_full to y_partial
+    for (int i = 0; i <= h_max_1; ++i)
+      y_partial_1[i] = y_full[i];
+    for (int i = 0; i <= h_max_2; ++i)
+      y_partial_2[i] = y_full[i];
+
+    Project p;
+    CHK(p.load(config.inpFile.c_str()), "Load project");
+    CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+
+    // Advance the solver
+    int t = 0, dt = 0, t_max;
+    double cost = 0;
+
+    // Call partial 1
+    solver.set_y(y_partial_1);
+    solver.update_pumps(p, false);
+    t_max = 3600 * h_max_1;
+    advance_solver(p, solver, t, dt, t_max, cost);
+
+    // Call partial 2
+    solver.set_y(y_partial_2);
+    solver.update_pumps(p, false);
+    t_max = 3600 * h_max_2;
+    advance_solver(p, solver, t, dt, t_max, cost);
+
+    // Call full
+    t_max = 3600 * solver.h_max;
+    solver.set_y(y_full);
+    solver.update_pumps(p, false);
+
+    // Check stability for the last hour
+    if (solver.is_feasible && solver.h == solver.h_max)
+    {
+      solver.is_feasible = solver.cntrs.check_stability(verbose);
+      if (!solver.is_feasible) solver.add_prune(PruneReason::STABILITY);
+    }
+
+    // Console print cost
+    if (std::abs(cost - expected_cost) > 0.1)
+    {
+      Console::printf(Console::Color::RED, "Failed: cost=%.2f is not within 0.1 of expected=%.2f.\n", cost, expected_cost);
+      return false;
+    }
+    else
+    {
+      Console::printf(Console::Color::BRIGHT_GREEN, "Passed: cost=%.2f is within 0.1 of expected=%.2f.\n", cost, expected_cost);
     }
 
     return true;
@@ -582,13 +712,16 @@ void test_all()
   TestMPI testMPI;
   TestSplit testSplit;
   TestSetY testSetY;
+  TestEpanetReuse testEpanetReuse;
+
   if (rank == 0)
   {
     testCost1.run(false);
     testCost2.run(false);
     testCost3.run(false);
     testTopLevel.run(false);
-    testSetY.run(true);
+    testSetY.run(false);
+    testEpanetReuse.run(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 

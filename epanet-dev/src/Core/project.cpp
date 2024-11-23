@@ -189,12 +189,12 @@ namespace Epanet
         try
         {
             if ( !solverInitialized ) throw SystemError(SystemError::SOLVER_NOT_INITIALIZED);
-            hydEngine.solve(t);
+            int statusCode = hydEngine.solve(t);
             if ( outputFileOpened  && *t % network.option(Options::REPORT_STEP) == 0 )
             {
                 outputFile.writeNetworkResults();
             }
-            return 0;
+            return statusCode;
         }
         catch (ENerror const& e)
         {

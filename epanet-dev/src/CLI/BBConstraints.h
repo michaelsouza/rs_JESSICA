@@ -51,13 +51,13 @@ public:
 
   void show() const;
 
-  void update_pumps(EN_Project p, const int h, const std::vector<int> &x, bool verbose);
+  void update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose);
 
   std::map<std::string, int> nodes;
   std::map<std::string, int> tanks;
   std::map<std::string, Pump *> pumps;
   double cost_ub; ///< Maximum cost allowed (upper bound).
-  EN_Project p;
+  Project *p;
   std::string inpFile;
 
 private:

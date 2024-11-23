@@ -97,7 +97,7 @@ public:
 
   void add_prune(PruneReason reason);
 
-  void update_pumps(EN_Project p, bool verbose);
+  void update_pumps(Project &p, bool verbose);
 
   void add_feasible();
 

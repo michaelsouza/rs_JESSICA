@@ -10,7 +10,7 @@
 int main(int argc, char *argv[])
 {
   // Run tests
-  // test_all();
+  test_all();
 
   // Initialize MPI
   MPI_Init(nullptr, nullptr);

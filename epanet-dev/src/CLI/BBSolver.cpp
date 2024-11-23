@@ -39,10 +39,9 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   is_feasible = true;
   int t = 0, dt = 0, t_max = 3600 * this->h;
 
-  EN_Project p = EN_createProject();
-
-  CHK(EN_loadProject(this->inpFile.c_str(), p), "Load project");
-  CHK(EN_initSolver(EN_INITFLOW, p), "Initialize solver");
+  Project p;
+  CHK(p.load(this->inpFile.c_str()), "Load project");
+  CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
   // Set the project and constraints
   update_pumps(p, verbose);
@@ -52,7 +51,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   do
   {
     // Run the solver
-    CHK(EN_runSolver(&t, p), "Run solver");
+    CHK(p.runSolver(&t), "Run solver");
 
     if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
 
@@ -83,7 +82,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     }
 
     // Advance the solver
-    CHK(EN_advanceSolver(&dt, p), "Advance solver");
+    CHK(p.advanceSolver(&dt), "Advance solver");
 
     // Check if we have reached the maximum simulation time
     if (t + dt > t_max) break;
@@ -103,19 +102,15 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     auto time = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
     ss << "output_" << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S") << ".inp";
-    Project *prj = static_cast<Project *>(p);
-    prj->save(ss.str().c_str());
+    p.save(ss.str().c_str());
     Console::printf(Console::Color::BRIGHT_GREEN, "Project saved to: %s\n", ss.str().c_str());
   }
-
-  // Delete the project
-  EN_deleteProject(p);
 
   return is_feasible;
 }
 
 /** Update functions */
-void BBSolver::update_pumps(EN_Project p, bool verbose)
+void BBSolver::update_pumps(Project &p, bool verbose)
 {
   cntrs.update_pumps(p, this->h, this->x, verbose);
 }

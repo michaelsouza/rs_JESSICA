@@ -503,6 +503,9 @@ private:
 
 void test_all()
 {
+  // Initialize MPI
+  MPI_Init(nullptr, nullptr);
+
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 

@@ -86,10 +86,15 @@ void BBStats::show() const
   }
 }
 
-void BBStats::to_json(double eta_secs)
+void BBStats::to_json(const BBSolverConfig &config, double eta_secs)
 {
   // Create a JSON object
   json j;
+
+  // Add solver info
+  j["h_max"] = config.h_max;
+  j["max_actuations"] = config.max_actuations;
+  j["h_threshold"] = config.h_threshold;
 
   // Add eta_secs
   j["eta_secs"] = eta_secs;
@@ -120,30 +125,18 @@ void BBStats::to_json(double eta_secs)
   }
   j["prunings"] = prunings_json;
 
-  // Get MPI rank
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  // Get current date and time
-  auto now = std::chrono::system_clock::now();
-  std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-  std::tm tm_struct;
-#if defined(_MSC_VER) || defined(__MINGW32__)
-  localtime_s(&tm_struct, &now_time); // For MSVC
-#else
-  localtime_r(&now_time, &tm_struct); // For POSIX
-#endif
-  std::stringstream ss;
-  ss << std::put_time(&tm_struct, "%Y%m%d_%H%M%S");
-
   // Construct filename with date, time, and rank
-  std::string filename = "BBStats_rank" + std::to_string(rank) + "_" + ss.str() + ".json";
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  char filename[256];
+  sprintf(filename, "BBStats_size_%d_rank_%d_acts_%d_hmax_%d_hthr_%d.json", size, rank, config.max_actuations, config.h_max, config.h_threshold);
 
   // Write JSON to file
   std::ofstream ofs(filename);
   if (!ofs.is_open())
   {
-    Console::printf(Console::Color::RED, "Rank[%d]: Failed to open file %s for writing JSON stats.\n", rank, filename.c_str());
+    Console::printf(Console::Color::RED, "Rank[%d]: Failed to open file %s for writing JSON stats.\n", rank, filename);
     return;
   }
 
@@ -151,5 +144,5 @@ void BBStats::to_json(double eta_secs)
   ofs.close();
 
   // Optional: Print confirmation
-  Console::printf(Console::Color::GREEN, "Rank[%d]: Statistics written to %s\n", rank, filename.c_str());
+  Console::printf(Console::Color::GREEN, "Rank[%d]: Statistics written to %s\n", rank, filename);
 }

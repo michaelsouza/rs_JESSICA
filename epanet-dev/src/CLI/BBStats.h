@@ -2,6 +2,7 @@
 #pragma once
 
 #include "BBPruneReason.h"
+#include "BBSolverConfig.h"
 #include "Console.h"
 #include "Utils.h"
 
@@ -25,5 +26,5 @@ public:
   int split_counter;
   std::vector<PruneReason> prune_keys;
   void show() const;
-  void to_json(double eta_secs);
+  void to_json(const BBSolverConfig &config, double eta_secs);
 };

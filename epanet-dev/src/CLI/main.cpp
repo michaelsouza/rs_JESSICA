@@ -9,11 +9,11 @@
 
 int main(int argc, char *argv[])
 {
+  // Run tests
+  // test_all();
+
   // Initialize MPI
   MPI_Init(nullptr, nullptr);
-
-  // Run tests
-  test_all();
 
   // Create configuration from command-line arguments
   BBSolverConfig config(argc, argv);

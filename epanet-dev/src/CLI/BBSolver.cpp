@@ -538,12 +538,7 @@ void BBSolver::show() const
 
 void BBSolver::to_json(double eta_secs)
 {
-  // Update stats
-  stats.y_min = y_best;
-  stats.x_min = x_best;
-  stats.cost_min = cntrs.cost_ub;
-
-  stats.to_json(eta_secs);
+  stats.to_json(config, eta_secs);
 }
 
 /** Main solve functions */

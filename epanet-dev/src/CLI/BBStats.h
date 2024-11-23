@@ -25,5 +25,5 @@ public:
   int split_counter;
   std::vector<PruneReason> prune_keys;
   void show() const;
-  void to_json();
+  void to_json(double eta_secs);
 };

@@ -86,10 +86,13 @@ void BBStats::show() const
   }
 }
 
-void BBStats::to_json()
+void BBStats::to_json(double eta_secs)
 {
   // Create a JSON object
   json j;
+
+  // Add eta_secs
+  j["eta_secs"] = eta_secs;
 
   // Add basic statistics
   j["cost_min"] = cost_min;

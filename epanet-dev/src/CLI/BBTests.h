@@ -30,14 +30,11 @@
 class BBTest
 {
 protected:
-  const char *inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
-  int h_max = 24;
-  int max_actuations = 3;
-  bool save_project = false;
-  bool verbose = false;
   std::string test_name;
 
 public:
+  bool verbose = false;
+
   virtual ~BBTest()
   {
   }
@@ -46,24 +43,10 @@ public:
 
   virtual void set_up()
   {
-    // Common setup code
-    // Check if the inpFile exists
-    std::ifstream fileCheck(inpFile);
-    if (!fileCheck)
-    {
-      Console::printf(Console::Color::RED, "Error: Input file %s does not exist.\n", inpFile);
-      // Handle error as appropriate
-    }
   }
 
   virtual void tear_down()
   {
-    // Common teardown code if needed
-  }
-
-  virtual void set_verbose(bool verbose)
-  {
-    this->verbose = verbose;
   }
 
   virtual void print_test_name()
@@ -119,13 +102,12 @@ public:
     print_test_name();
 
     // Insert a 0 at the beginning of y if necessary
-    if (y.size() == static_cast<size_t>(h_max))
-    {
-      y.insert(y.begin(), 0);
-    }
+    y.insert(y.begin(), 0);
 
     // Initialize branch-and-bound solver and statistics
-    BBSolver solver(inpFile, h_max, max_actuations);
+    BBSolverConfig config(0, nullptr);
+    config.verbose = verbose;
+    BBSolver solver(config);
 
     // Set y values and update x for each hour
     if (!solver.set_y(y))
@@ -133,10 +115,9 @@ public:
       Console::printf(Console::Color::RED, "Error: Failed to update x from y.\n");
       return false;
     }
-    solver.show_xy(verbose);
 
     double cost = 0.0;
-    bool is_feasible = solver.process_node(cost, verbose, save_project);
+    bool is_feasible = solver.process_node(cost, verbose, config.save_project);
     if (!is_feasible)
     {
       Console::printf(Console::Color::RED, "Error: Process node returned infeasible solution.\n");
@@ -178,7 +159,6 @@ public:
   TestTopLevel(int top_level, int top_cut, int expected_top_level)
   {
     this->test_name = "test_top_level";
-    this->h_max = 6;
   }
 
   bool run() override
@@ -213,7 +193,10 @@ public:
       auto [y, top_level, top_cut, expected_top_level] = test_cases[i];
 
       // Initialize BBsolver with provided parameters
-      BBSolver solver(inpFile, h_max, max_actuations);
+      BBSolverConfig config(0, nullptr);
+      config.verbose = verbose;
+      config.h_max = 6;
+      BBSolver solver(config);
       solver.h_min = top_level;
       solver.h_cut = top_cut;
 
@@ -286,7 +269,11 @@ public:
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    BBSolver solver(inpFile, h_max, max_actuations);
+    BBSolverConfig config(0, nullptr);
+    config.verbose = verbose;
+
+    BBSolver solver(config);
+
     if (verbose) solver.show();
 
     if (!solver.set_y(y))
@@ -300,7 +287,7 @@ public:
     for (int i = 0; i < 128; ++i)
     {
       double cost = 0.0;
-      bool is_feasible = solver.process_node(cost, verbose, save_project);
+      bool is_feasible = solver.process_node(cost, verbose, config.save_project);
       if (!is_feasible)
       {
         Console::printf(Console::Color::RED, "TestMPI[rank=%d]: Process node returned infeasible solution.\n", rank);
@@ -359,9 +346,10 @@ public:
     Console::open(rank, true, verbose);
 
     // Initialize solver
-    h_max = 3;
-    max_actuations = 1;
-    BBSolver solver(inpFile, h_max, max_actuations);
+    BBSolverConfig config(0, nullptr);
+    config.max_actuations = 1;
+    config.h_max = 3;
+    BBSolver solver(config);
 
     // Initialize iteration variables
     niters = 0;
@@ -528,17 +516,19 @@ void test_all()
 
   if (rank == 0)
   {
-    // testCost1.run();
-    // testCost2.run();
-    // testCost3.run();
-    // testTopLevel.run();
+    testCost1.run();
+    testCost2.run();
+    testCost3.run();
+    testTopLevel.run();
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  // testMPI.run();
+  testMPI.run();
   MPI_Barrier(MPI_COMM_WORLD);
 
-  testSplit.set_verbose(true);
   testSplit.run();
   MPI_Barrier(MPI_COMM_WORLD);
+
+  MPI_Finalize();
+  exit(EXIT_SUCCESS);
 }

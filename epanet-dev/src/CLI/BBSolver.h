@@ -3,6 +3,7 @@
 
 #include "BBConstraints.h"
 #include "BBPruneReason.h"
+#include "BBSolverConfig.h"
 #include "BBStats.h"
 
 #include <string>
@@ -27,7 +28,19 @@ public:
    * @param h_max The total number of time periods (hours) to manage.
    * @param max_actuations The maximum number of actuations permitted for each pump.
    */
-  BBSolver(std::string inpFile, int h_max, int max_actuations);
+  BBSolver(BBSolverConfig &config);
+
+  void solve();
+
+  /**
+   * @brief Sets the y vector to the provided values.
+   *
+   * @param y A vector of integers representing the desired y states.
+   * @return true if the y vector is set successfully, false otherwise.
+   */
+  bool set_y(const std::vector<int> &y);
+
+  bool process_node(double &cost, bool verbose, bool save_project);
 
   /**
    * @brief Updates the y vector based on feasibility.
@@ -57,14 +70,6 @@ public:
   void jump_to_end();
 
   /**
-   * @brief Sets the y vector to the provided values.
-   *
-   * @param y A vector of integers representing the desired y states.
-   * @return true if the y vector is set successfully, false otherwise.
-   */
-  bool set_y(const std::vector<int> &y);
-
-  /**
    * @brief Retrieves the top level that is free for actuations.
    *
    * @return The top level index that can accept more actuations.
@@ -92,8 +97,6 @@ public:
 
   void add_prune(PruneReason reason);
 
-  bool process_node(double &cost, bool verbose, bool save_project);
-
   void update_pumps(EN_Project p, bool verbose);
 
   void add_feasible();
@@ -102,28 +105,8 @@ public:
 
   void update_cost(double cost, bool update_xy);
 
-  void to_json();
+  void to_json(double eta_secs);
 
-  // Public member variables
-  int h;                       ///< Current time period index.
-  int h_max;                   ///< Total number of time periods.
-  std::vector<int> y;          ///< Vector tracking actuations per time period.
-  std::vector<int> x;          ///< Vector tracking pump states across time periods.
-  int max_actuations;          ///< Maximum actuations allowed per pump.
-  int num_pumps;               ///< Number of pumps being managed.
-  int h_min;                   ///< Current top level in the counter.
-  int h_cut;                   ///< Threshold for top level operations.
-  std::string inpFile;         ///< Input file name.
-  BBConstraints cntrs;         ///< Constraints object for the network.
-  std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
-  int mpi_rank;                ///< Rank of the current process.
-  int mpi_size;                ///< Size of the MPI communicator.
-  std::vector<int> y_best;     ///< Best y vector found.
-  std::vector<int> x_best;     ///< Best x vector found.
-  int is_feasible;             ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
-  BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
-
-private:
   void send_work(int recv_rank, const std::vector<int> &h_free, bool verbose);
 
   void recv_work(int send_rank, const std::vector<int> &h_free, bool verbose);
@@ -144,6 +127,27 @@ private:
    * @param h The current time period index.
    */
   void calc_actuations_csum(int *actuations_csum, const std::vector<int> &x, int h);
-};
 
-void solve(int argc, char *argv[]);
+  void solve_iteration(int &done_loc, bool verbose, bool save_project);
+
+  void solve_sync(const int h_threshold, int &done_loc, int &done_all, bool verbose);
+
+  int h;                       ///< Current time period index.
+  int h_max;                   ///< Total number of time periods.
+  std::vector<int> y;          ///< Vector tracking actuations per time period.
+  std::vector<int> x;          ///< Vector tracking pump states across time periods.
+  int max_actuations;          ///< Maximum actuations allowed per pump.
+  int num_pumps;               ///< Number of pumps being managed.
+  int h_min;                   ///< Current top level in the counter.
+  int h_cut;                   ///< Threshold for top level operations.
+  std::string inpFile;         ///< Input file name.
+  BBConstraints cntrs;         ///< Constraints object for the network.
+  std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
+  int mpi_rank;                ///< Rank of the current process.
+  int mpi_size;                ///< Size of the MPI communicator.
+  std::vector<int> y_best;     ///< Best y vector found.
+  std::vector<int> x_best;     ///< Best x vector found.
+  int is_feasible;             ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
+  BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
+  BBSolverConfig config;       ///< Configuration object for solver parameters.
+};

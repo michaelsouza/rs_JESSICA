@@ -204,6 +204,7 @@ set(run_epanet3_sources
     src/CLI/main.cpp
     src/CLI/Utils.cpp
     src/CLI/BBConstraints.cpp
+    src/CLI/BBSolverConfig.cpp
     src/CLI/BBSolver.cpp
     src/CLI/BBStats.cpp
     src/CLI/Console.cpp

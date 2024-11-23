@@ -39,7 +39,7 @@ public:
   {
   }
 
-  virtual bool run() = 0;
+  virtual bool run(bool verbose) = 0;
 
   virtual void set_up()
   {
@@ -91,8 +91,9 @@ public:
     this->test_name = test_name;
   }
 
-  bool run() override
+  bool run(bool verbose) override
   {
+    this->verbose = verbose;
     set_up();
     return execute_test();
   }
@@ -161,8 +162,9 @@ public:
     this->test_name = "test_top_level";
   }
 
-  bool run() override
+  bool run(bool verbose) override
   {
+    this->verbose = verbose;
     set_up();
     return execute_test();
   }
@@ -256,8 +258,9 @@ public:
     y.insert(y.begin(), 0);
   }
 
-  bool run() override
+  bool run(bool verbose) override
   {
+    this->verbose = verbose;
     set_up();
     return execute_test();
   }
@@ -329,8 +332,9 @@ public:
     this->test_name = "test_split";
   }
 
-  bool run() override
+  bool run(bool verbose) override
   {
+    this->verbose = verbose;
     set_up();
     return execute_test();
   }
@@ -501,6 +505,67 @@ private:
   }
 };
 
+class TestSetY : public BBTest
+{
+public:
+  TestSetY()
+  {
+    this->test_name = "test_set_y";
+  }
+
+  bool run(bool verbose) override
+  {
+    this->verbose = verbose;
+    set_up();
+    return execute_test();
+  }
+
+  bool execute_test()
+  {
+    print_test_name();
+    std::vector<std::tuple<std::vector<int>, int, bool>> test_cases = {
+      // test 1
+      {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true},
+      // test 2
+      {{0, 1, 3, 2, 2, 0, 1, 1, 1, 0, 3, 3, 3}, 9, true}, 
+      // test 3
+      {{0, 1, 3, 2, 2, 2, 2, 2, 3, 0, 0, 3, 3}, 10, true},
+      // test 4
+      {{0, 2, 0, 1, 1, 2, 2, 1, 1, 1, 2, 3, 3}, 10, true},
+      // test 5
+      {{0, 2, 1, 0, 0, 3, 3, 2, 2, 0, 3, 3, 3}, 9, true},
+      // test 6
+      {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true}};
+
+    for (int i = 0; i < test_cases.size(); ++i)
+    {
+      auto [y_test, h_max, expected_result] = test_cases[i];
+
+      // Initialize BBSolver with appropriate configuration
+      BBSolverConfig config(0, nullptr);
+      config.verbose = verbose;
+      config.h_max = h_max;
+      config.max_actuations = 1;
+      BBSolver solver(config);
+
+      // Set the y vector
+      bool set_y_result = solver.set_y(y_test);
+      if (set_y_result != expected_result)
+      {
+        Console::printf(Console::Color::RED, "TestSetY[%d]: set_y returned %s, expected %s.\n", i + 1, set_y_result ? "true" : "false",
+                        expected_result ? "true" : "false");
+        return false;
+      }
+      else
+      {
+        Console::printf(Console::Color::GREEN, "TestSetY[%d]: set_y returned true, y vector is feasible.\n", i + 1);
+      }
+    }
+
+    return true;
+  }
+};
+
 void test_all()
 {
   // Initialize MPI
@@ -516,20 +581,21 @@ void test_all()
   TestTopLevel testTopLevel(1, 3, 1);
   TestMPI testMPI;
   TestSplit testSplit;
-
+  TestSetY testSetY;
   if (rank == 0)
   {
-    testCost1.run();
-    testCost2.run();
-    testCost3.run();
-    testTopLevel.run();
+    testCost1.run(false);
+    testCost2.run(false);
+    testCost3.run(false);
+    testTopLevel.run(false);
+    testSetY.run(true);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  testMPI.run();
+  testMPI.run(false);
   MPI_Barrier(MPI_COMM_WORLD);
 
-  testSplit.run();
+  testSplit.run(false);
   MPI_Barrier(MPI_COMM_WORLD);
 
   MPI_Finalize();

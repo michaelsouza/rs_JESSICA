@@ -63,6 +63,7 @@ void Console::printf(Color color, const char *format, ...)
   {
     std::cout << buffer.get();
   }
+  std::cout.flush();
 
   if (use_logger)
   {

@@ -103,7 +103,7 @@ public:
 
   bool try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose);
 
-  void update_cost(double cost, bool update_xy);
+  void update_cost_ub(double cost, bool update_xy);
 
   void to_json(double eta_secs);
 

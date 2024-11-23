@@ -65,6 +65,8 @@
         "charconv": "cpp",
         "format": "cpp",
         "span": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     }
 }

@@ -17,3 +17,7 @@ codes/temp.bin
 codes/temp.rpt
 codes/temp.inp
 =4.2.0
+networks/any-town_parsed_*.inp
+networks/any-town_parsed.inp
+logger_*.log
+gmon.out

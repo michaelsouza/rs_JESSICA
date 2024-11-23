@@ -563,7 +563,7 @@ void parse_args(int argc, char *argv[], bool &verbose, int &h_max, int &max_actu
   }
 }
 
-void BBSolver::update_cost(double cost, bool update_xy)
+void BBSolver::update_cost_ub(double cost, bool update_xy)
 {
   if (cost > cntrs.cost_ub)
   {
@@ -586,6 +586,27 @@ void BBSolver::update_cost(double cost, bool update_xy)
   {
     y_best = y;
     x_best = x;
+    Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: y = {", mpi_rank);
+    for (size_t i = 0; i < y.size(); ++i)
+    {
+      Console::printf(Console::Color::BRIGHT_GREEN, "%d", y[i]);
+      if (i < y.size() - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
+    }
+    Console::printf(Console::Color::BRIGHT_GREEN, "}\n");
+
+    Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: x = {", mpi_rank);
+    for (size_t i = 0; i < y.size(); ++i)
+    {
+      Console::printf(Console::Color::BRIGHT_GREEN, "{");
+      for (int j = 0; j < num_pumps; ++j)
+      {
+        Console::printf(Console::Color::BRIGHT_GREEN, "%d", x[i * num_pumps + j]);
+        if (j < num_pumps - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
+      }
+      Console::printf(Console::Color::BRIGHT_GREEN, "}");
+      if (i < y.size() - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
+    }
+    Console::printf(Console::Color::BRIGHT_GREEN, "}\n");
   }
 }
 
@@ -623,7 +644,7 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
     // New solution found
     if (h == h_max)
     {
-      update_cost(cost, true);
+      update_cost_ub(cost, true);
     }
   }
 }
@@ -661,7 +682,7 @@ void BBSolver::solve_sync(int h_threshold, int &done_loc, int &done_all, bool ve
 
   if (cntrs.cost_ub > cost_min)
   {
-    update_cost(cost_min, false);
+    update_cost_ub(cost_min, false);
   }
 
   // Broadcast the solution from the rank with the minimum cost
@@ -753,8 +774,7 @@ void BBSolver::solve()
   {
     ++niters;
 
-    if (mpi_rank == 0) show_timer(niters, tic, 256);
-
+    show_timer(rank, niters, h, done_loc, done_all, y, is_feasible, tic, 256, 1024);
     solve_iteration(done_loc, config.verbose, config.save_project);
     solve_sync(config.h_threshold, done_loc, done_all, config.verbose);
   }

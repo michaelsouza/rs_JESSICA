@@ -105,6 +105,7 @@ public:
 
     // Initialize branch-and-bound solver and statistics
     BBSolverConfig config(0, nullptr);
+    config.save_project = true;
     config.verbose = verbose;
     BBSolver solver(config);
 
@@ -591,7 +592,7 @@ public:
       // Run the solver
       CHK(p.runSolver(&t), "Run solver");
 
-      if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
+      if (true) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
 
       // Check node pressures
       solver.is_feasible = solver.cntrs.check_pressures(verbose);
@@ -631,17 +632,16 @@ public:
 
     // Set config
     BBSolverConfig config(0, nullptr);
-    config.max_actuations = 1;
+    config.max_actuations = 3;
     config.verbose = verbose;
     config.h_max = 24;
-
-    double expected_cost = 4566.876225;
 
     BBSolver solver(config);
     solver.is_feasible = true;
 
     // Set y vector
-    std::vector<int> y_full = {0, 3, 1, 0, 0, 1, 0, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
+    std::vector<int> y_full = {0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
+    double expected_cost = 3578.66;
 
     Project p;
     CHK(p.load(config.inpFile.c_str()), "Load project");
@@ -671,6 +671,9 @@ public:
       // print i, h_max, t, dt, cost
       Console::printf(Console::Color::BRIGHT_GREEN, "i=%d, h_max=%2d, t=%d, dt=%d, cost=%.2f\n", i, h_max, t, dt, cost);
     }
+
+    // print expected_cost
+    Console::printf(Console::Color::BRIGHT_GREEN, "Expected cost: %.2f\n", expected_cost);
 
     // Check stability for the last hour
     if (solver.is_feasible && solver.h == solver.h_max)
@@ -703,11 +706,11 @@ void test_all()
 
   if (rank == 0)
   {
-    //   testCost1.run(false);
-    //   testCost2.run(false);
-    //   testCost3.run(false);
-    //   testTopLevel.run(false);
-    //   testSetY.run(false);
+    // testCost1.run(false);
+    // testCost2.run(false);
+    // testCost3.run(false);
+    // testTopLevel.run(false);
+    // testSetY.run(false);
     testEpanetReuse.run(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);

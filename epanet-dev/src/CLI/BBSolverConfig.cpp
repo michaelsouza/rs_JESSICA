@@ -10,7 +10,7 @@ BBSolverConfig::BBSolverConfig(int argc, char *argv[])
 void BBSolverConfig::parse_args(int argc, char *argv[])
 {
   // Default input file
-  inpFile = "/home/michael/github/rs_JESSICA/networks/any-town.inp";
+  inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
 
   // Parse command line arguments
   for (int i = 1; i < argc; ++i)

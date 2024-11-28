@@ -1,13 +1,15 @@
-# Ignore the virtual environment
+# Ignore virtual environment directories
 .venv/
 
-# Ignore the Python cache directory
+# Ignore Python cache directories
 __pycache__/
 
-# Ignore the epanet-dev directory
+# Ignore build directories
 epanet-dev/build/
+epanet-dev/debug/**
+epanet-dev/release/**
 
-# Ignore the output files
+# Ignore output files
 dataset/any-town.out
 temp.bin
 temp.inp
@@ -16,8 +18,14 @@ prompt_content.json
 codes/temp.bin
 codes/temp.rpt
 codes/temp.inp
-=4.2.0
+gmon.out
+
+# Ignore network files
 networks/any-town_parsed_*.inp
 networks/any-town_parsed.inp
+
+# Ignore log files
 logger_*.log
-gmon.out
+
+# Miscellaneous
+=4.2.0

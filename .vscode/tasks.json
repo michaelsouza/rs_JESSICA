@@ -115,7 +115,7 @@
         {
             "label": "build-debug",
             "type": "shell",
-            "command": "cmake -DCMAKE_BUILD_TYPE=Debug -B build/debug && cmake --build build/debug",
+            "command": "make BUILD_TYPE=debug",
             "group": {
                 "kind": "build",
                 "isDefault": false

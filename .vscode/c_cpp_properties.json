@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/epanet-dev/src"
+                "${workspaceFolder}/epanet-dev/src",
+                "/usr/lib/x86_64-linux-gnu/openmpi/include"
             ],
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/usr/bin/gcc",

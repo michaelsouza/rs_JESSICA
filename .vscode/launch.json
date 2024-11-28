@@ -24,14 +24,19 @@
             "name": "Run EPANET3 (Debug)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/epanet-dev/build/debug/bin/run-epanet3",
+            "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
             "args": [
                 "--max_actuations", "1",
-                "--h_max", "24",
+                "--h_max", "24"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/epanet-dev/debug:${env:LD_LIBRARY_PATH}"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
@@ -43,7 +48,7 @@
             ],
             "preLaunchTask": "build-debug",
             "miDebuggerPath": "/usr/bin/gdb"
-        },
+        },        
         {
             "name": "Run EPANET3 (Release)",
             "type": "cppdbg",

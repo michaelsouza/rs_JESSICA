@@ -2,7 +2,8 @@
 #pragma once
 
 #include "BBPruneReason.h"
-#include "BBSolverConfig.h"
+#include "BBConfig.h"
+#include "BBConstraints.h"
 #include "Console.h"
 #include "Utils.h"
 
@@ -18,13 +19,8 @@ public:
   void add_pruning(PruneReason reason, int h);
   void add_feasible(int h);
 
-  double cost_min;
-  std::vector<int> y_min;
-  std::vector<int> x_min;
   std::vector<std::map<PruneReason, int>> prunings;
   std::vector<int> feasible_counter;
-  int split_counter;
-  std::vector<PruneReason> prune_keys;
-  void show() const;
-  void to_json(const BBSolverConfig &config, double eta_secs);
+  int split_counter;  
+  void to_json(const BBConfig &config, const BBConstraints& cnstr, double eta_secs, std::vector<int>& y_best, std::vector<int>& x_best);
 };

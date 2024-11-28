@@ -52,3 +52,18 @@ void show_timer(int mpi_rank, unsigned int niter, int h, int done_loc, int done_
     Console::printf(Console::Color::BRIGHT_BLUE, "]\n");
   }
 }
+
+// Implementation of write_vector
+void write_vector(std::ofstream &ofs, const std::vector<int> &vec, const std::string vec_name)
+{
+  ofs << vec_name << ": [";
+  for (size_t i = 0; i < vec.size(); ++i)
+  {
+    ofs << vec[i];
+    if (i != vec.size() - 1)
+    {
+      ofs << ", ";
+    }
+  }
+  ofs << "]";
+}

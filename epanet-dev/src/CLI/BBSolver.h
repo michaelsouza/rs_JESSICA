@@ -3,7 +3,7 @@
 
 #include "BBConstraints.h"
 #include "BBPruneReason.h"
-#include "BBSolverConfig.h"
+#include "BBConfig.h"
 #include "BBStats.h"
 
 #include <string>
@@ -28,7 +28,7 @@ public:
    * @param h_max The total number of time periods (hours) to manage.
    * @param max_actuations The maximum number of actuations permitted for each pump.
    */
-  BBSolver(BBSolverConfig &config);
+  BBSolver(BBConfig &config);
 
   void solve();
 
@@ -149,5 +149,5 @@ public:
   std::vector<int> x_best;     ///< Best x vector found.
   int is_feasible;             ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
   BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
-  BBSolverConfig config;       ///< Configuration object for solver parameters.
+  BBConfig config;             ///< Configuration object for solver parameters.
 };

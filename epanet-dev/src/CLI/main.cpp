@@ -1,7 +1,7 @@
 // src/CLI/main.cpp
 
 #include "BBSolver.h"
-#include "BBSolverConfig.h"
+#include "BBConfig.h"
 #include "BBTests.h"
 
 #include <mpi.h>
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   MPI_Init(nullptr, nullptr);
 
   // Create configuration from command-line arguments
-  BBSolverConfig config(argc, argv);
+  BBConfig config(argc, argv);
 
   // Create solver instance
   BBSolver solver(config);

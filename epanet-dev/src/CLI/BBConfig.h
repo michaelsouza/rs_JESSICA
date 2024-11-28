@@ -1,12 +1,12 @@
-// src/CLI/BBSolverConfig.h
+// src/CLI/BBConfig.h
 #pragma once
 
 #include <string>
 
-class BBSolverConfig
+class BBConfig
 {
 public:
-  BBSolverConfig(int argc, char *argv[]);
+  BBConfig(int argc, char *argv[]);
 
   std::string inpFile;
   int h_max = 24;

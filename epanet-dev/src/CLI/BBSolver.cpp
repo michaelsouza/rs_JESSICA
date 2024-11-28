@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <thread>
 
-BBSolver::BBSolver(BBSolverConfig &config)
+BBSolver::BBSolver(BBConfig &config)
     : inpFile(config.inpFile), cntrs(config.inpFile), stats(config.h_max, config.max_actuations), config(config)
 {
   // Initialize scalar variables
@@ -535,15 +535,11 @@ void BBSolver::show() const
 
   // Print Footer
   Console::printf(Console::Color::BRIGHT_CYAN, "\n");
-
-  this->stats.show();
-
-  this->cntrs.show();
 }
 
 void BBSolver::to_json(double eta_secs)
 {
-  stats.to_json(config, eta_secs);
+  stats.to_json(config, cntrs, eta_secs, y_best, x_best);
 }
 
 /** Main solve functions */

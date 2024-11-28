@@ -1,13 +1,13 @@
-// src/CLI/BBSolverConfig.cpp
-#include "BBSolverConfig.h"
+// src/CLI/BBConfig.cpp
+#include "BBConfig.h"
 #include <string>
 
-BBSolverConfig::BBSolverConfig(int argc, char *argv[])
+BBConfig::BBConfig(int argc, char *argv[])
 {
   parse_args(argc, argv);
 }
 
-void BBSolverConfig::parse_args(int argc, char *argv[])
+void BBConfig::parse_args(int argc, char *argv[])
 {
   // Default input file
   inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";

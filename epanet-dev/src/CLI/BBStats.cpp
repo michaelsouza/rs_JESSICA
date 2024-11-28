@@ -2,19 +2,14 @@
 #include "BBStats.h"
 #include "Utils.h" // For ColorStream
 
-#include <iomanip>
-#include <iostream>
+#include <iomanip>  // For std::setw
+#include <iostream> // For std::cout
 #include <limits>
 #include <mpi.h>
-#include <nlohmann/json.hpp>
-#include <sstream>
-
-using json = nlohmann::json;
+#include <sstream> // For std::ostringstream
 
 BBStats::BBStats(int h_max, int max_actuations)
 {
-  cost_min = std::numeric_limits<double>::infinity();
-  y_min = std::vector<int>(h_max + 1, 0);
   feasible_counter = std::vector<int>(h_max + 1, 0);
   split_counter = 0;
   prunings = std::vector<std::map<PruneReason, int>>(h_max + 1);
@@ -42,89 +37,8 @@ void BBStats::add_feasible(int h)
   feasible_counter[h]++;
 }
 
-void BBStats::show() const
+void BBStats::to_json(const BBConfig &config, const BBConstraints& cnstr, double eta_secs, std::vector<int>& y_best, std::vector<int>& x_best)
 {
-  // Get MPI rank
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  // Header with rank info
-  Console::hline(Console::Color::BRIGHT_WHITE);
-  Console::printf(Console::Color::BRIGHT_WHITE, "Statistics (Rank %d)\n", rank);
-
-  // Best solution
-  Console::printf(Console::Color::WHITE, "Best cost: ");
-  Console::printf(Console::Color::BRIGHT_GREEN, "%f\n", cost_min);
-
-  // Table header
-  Console::printf(Console::Color::BRIGHT_WHITE, "Level \u2502 ");
-  // Assuming prune_keys are fixed, you might need to adjust this based on actual enum values
-  Console::printf(Console::Color::BRIGHT_WHITE, "actuations \u2502 cost \u2502 pressures \u2502 levels \u2502 stability \u2502 Feasible\n",
-                  Console::Color::BRIGHT_WHITE);
-
-  // Separator line
-  Console::printf(Console::Color::WHITE, "------+---------+------+-----------+--------+----------\n");
-
-  // Data rows
-  for (size_t h = 0; h < prunings.size(); h++)
-  {
-    // Level number
-    Console::printf(Console::Color::YELLOW, "%d     | ", h);
-
-    // Pruning counts for each reason
-    std::string actuations = std::to_string(prunings[h].at(PruneReason::ACTUATIONS));
-    std::string cost = std::to_string(prunings[h].at(PruneReason::COST));
-    std::string pressures = std::to_string(prunings[h].at(PruneReason::PRESSURES));
-    std::string levels = std::to_string(prunings[h].at(PruneReason::LEVELS));
-    std::string stability = std::to_string(prunings[h].at(PruneReason::STABILITY));
-
-    Console::printf(Console::Color::CYAN, "%s       | %s    | %s       | %s      | %s      | ", actuations.c_str(), cost.c_str(), pressures.c_str(),
-                    levels.c_str(), stability.c_str());
-
-    // Feasible solutions
-    Console::printf(Console::Color::GREEN, "%d\n", feasible_counter[h]);
-  }
-}
-
-void BBStats::to_json(const BBSolverConfig &config, double eta_secs)
-{
-  // Create a JSON object
-  json j;
-
-  // Add solver info
-  j["h_max"] = config.h_max;
-  j["max_actuations"] = config.max_actuations;
-  j["h_threshold"] = config.h_threshold;
-
-  // Add eta_secs
-  j["eta_secs"] = eta_secs;
-
-  // Add basic statistics
-  j["cost_min"] = cost_min;
-
-  // Add y_min vector
-  j["y_min"] = y_min;
-
-  // Add feasible_counter
-  j["feasible_counter"] = feasible_counter;
-
-  // Add split_counter
-  j["split_counter"] = split_counter;
-
-  // Add prunings
-  // Convert PruneReason enum to string for JSON
-  std::map<std::string, std::map<std::string, int>> prunings_json;
-  for (size_t h = 0; h < prunings.size(); h++)
-  {
-    std::map<std::string, int> reasons_map;
-    for (const auto &pair : prunings[h])
-    {
-      reasons_map[to_string(pair.first)] = pair.second;
-    }
-    prunings_json["Level_" + std::to_string(h)] = reasons_map;
-  }
-  j["prunings"] = prunings_json;
-
   // Construct filename with date, time, and rank
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -132,6 +46,7 @@ void BBStats::to_json(const BBSolverConfig &config, double eta_secs)
   char filename[256];
   sprintf(filename, "BBStats_size_%d_rank_%d_acts_%d_hmax_%d_hthr_%d.json", size, rank, config.max_actuations, config.h_max, config.h_threshold);
 
+  // Create a JSON object
   // Write JSON to file
   std::ofstream ofs(filename);
   if (!ofs.is_open())
@@ -140,7 +55,62 @@ void BBStats::to_json(const BBSolverConfig &config, double eta_secs)
     return;
   }
 
-  ofs << std::setw(4) << j << std::endl;
+  // Add solver info
+  ofs << "{\n";
+  ofs << "\t\"h_max\": " << config.h_max << ",\n";
+  ofs << "\t\"max_actuations\": " << config.max_actuations << ",\n";
+  ofs << "\t\"h_threshold\": " << config.h_threshold << ",\n";
+
+  // Add eta_secs
+  ofs << "\t\"eta_secs\": " << eta_secs << ",\n";
+
+  // Add basic statistics
+  ofs << "\t\"cost_best\": " << cnstr.cost_ub << ",\n";
+
+  // Add y_best vector
+  write_vector(ofs, y_best, "\t\"y_best\"");
+  ofs << ",\n";
+
+  // Add x_best vector
+  write_vector(ofs, x_best, "\t\"x_best\"");
+  ofs << ",\n";
+
+  // Add feasible_counter
+  write_vector(ofs, feasible_counter, "\t\"feasible_counter\"");
+  ofs << ",\n";
+
+  // Add split_counter
+  ofs << "\t\"split_counter\": " << split_counter << ",\n";
+
+  // Add prunings
+  ofs << "\t\"prunings\": {\n";
+  // Convert PruneReason enum to string for JSON
+  for (size_t h = 0; h < prunings.size(); h++)
+  {
+    ofs << "\t\t\"h_" << h << "\": {\n";
+    auto reasons = prunings[h];
+    int reasons_size = reasons.size();
+    int i = 0;
+    for (const auto reason : reasons)
+    {
+      std::string reason_name = to_string(reason.first);
+      ofs << "\t\t\t\"" << reason_name << "\": " << reason.second;
+      if (i != reasons_size - 1)
+      {
+        ofs << ", ";
+      }
+      ofs << "\n";
+      i++;
+    }
+    ofs << "\t\t}";
+    if (h != prunings.size() - 1)
+    {
+      ofs << ",\n";
+    }
+  }
+  ofs << "\n\t}\n}\n";
+  ofs.flush();
+
   ofs.close();
 
   // Optional: Print confirmation

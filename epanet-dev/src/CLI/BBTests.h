@@ -104,7 +104,7 @@ public:
     y.insert(y.begin(), 0);
 
     // Initialize branch-and-bound solver and statistics
-    BBSolverConfig config(0, nullptr);
+    BBConfig config(0, nullptr);
     config.save_project = true;
     config.verbose = verbose;
     BBSolver solver(config);
@@ -194,7 +194,7 @@ public:
       auto [y, top_level, top_cut, expected_top_level] = test_cases[i];
 
       // Initialize BBsolver with provided parameters
-      BBSolverConfig config(0, nullptr);
+      BBConfig config(0, nullptr);
       config.verbose = verbose;
       config.h_max = 6;
       BBSolver solver(config);
@@ -271,7 +271,7 @@ public:
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    BBSolverConfig config(0, nullptr);
+    BBConfig config(0, nullptr);
     config.verbose = verbose;
 
     BBSolver solver(config);
@@ -350,7 +350,7 @@ public:
     Console::open(rank, true, verbose);
 
     // Initialize solver
-    BBSolverConfig config(0, nullptr);
+    BBConfig config(0, nullptr);
     config.max_actuations = 1;
     config.h_max = 3;
     BBSolver solver(config);
@@ -541,7 +541,7 @@ public:
       auto [y_test, h_max, expected_result] = test_cases[i];
 
       // Initialize BBSolver with appropriate configuration
-      BBSolverConfig config(0, nullptr);
+      BBConfig config(0, nullptr);
       config.verbose = verbose;
       config.h_max = h_max;
       config.max_actuations = 1;
@@ -631,7 +631,7 @@ public:
     print_test_name();
 
     // Set config
-    BBSolverConfig config(0, nullptr);
+    BBConfig config(0, nullptr);
     config.max_actuations = 3;
     config.verbose = verbose;
     config.h_max = 24;

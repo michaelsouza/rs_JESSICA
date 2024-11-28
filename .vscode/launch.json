@@ -27,7 +27,7 @@
             "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
             "args": [
                 "--max_actuations", "1",
-                "--h_max", "24"
+                "--h_max", "5"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

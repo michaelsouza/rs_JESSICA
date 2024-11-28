@@ -14,7 +14,7 @@ codes: no
   bbsolver.py: all  
   economic_custom.py: all
 
-epanet-dev/src/CLI: yes
+epanet-dev/src/CLI: no
   BBTests.h: all
   BBCounter.h: none
   BBCounter.cpp: none
@@ -33,10 +33,14 @@ epanet-dev/src/CLI: yes
 epanet-dev/src/Elements: no
   pump.h: all
 
+epanet-dev/: yes
+  makefile: all
 .venv/lib/python3.10/site-packages/wntr: no
   network/controls.py: all
 
 # user_request
 """
-Pls, create a new test to check the set_y function in BBSolver.cpp. The test should verify that y: [0,1,2,2,3,3,3,2,0,0,3,3,3] is feasible.
+rs_JESSICA/epanet-dev/debug on  michael [✘!?⇡] via 🐍 v3.11.0rc1 (.venv) 
+❯ gprof gmon.out > profile_report.txt
+gprof: gmon.out: not in executable forma
 """

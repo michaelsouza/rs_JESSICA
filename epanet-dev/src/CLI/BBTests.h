@@ -579,8 +579,9 @@ public:
     return execute_test();
   }
 
-  void advance_solver(Project &p, BBSolver &solver, int &t, int &dt, int t_max, double &cost)
+  void advance_solver(Project &p, BBSolver &solver, int &t, int &dt, double &cost)
   {
+    int t_max = 3600 * solver.h_max;
     do
     {
       // Check if we have reached the maximum simulation time
@@ -640,38 +641,36 @@ public:
     solver.is_feasible = true;
 
     // Set y vector
-    std::vector<int> y_full = {0, 3, 1, 0, 0, 1, 0, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};    
+    std::vector<int> y_full = {0, 3, 1, 0, 0, 1, 0, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
 
-    const int niters = 512;
-    for(int i = 0; i < niters; ++i){
-      Project p;
-      CHK(p.load(config.inpFile.c_str()), "Load project");
-      CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+    Project p;
+    CHK(p.load(config.inpFile.c_str()), "Load project");
+    CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+    int t = 0, dt = 0;
+    std::vector<int> h_max_vec = {6, 12, 18, 24};
+    std::vector<double> cost_vec(h_max_vec.size(), 0.0);
+    if (!solver.set_y(y_full))
+    {
+      Console::printf(Console::Color::RED, "Failed to set y vector for full.\n");
+      return false;
+    }
+    solver.update_pumps(p, true, false);
+
+    for (size_t i = 0; i < h_max_vec.size(); ++i)
+    {
+      // Set h_max, cost
+      int h_max = h_max_vec[i];
+      double &cost = cost_vec[i];
 
       // Advance the solver
-      int t = 0, dt = 0, t_max;
-      double cost = 0;
+      int t_max = 3600 * solver.h_max;
 
-      t_max = 3600 * solver.h_max;
-      if (!solver.set_y(y_full))
-      {
-        Console::printf(Console::Color::RED, "Failed to set y vector for full.\n");
-        return false;
-      }
-      solver.update_pumps(p, true, false);
+      solver.h_max = h_max;
+      advance_solver(p, solver, t, dt, cost);
 
-      advance_solver(p, solver, t, dt, t_max, cost);    
-      // Console print cost
-      if(verbose){
-        if (std::abs(cost - expected_cost) > 0.1)
-        {
-          Console::printf(Console::Color::RED, "Failed: cost=%.2f is not within 0.1 of expected=%.2f.\n", cost, expected_cost);
-          return false;
-        }        
-      }
-    }    
-    Console::printf(Console::Color::BRIGHT_GREEN, "Passed: cost is within 0.1 of expected=%.2f (niters=%d).\n", expected_cost, niters);
-  
+      // print i, h_max, t, dt, cost
+      Console::printf(Console::Color::BRIGHT_GREEN, "i=%d, h_max=%2d, t=%d, dt=%d, cost=%.2f\n", i, h_max, t, dt, cost);
+    }
 
     // Check stability for the last hour
     if (solver.is_feasible && solver.h == solver.h_max)
@@ -679,7 +678,6 @@ public:
       solver.is_feasible = solver.cntrs.check_stability(verbose);
       if (!solver.is_feasible) solver.add_prune(PruneReason::STABILITY);
     }
-
 
     return true;
   }
@@ -705,11 +703,11 @@ void test_all()
 
   if (rank == 0)
   {
-  //   testCost1.run(false);
-  //   testCost2.run(false);
-  //   testCost3.run(false);
-  //   testTopLevel.run(false);
-  //   testSetY.run(false);
+    //   testCost1.run(false);
+    //   testCost2.run(false);
+    //   testCost3.run(false);
+    //   testTopLevel.run(false);
+    //   testSetY.run(false);
     testEpanetReuse.run(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);

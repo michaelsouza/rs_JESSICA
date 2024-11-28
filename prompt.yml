@@ -35,12 +35,11 @@ epanet-dev/src/Elements: no
 
 epanet-dev/: yes
   makefile: all
+
 .venv/lib/python3.10/site-packages/wntr: no
   network/controls.py: all
 
 # user_request
 """
-rs_JESSICA/epanet-dev/debug on  michael [✘!?⇡] via 🐍 v3.11.0rc1 (.venv) 
-❯ gprof gmon.out > profile_report.txt
-gprof: gmon.out: not in executable forma
+I need to add dependency of debug and release with respect to *.h files in the src/CLI/BBTests.h
 """

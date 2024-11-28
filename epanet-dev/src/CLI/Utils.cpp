@@ -18,7 +18,7 @@ void CHK(int err, const std::string &message)
 }
 
 // Implementation of show_timer
-void show_timer(int mpi_rank, unsigned int niter, int h, int done_loc, int done_all, std::vector<int> &y, int is_feasible,
+void show_timer(int mpi_rank, unsigned int niter, int h, int done_loc, int done_all, double cost, std::vector<int> &y, int is_feasible,
                 std::chrono::high_resolution_clock::time_point tic, int interval_niter, int interval_solver)
 {
   // Only show the timer every `interval` iterations
@@ -39,8 +39,10 @@ void show_timer(int mpi_rank, unsigned int niter, int h, int done_loc, int done_
 
   if (niter % interval_solver == 0)
   {
-    Console::printf(Console::Color::BRIGHT_BLUE, "\nRank[%d] h=%d, done_loc=%d, done_all=%d, is_feasible=%d\ny: [", mpi_rank, h, done_loc, done_all,
+    Console::printf(Console::Color::BRIGHT_BLUE, "\nRank[%d] h=%d, done_loc=%d, done_all=%d, is_feasible=%d\n", mpi_rank, h, done_loc, done_all,
                     is_feasible);
+    Console::printf(Console::Color::BRIGHT_BLUE, "cost_best: %.2f, y_best: [", cost);
+    Console::printf(Console::Color::BRIGHT_CYAN, "%d", y[0]);
     for (size_t i = 0; i < y.size(); ++i)
     {
       Console::printf(Console::Color::BRIGHT_CYAN, "%d", y[i]);

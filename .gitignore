@@ -29,3 +29,4 @@ logger_*.log
 
 # Miscellaneous
 =4.2.0
+output_*.inp

@@ -584,21 +584,38 @@ public:
     return execute_test();
   }
 
-  void advance_solver(Project &p, BBSolver &solver, int &t, int &dt, double &cost)
+  void advance_solver(Project &p, BBSolver &solver, int h, int &t, int &dt, double &cost)
   {
-    int t_max = 3600 * solver.h_max;
+    const int t_max = 3600 * h;
     do
     {
-      // Check if we have reached the maximum simulation time
-      const int t_new = t + dt;
-      if (t_new > t_max) break;
-
       // Run the solver
       CHK(p.runSolver(&t), "Run solver");
+      
+      // Advance the solver
+      CHK(p.advanceSolver(&dt), "Advance solver");
 
-      if (true) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
+      // Check cost
+      cost = solver.cntrs.calc_cost();
+      solver.is_feasible = solver.cntrs.check_cost(cost, verbose);
+      if (!solver.is_feasible)
+      {
+        solver.add_prune(PruneReason::COST);
+        solver.jump_to_end();
+        break;
+      }
 
-      // Check node pressures
+      const int t_new = t + dt;
+
+      // Show t_new
+      // Console::printf(Console::Color::BLUE, "t_new=%d, t_max=%d, dt=%d\n", t_new, t_max, dt);
+
+      if (verbose || true) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d, cost=%.2f\n", t_new, t_max, t, dt, cost);
+
+      // The last hour is different, because we can have "t_new" > "t_max", but only the "cost" will be updated not the "t".
+      if (t_new > t_max && h != solver.h_max) break;
+      
+      // Check node pressures      
       solver.is_feasible = solver.cntrs.check_pressures(verbose);
       if (!solver.is_feasible)
       {
@@ -614,18 +631,7 @@ public:
         break;
       }
 
-      // Check cost
-      cost = solver.cntrs.calc_cost();
-      solver.is_feasible = solver.cntrs.check_cost(cost, verbose);
-      if (!solver.is_feasible)
-      {
-        solver.add_prune(PruneReason::COST);
-        solver.jump_to_end();
-        break;
-      }
-
-      // Advance the solver
-      CHK(p.advanceSolver(&dt), "Advance solver");
+      
 
     } while (dt > 0);
   }
@@ -646,9 +652,10 @@ public:
     Project p;
     CHK(p.load(config.inpFile.c_str()), "Load project");
     CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+
     int t = 0, dt = 0;
-    std::vector<int> h_max_vec = {6, 12, 18, 24};
-    std::vector<double> cost_vec(h_max_vec.size(), 0.0);
+    std::vector<int> h_vec = {6, 12, 18, 24};
+    std::vector<double> cost_vec(h_vec.size(), 0.0);
     if (!solver.set_y(y))
     {
       Console::printf(Console::Color::RED, "Failed to set y vector for full.\n");
@@ -656,20 +663,16 @@ public:
     }
     solver.update_pumps(p, true, false);
 
-    for (size_t i = 0; i < h_max_vec.size(); ++i)
+    for (size_t i = 0; i < h_vec.size(); ++i)
     {
-      // Set h_max, cost
-      int h_max = h_max_vec[i];
+      // Set h_max, cost and t_max
+      int h = h_vec[i];
       double &cost = cost_vec[i];
 
-      // Advance the solver
-      int t_max = 3600 * solver.h_max;
-
-      solver.h_max = h_max;
-      advance_solver(p, solver, t, dt, cost);
+      advance_solver(p, solver, h, t, dt, cost);
 
       // print i, h_max, t, dt, cost
-      Console::printf(Console::Color::BRIGHT_GREEN, "i=%d, h_max=%2d, t=%d, dt=%d, cost=%.2f\n", i, h_max, t, dt, cost);
+      // Console::printf(Console::Color::BRIGHT_GREEN, "i=%d, h=%2d, t=%d, dt=%d, cost=%.2f\n", i, h, t, dt, cost);
     }
 
     // Assert fabs(cost - expected_cost) < 0.01
@@ -741,11 +744,11 @@ void test_all()
   if (rank == 0)
   {
     // testCost1.run(false);
-    // testCost2.run(false);
+    // testCost2.run(true);
     // testCost3.run(false);
     // testTopLevel.run(false);
     // testSetY.run(false);
-    testEpanetReuse1.run(false);
+    // testEpanetReuse1.run(false);
     testEpanetReuse2.run(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);

@@ -101,7 +101,7 @@
         {
             "label": "build-release",
             "type": "shell",
-            "command": "cmake -DCMAKE_BUILD_TYPE=Release -B build/release && cmake --build build/release",
+            "command": "make -BUILD_TYPE=release",
             "group": {
                 "kind": "build",
                 "isDefault": false

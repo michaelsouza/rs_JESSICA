@@ -16,7 +16,9 @@ void BBConfig::parse_args(int argc, char *argv[])
   for (int i = 1; i < argc; ++i)
   {
     std::string arg = argv[i];
-    if (arg == "-v" || arg == "--verbose")
+    if (arg == "-i" || arg == "--input")
+      inpFile = argv[++i];
+    else if (arg == "-v" || arg == "--verbose")
       verbose = true;
     else if (arg == "-h" || arg == "--h_max")
       h_max = std::stoi(argv[++i]);

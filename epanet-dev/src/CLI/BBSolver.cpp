@@ -52,8 +52,24 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   {
     // Run the solver
     CHK(p.runSolver(&t), "Run solver");
+    
+    // Advance the solver
+    CHK(p.advanceSolver(&dt), "Advance solver");
 
-    if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n", t_max, t, dt);
+    const int t_new = t + dt;
+
+    // Check cost
+    cost = cntrs.calc_cost();
+    is_feasible = cntrs.check_cost(cost, verbose);
+    if (!is_feasible)
+    {
+      add_prune(PruneReason::COST);
+      jump_to_end();
+      break;
+    }
+
+    // Show the current state
+    if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d, cost=%.2f\n", t_new, t_max, t, dt, cost);
 
     // Check node pressures
     is_feasible = cntrs.check_pressures(verbose);
@@ -70,23 +86,12 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
       add_prune(PruneReason::LEVELS);
       break;
     }
+    
 
-    // Check cost
-    cost = cntrs.calc_cost();
-    is_feasible = cntrs.check_cost(cost, verbose);
-    if (!is_feasible)
-    {
-      add_prune(PruneReason::COST);
-      jump_to_end();
-      break;
-    }
-
-    // Advance the solver
-    CHK(p.advanceSolver(&dt), "Advance solver");
-
-    // Check if we have reached the maximum simulation time
-    if (t + dt > t_max) break;
   } while (dt > 0);
+
+  // Show the final state
+  if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n, cost=%.2f", t_max, t, dt, cost);
 
   // Check stability for the last hour
   if (is_feasible && this->h == this->h_max)
@@ -775,7 +780,7 @@ void BBSolver::solve()
   {
     ++niters;
 
-    show_timer(rank, niters, h, done_loc, done_all, y, is_feasible, tic, 256, 1024);
+    show_timer(rank, niters, h, done_loc, done_all, cntrs.cost_ub, y_best, is_feasible, tic, 256, 1024);
     solve_iteration(done_loc, config.verbose, config.save_project);
     solve_sync(config.h_threshold, done_loc, done_all, config.verbose);
   }

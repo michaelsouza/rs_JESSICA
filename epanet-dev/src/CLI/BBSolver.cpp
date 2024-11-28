@@ -44,7 +44,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
   // Set the project and constraints
-  update_pumps(p, verbose);
+  update_pumps(p, false, verbose);
 
   if (verbose) show();
 
@@ -110,9 +110,19 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
 }
 
 /** Update functions */
-void BBSolver::update_pumps(Project &p, bool verbose)
+void BBSolver::update_pumps(Project &p, bool full_update, bool verbose)
 {
-  cntrs.update_pumps(p, this->h, this->x, verbose);
+  if (full_update)
+  {
+    for (int i = 0; i < h_max; ++i)
+    {
+      cntrs.update_pumps(p, i, x, verbose);
+    }
+  }
+  else
+  {
+    cntrs.update_pumps(p, this->h, this->x, verbose);
+  }
 }
 
 bool BBSolver::set_y(const std::vector<int> &y)

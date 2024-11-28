@@ -7,10 +7,21 @@
 #include <mpi.h>
 #include <unistd.h>
 
+void run_tests(int argc, char*argv[]){
+  // Search for --test parameter
+  for (int i = 1; i < argc; ++i)
+  {
+    std::string arg = argv[i];
+    if (arg == "--test")
+    {
+      test_all();
+    }
+  }
+}
+
 int main(int argc, char *argv[])
 {
-  // Run tests
-  // test_all();
+  run_tests(argc, argv);  
 
   // Initialize MPI
   MPI_Init(nullptr, nullptr);

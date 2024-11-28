@@ -565,12 +565,16 @@ public:
   }
 };
 
-class TestEpanetReuse : public BBTest
+class TestEpanetReuseBase : public BBTest
 {
+protected:
+  std::vector<int> y;
+  double expected_cost;
+
 public:
-  TestEpanetReuse()
+  TestEpanetReuseBase(const std::vector<int> &y, double expected_cost, const std::string &test_name) : y(y), expected_cost(expected_cost)
   {
-    this->test_name = "test_epanet_reuse";
+    this->test_name = test_name;
   }
 
   bool run(bool verbose) override
@@ -635,13 +639,9 @@ public:
     config.max_actuations = 3;
     config.verbose = verbose;
     config.h_max = 24;
-
+    
     BBSolver solver(config);
     solver.is_feasible = true;
-
-    // Set y vector
-    std::vector<int> y_full = {0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0};
-    double expected_cost = 3578.66;
 
     Project p;
     CHK(p.load(config.inpFile.c_str()), "Load project");
@@ -649,7 +649,7 @@ public:
     int t = 0, dt = 0;
     std::vector<int> h_max_vec = {6, 12, 18, 24};
     std::vector<double> cost_vec(h_max_vec.size(), 0.0);
-    if (!solver.set_y(y_full))
+    if (!solver.set_y(y))
     {
       Console::printf(Console::Color::RED, "Failed to set y vector for full.\n");
       return false;
@@ -672,8 +672,16 @@ public:
       Console::printf(Console::Color::BRIGHT_GREEN, "i=%d, h_max=%2d, t=%d, dt=%d, cost=%.2f\n", i, h_max, t, dt, cost);
     }
 
-    // print expected_cost
-    Console::printf(Console::Color::BRIGHT_GREEN, "Expected cost: %.2f\n", expected_cost);
+    // Assert fabs(cost - expected_cost) < 0.01
+    if(std::fabs(cost_vec.back() - expected_cost) < 0.01)
+    {
+      Console::printf(Console::Color::GREEN, "Rank[%d]: cost=%.2f is within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(), expected_cost);
+    }
+    else
+    {
+      Console::printf(Console::Color::RED, "Rank[%d]: cost=%.2f is not within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(), expected_cost);
+      return false;
+    }
 
     // Check stability for the last hour
     if (solver.is_feasible && solver.h == solver.h_max)
@@ -682,7 +690,32 @@ public:
       if (!solver.is_feasible) solver.add_prune(PruneReason::STABILITY);
     }
 
+    // Assert solver.is_feasible
+    if (!solver.is_feasible)
+    {
+      Console::printf(Console::Color::RED, "Solver is not feasible.\n");
+      return false;
+    }
+
     return true;
+  }
+};
+
+class TestEpanetReuse1 : public TestEpanetReuseBase
+{
+public:
+  // y.size == 25, expected_cost = 3578.66
+  TestEpanetReuse1() : TestEpanetReuseBase({0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0}, 3578.66, "test_epanet_reuse_1")
+  {
+  }
+};
+
+class TestEpanetReuse2 : public TestEpanetReuseBase
+{
+public:
+  // y.size == 25, expected_cost = 3916.98
+  TestEpanetReuse2() : TestEpanetReuseBase({0, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1}, 3916.98, "test_epanet_reuse_2")
+  {
   }
 };
 
@@ -702,7 +735,8 @@ void test_all()
   TestMPI testMPI;
   TestSplit testSplit;
   TestSetY testSetY;
-  TestEpanetReuse testEpanetReuse;
+  TestEpanetReuse1 testEpanetReuse1;
+  TestEpanetReuse2 testEpanetReuse2;
 
   if (rank == 0)
   {
@@ -711,7 +745,8 @@ void test_all()
     // testCost3.run(false);
     // testTopLevel.run(false);
     // testSetY.run(false);
-    testEpanetReuse.run(false);
+    testEpanetReuse1.run(false);
+    testEpanetReuse2.run(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 

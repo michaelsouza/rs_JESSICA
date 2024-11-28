@@ -4,7 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {   
+        {
             "name": "DBG Python",
             "type": "debugpy",
             "request": "launch",
@@ -21,13 +21,43 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Run TestAll (Debug)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
+            "args": [
+                "--test"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/epanet-dev/debug:${env:LD_LIBRARY_PATH}"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-debug",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
             "name": "Run EPANET3 (Debug)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
             "args": [
-                "--max_actuations", "1",
-                "--h_max", "5"
+                "--max_actuations",
+                "1",
+                "--h_max",
+                "5"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -48,14 +78,14 @@
             ],
             "preLaunchTask": "build-debug",
             "miDebuggerPath": "/usr/bin/gdb"
-        },        
+        },
         {
             "name": "Run EPANET3 (Release)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/epanet-dev/build/release/bin/run-epanet3",
             "args": [
-                "${workspaceFolder}/dataset/any-town.inp", 
+                "${workspaceFolder}/dataset/any-town.inp",
                 "${workspaceFolder}/dataset/any-town.rpt"
             ],
             "stopAtEntry": false,

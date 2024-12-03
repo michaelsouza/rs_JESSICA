@@ -105,7 +105,7 @@ public:
 
     // Initialize branch-and-bound solver and statistics
     BBConfig config(0, nullptr);
-    config.save_project = true;
+    config.save_project = false;
     config.verbose = verbose;
     BBSolver solver(config);
 
@@ -722,7 +722,7 @@ public:
   }
 };
 
-void test_all()
+void test_all(const std::vector<std::string>& test_names)
 {
   // Initialize MPI
   MPI_Init(nullptr, nullptr);
@@ -743,21 +743,32 @@ void test_all()
 
   if (rank == 0)
   {
-    // testCost1.run(false);
-    // testCost2.run(true);
-    // testCost3.run(false);
-    // testTopLevel.run(false);
-    // testSetY.run(false);
-    // testEpanetReuse1.run(false);
+    for(const auto& test_name : test_names)
+    {
+      if (test_name == "test_cost_1") testCost1.run(false);
+      if (test_name == "test_cost_2") testCost2.run(false);
+      if (test_name == "test_cost_3") testCost3.run(false);
+      if (test_name == "test_top_level") testTopLevel.run(false);
+      if (test_name == "test_set_y") testSetY.run(false);
+      if (test_name == "test_epanet_reuse_1") testEpanetReuse1.run(false);
+      if (test_name == "test_epanet_reuse_2") testEpanetReuse2.run(false);
+    }
     testEpanetReuse2.run(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  // testMPI.run(false);
-  // MPI_Barrier(MPI_COMM_WORLD);
-
-  // testSplit.run(false);
-  // MPI_Barrier(MPI_COMM_WORLD);
+  for(const auto& test_name : test_names)
+  {
+    if (test_name == "test_mpi") {
+      testMPI.run(false);
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+    if (test_name == "test_split") 
+    {
+      testSplit.run(false);
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+  }
 
   MPI_Finalize();
   exit(EXIT_SUCCESS);

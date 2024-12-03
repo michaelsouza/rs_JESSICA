@@ -7,15 +7,35 @@
 #include <mpi.h>
 #include <unistd.h>
 
+#include <vector>
+#include <string>
+
 void run_tests(int argc, char*argv[]){
+  std::vector<std::string> test_names;
+  bool run_tests_flag = false;
+
   // Search for --test parameter
   for (int i = 1; i < argc; ++i)
   {
     std::string arg = argv[i];
     if (arg == "--test")
     {
-      test_all();
+      run_tests_flag = true;
+      // Collect all subsequent arguments as test names
+      while(++i < argc){
+        std::string test_name = argv[i];
+        if(test_name.rfind("--", 0) == 0){
+          // Encountered another flag, stop collecting test names
+          i--;
+          break;
+        }
+        test_names.push_back(test_name);
+      }
     }
+  }
+
+  if(run_tests_flag){
+    test_all(test_names);
   }
 }
 

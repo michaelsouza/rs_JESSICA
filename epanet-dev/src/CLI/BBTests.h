@@ -728,7 +728,10 @@ void test_all(const std::vector<std::string>& test_names)
   MPI_Init(nullptr, nullptr);
 
   int rank = 0;
+  int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  if(rank == 0) Console::printf(Console::Color::BRIGHT_WHITE, "Running tests with %d ranks.\n", size);
 
   // Instantiate and run all tests
   TestCost1 testCost1;

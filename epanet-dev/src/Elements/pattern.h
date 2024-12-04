@@ -15,6 +15,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 class MemPool;
 
@@ -50,6 +51,14 @@ class Pattern: public Element
     virtual void   init(int intrvl, int tstart) = 0;
     virtual int    nextTime(int t) = 0;
     virtual void   advance(int t) = 0;
+    void           show() {
+      std::cout << "Pattern: " << name << std::endl;
+      std::cout << "  type: " << type << std::endl;
+      std::cout << "  factors: " << currentFactor() << std::endl;
+      for (int i = 0; i < size(); i++) {
+        std::cout << "  " << i << ": " << factor(i) << std::endl;
+      }
+    };
 
     // Properties
     int            type;                //!< type of time pattern

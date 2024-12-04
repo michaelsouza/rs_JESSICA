@@ -317,11 +317,14 @@ void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int>
       double factor_old = pattern->factor(factor_id);
       // Update speed factor
       pattern->setFactor(factor_id, factor_new);
-
-      if (verbose)
-      {
-        Console::printf(Console::Color::CYAN, "  h[%d]: pump[%s]: %.0f -> %.0f\n", i, pump_name.c_str(), factor_old, factor_new);
-      }
     }
+  }
+
+  // Show patterns
+  if (verbose)
+  {
+    Console::printf(Console::Color::BRIGHT_WHITE, "\nUpdated patterns\n");
+    for (auto &pump : pumps)
+      pump.second->speedPattern->show();
   }
 }

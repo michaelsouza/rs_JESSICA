@@ -79,7 +79,7 @@ public:
   /**
    * @brief Displays the current state of the counter.
    */
-  void show() const;
+  void show(bool show_constraints) const;
 
   /**
    * @brief Fills a vector with the current state of the counter.
@@ -97,6 +97,13 @@ public:
 
   void add_prune(PruneReason reason);
 
+  /**
+   * @brief Updates the pump states in the EPANET project based on the current solution
+   * 
+   * @param p The EPANET project to update
+   * @param full_update If true, updates pumps for all time periods. If false, only updates current period
+   * @param verbose If true, prints detailed information about the pump updates
+   */
   void update_pumps(Project &p, bool full_update, bool verbose);
 
   void add_feasible();

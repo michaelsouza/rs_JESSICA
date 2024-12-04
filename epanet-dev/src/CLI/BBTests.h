@@ -276,7 +276,7 @@ public:
 
     BBSolver solver(config);
 
-    if (verbose) solver.show();
+    if (verbose) solver.show(true);
 
     if (!solver.set_y(y))
     {
@@ -756,7 +756,6 @@ void test_all(const std::vector<std::string>& test_names)
       if (test_name == "test_epanet_reuse_1") testEpanetReuse1.run(false);
       if (test_name == "test_epanet_reuse_2") testEpanetReuse2.run(false);
     }
-    testEpanetReuse2.run(false);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 

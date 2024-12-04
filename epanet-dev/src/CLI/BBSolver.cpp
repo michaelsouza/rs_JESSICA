@@ -38,15 +38,16 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
 {
   is_feasible = true;
   int t = 0, dt = 0, t_max = 3600 * this->h;
+  bool pumps_update_full = true;
 
   Project p;
   CHK(p.load(this->inpFile.c_str()), "Load project");
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
   // Set the project and constraints
-  update_pumps(p, false, verbose);
+  update_pumps(p, pumps_update_full, verbose);
 
-  if (verbose) show();
+  if (verbose) show(true);
 
   do
   {
@@ -114,18 +115,19 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   return is_feasible;
 }
 
-/** Update functions */
 void BBSolver::update_pumps(Project &p, bool full_update, bool verbose)
 {
   if (full_update)
   {
-    for (int i = 0; i < h_max; ++i)
+    // Update pumps for all time periods
+    for (int i = 0; i <= h_max; ++i)
     {
       cntrs.update_pumps(p, i, x, verbose);
     }
   }
   else
   {
+    // Update pumps only for current time period
     cntrs.update_pumps(p, this->h, this->x, verbose);
   }
 }
@@ -521,7 +523,7 @@ void BBSolver::show_xy(bool verbose) const
   }
 }
 
-void BBSolver::show() const
+void BBSolver::show(bool show_constraints) const
 {
   // Get MPI rank
   int rank = 0;
@@ -537,6 +539,9 @@ void BBSolver::show() const
 
   // Display y and x vectors
   show_xy(true);
+
+  // Display constraints
+  if (show_constraints) cntrs.show();
 
   // Print Footer
   Console::printf(Console::Color::BRIGHT_CYAN, "\n");

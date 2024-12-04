@@ -35,7 +35,13 @@ void run_tests(int argc, char*argv[]){
   }
 
   if(run_tests_flag){
-    test_all(test_names);
+    if(test_names.empty())
+    {
+      Console::printf(Console::Color::BRIGHT_RED, "No test names provided\n");
+      exit(EXIT_FAILURE); 
+    }
+    else
+      test_all(test_names);
   }
 }
 

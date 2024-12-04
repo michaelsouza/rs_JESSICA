@@ -54,10 +54,11 @@ class Pattern: public Element
     void           show() {
       std::cout << "Pattern: " << name << std::endl;
       std::cout << "  type: " << type << std::endl;
-      std::cout << "  factors: " << currentFactor() << std::endl;
+      std::cout << "  factors(" << size() << "): [";
       for (int i = 0; i < size(); i++) {
-        std::cout << "  " << i << ": " << factor(i) << std::endl;
+        std::cout << " " << factor(i);
       }
+      std::cout << " ]" << std::endl;
     };
 
     // Properties

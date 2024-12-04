@@ -43,6 +43,8 @@ void BBConstraints::show() const
   for (const auto &pump : pumps)
     Console::printf(Console::Color::BRIGHT_WHITE, "%s ", pump.first.c_str());
   Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
+  for(auto &pump : pumps)
+    pump.second->speedPattern->show();
 
   Console::printf(Console::Color::BRIGHT_WHITE, "Tanks: [ ");
   for (const auto &tank : tanks)
@@ -140,30 +142,6 @@ bool BBConstraints::check_pressures(bool verbose)
   }
 
   return all_ok;
-}
-
-// Function to display pattern information
-void show_pattern(Pattern *p, const std::string &name)
-{
-  std::string type_name;
-  switch (p->type)
-  {
-  case Pattern::FIXED_PATTERN:
-    type_name = "FIXED";
-    break;
-  case Pattern::VARIABLE_PATTERN:
-    type_name = "VARIABLE";
-    break;
-  default:
-    type_name = "UNKNOWN";
-    break;
-  }
-  std::cout << name << "[" << type_name << ", " << p->size() << "]: [";
-  for (int i = 0; i < p->size(); i++)
-  {
-    std::cout << p->factor(i) << " ";
-  }
-  std::cout << "]" << std::endl;
 }
 
 // Function to check tank levels
@@ -270,8 +248,6 @@ double BBConstraints::calc_cost() const
 
 void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose)
 {
-  if (verbose) Console::printf(Console::Color::BRIGHT_WHITE, "\nUpdating pumps\n");
-
   // Set project pointer. This is used by the "check" methods.
   this->p = &p;
 
@@ -318,13 +294,5 @@ void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int>
       // Update speed factor
       pattern->setFactor(factor_id, factor_new);
     }
-  }
-
-  // Show patterns
-  if (verbose)
-  {
-    Console::printf(Console::Color::BRIGHT_WHITE, "\nUpdated patterns\n");
-    for (auto &pump : pumps)
-      pump.second->speedPattern->show();
-  }
+  }  
 }

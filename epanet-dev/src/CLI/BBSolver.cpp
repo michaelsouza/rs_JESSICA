@@ -37,11 +37,16 @@ BBSolver::BBSolver(BBConfig &config)
 bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
 {
   is_feasible = true;
-  int t = 0, dt = 0, t_max = 3600 * h_max;
+  int t = 0, dt = 0, t_max = 3600 * h;
   bool pumps_update_full = true;
 
   Project p;
   CHK(p.load(config.inpFile.c_str()), "Load project");
+
+  // Set the total duration of the simulation
+  p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+
+  // Initialize the solver
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
   // Set the project and constraints
@@ -57,6 +62,15 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     // Advance the solver
     CHK(p.advanceSolver(&dt), "Advance solver");
 
+    const int t_new = t + dt;
+
+    // Show the current state
+    if (verbose)
+    {
+      Console::printf(Console::Color::CYAN, "════════════════════════════════════════\n");
+      Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d\n", t_new, t_max, t, dt);
+    }
+
     // Check cost
     cost = cntrs.calc_cost();
     is_feasible = cntrs.check_cost(cost, verbose);
@@ -66,14 +80,6 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
       jump_to_end();
       break;
     }
-
-    const int t_new = t + dt;
-
-    // Early stop if the t_max is reached for non-final hours
-    if (t_new > t_max && h != h_max) break;
-
-    // Show the current state
-    if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d, cost=%.2f\n", t_new, t_max, t, dt, cost);
 
     // Check node pressures
     is_feasible = cntrs.check_pressures(verbose);
@@ -92,9 +98,6 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     }
 
   } while (dt > 0);
-
-  // Show the final state
-  if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n, cost=%.2f", t_max, t, dt, cost);
 
   // Check stability for the last hour
   if (is_feasible && h == h_max)
@@ -342,6 +345,8 @@ bool BBSolver::update_x_h(bool verbose)
   // Start by copying the previous state
   std::copy(x_old, x_old + this->num_pumps, x_new);
 
+  if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: update_x_h[%d]: y_new=%d, y_old=%d\n", mpi_rank, h, y_new, y_old);
+
   // Nothing to be done
   if (y_new == y_old) return true;
 
@@ -373,11 +378,7 @@ bool BBSolver::update_x_h(bool verbose)
     success = switch_pumps_off(x_new, pumps_sorted, allowed_10, counter_10);
   }
 
-  if (verbose)
-  {
-    Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: update_x_h[%d]: success=%d, y_new=%d, y_old=%d\n", mpi_rank, h, success, y_new, y_old);
-    show_vector(x_new, num_pumps, "   x_new");
-  }
+  if (verbose) show_vector(x_new, num_pumps, "   x_new");
   return success;
 }
 
@@ -700,7 +701,7 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
   }
 
   // Process node
-  process_node(cost, false, save_project);
+  process_node(cost, verbose, save_project);
 
   // Update feasible counter
   if (is_feasible)

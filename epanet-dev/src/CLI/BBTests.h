@@ -524,17 +524,17 @@ public:
   {
     print_test_name();
     std::vector<std::tuple<std::vector<int>, int, bool>> test_cases = {// test 1
-                                                                       {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true},
+                                                                       {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, false},
                                                                        // test 2
-                                                                       {{0, 1, 3, 2, 2, 0, 1, 1, 1, 0, 3, 3, 3}, 9, true},
+                                                                       {{0, 1, 3, 2, 2, 0, 1, 1, 1, 0, 3, 3, 3}, 9, false},
                                                                        // test 3
-                                                                       {{0, 1, 3, 2, 2, 2, 2, 2, 3, 0, 0, 3, 3}, 10, true},
+                                                                       {{0, 1, 3, 2, 2, 2, 2, 2, 3, 0, 0, 3, 3}, 8, true},
                                                                        // test 4
                                                                        {{0, 2, 0, 1, 1, 2, 2, 1, 1, 1, 2, 3, 3}, 10, true},
                                                                        // test 5
-                                                                       {{0, 2, 1, 0, 0, 3, 3, 2, 2, 0, 3, 3, 3}, 9, true},
+                                                                       {{0, 2, 1, 0, 0, 3, 3, 2, 2, 0, 3, 3, 3}, 8, true},
                                                                        // test 6
-                                                                       {{0, 3, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true}};
+                                                                       {{0, 0, 0, 0, 1, 3, 1, 1, 0, 3, 3, 3, 3}, 8, true}};
 
     for (int i = 0; i < test_cases.size(); ++i)
     {
@@ -727,7 +727,7 @@ protected:
   int max_actuations;
   std::vector<int> initial_y;
   std::vector<int> expected_x;
-  bool expected_is_feasible;
+  std::vector<bool> expected_is_feasible;
 
 public:
   /**
@@ -738,7 +738,8 @@ public:
    * @param expected_is_feasible The expected feasibility outcome.
    * @param test_name The name of the test.
    */
-  TestUpdateXBase(int max_actuations, const std::vector<int> &initial_y, const std::vector<int> &expected_x, bool expected_is_feasible, const std::string &test_name)
+  TestUpdateXBase(int max_actuations, const std::vector<int> &initial_y, const std::vector<int> &expected_x,
+                  const std::vector<bool> &expected_is_feasible, const std::string &test_name)
       : max_actuations(max_actuations), initial_y(initial_y), expected_x(expected_x), expected_is_feasible(expected_is_feasible)
   {
     this->test_name = test_name;
@@ -777,10 +778,28 @@ public:
 
     solver.y = initial_y;
 
-    for(solver.h = 1; solver.h <= config.h_max; ++solver.h){
+    for (solver.h = 1; solver.h <= config.h_max; ++solver.h)
+    {
       bool is_feasible = solver.update_x_h(verbose);
-      if( is_feasible != expected_is_feasible){
-        Console::printf(Console::Color::RED, "   Failed: The is_feasible=%d is different from expected_is_feasible=%d\n", is_feasible, expected_is_feasible);
+      if (is_feasible != expected_is_feasible[solver.h - 1])
+      {
+        Console::printf(Console::Color::RED, "   Failed: The is_feasible=%d is different from expected_is_feasible=%d\n", is_feasible,
+                        expected_is_feasible[solver.h - 1]);
+      }
+      bool is_x_correct = true;
+      int *x_h = &solver.x[solver.h * solver.num_pumps];
+      int *expected_x_h = &expected_x[(solver.h - 1) * solver.num_pumps];
+      for (int pump_id = 0; pump_id < solver.num_pumps; ++pump_id)
+      {
+        if (x_h[pump_id] != expected_x_h[pump_id])
+        {
+          is_x_correct = false;
+          break;
+        }
+      }
+      if (!is_x_correct)
+      {
+        Console::printf(Console::Color::RED, "   Failed: The x vector is different from expected_x.\n");
       }
     }
     Console::printf(Console::Color::GREEN, "   Passed\n");
@@ -789,14 +808,29 @@ public:
   }
 };
 
-class TestUpdateX : public TestUpdateXBase
+class TestUpdateX1 : public TestUpdateXBase
 {
 public:
-  TestUpdateX()
-      : TestUpdateXBase(1,                  // max_actuations
-                        {0, 0, 1, 2, 1, 2}, // initial_y (y.size = h_max + 1)
-                        true,              // expected_is_feasible
-                        "test_update_x_1"   // test_name
+  TestUpdateX1()
+      : TestUpdateXBase(1,                                             // max_actuations
+                        {0, 0, 1, 2, 1, 2},                            // initial_y (y.size = h_max + 1)
+                        {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1}, // expected_x
+                        {true, true, true, true, true, true},          // expected_is_feasible
+                        "test_update_x_1"                              // test_name
+        )
+  {
+  }
+};
+
+class TestUpdateX2 : public TestUpdateXBase
+{
+public:
+  TestUpdateX2()
+      : TestUpdateXBase(1,                                                      // max_actuations
+                        {0, 2, 1, 2, 0, 1, 2},                                  // initial_y (y.size = h_max + 1)
+                        {1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0}, // expected_x
+                        {true, true, true, true, true, true, true},             // expected_is_feasible
+                        "test_update_x_2"                                       // test_name
         )
   {
   }
@@ -823,7 +857,20 @@ void test_all(const std::vector<std::string> &test_names)
   TestSetY testSetY;
   TestEpanetReuse1 testEpanetReuse1;
   TestEpanetReuse2 testEpanetReuse2;
-  TestUpdateX testUpdateX1;
+  TestUpdateX1 testUpdateX1;
+  TestUpdateX2 testUpdateX2;
+
+  std::vector<std::pair<BBTest *, std::string>> tests_serial = {{&testCost1, "test_cost_1"},
+                                                                {&testCost2, "test_cost_2"},
+                                                                {&testCost3, "test_cost_3"},
+                                                                {&testTopLevel, "test_top_level"},
+                                                                {&testSetY, "test_set_y"},
+                                                                {&testEpanetReuse1, "test_epanet_reuse_1"},
+                                                                {&testEpanetReuse2, "test_epanet_reuse_2"},
+                                                                {&testUpdateX1, "test_update_x_1"},
+                                                                {&testUpdateX2, "test_update_x_2"}};
+
+  std::vector<std::pair<BBTest *, std::string>> tests_parallel = {{&testMPI, "test_mpi"}, {&testSplit, "test_split"}};
 
   bool run_all = false;
   for (const auto &test_name : test_names)
@@ -833,30 +880,20 @@ void test_all(const std::vector<std::string> &test_names)
 
   if (rank == 0)
   {
-    for (const auto &test_name : test_names)
+    for (const auto &test : tests_serial)
     {
-      if (run_all || test_name == "test_cost_1") testCost1.run(false);
-      if (run_all || test_name == "test_cost_2") testCost2.run(false);
-      if (run_all || test_name == "test_cost_3") testCost3.run(false);
-      if (run_all || test_name == "test_top_level") testTopLevel.run(false);
-      if (run_all || test_name == "test_set_y") testSetY.run(false);
-      if (run_all || test_name == "test_epanet_reuse_1") testEpanetReuse1.run(false);
-      if (run_all || test_name == "test_epanet_reuse_2") testEpanetReuse2.run(false);
-      if (run_all || test_name == "test_update_x_1") testUpdateX1.run(false);
+      bool test_included = std::find(test_names.begin(), test_names.end(), test.second) != test_names.end();
+      if (run_all || test_included) test.first->run(false);
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  for (const auto &test_name : test_names)
+  for (const auto &test : tests_parallel)
   {
-    if (run_all || test_name == "test_mpi")
+    bool test_included = std::find(test_names.begin(), test_names.end(), test.second) != test_names.end();
+    if (run_all || test_included)
     {
-      testMPI.run(false);
-      MPI_Barrier(MPI_COMM_WORLD);
-    }
-    if (run_all || test_name == "test_split")
-    {
-      testSplit.run(false);
+      test.first->run(false);
       MPI_Barrier(MPI_COMM_WORLD);
     }
   }

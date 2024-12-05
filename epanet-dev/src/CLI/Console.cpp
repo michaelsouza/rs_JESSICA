@@ -162,3 +162,25 @@ void write_vector(std::ofstream &ofs, const std::vector<int> &vec, const std::st
   }
   ofs << "]";
 }
+
+// Function to show a vector
+void show_vector(const std::vector<int> &vec, const std::string vec_name)
+{
+  Console::printf(Console::Color::BRIGHT_BLUE, "%s: [ ", vec_name.c_str());
+  for (size_t i = 0; i < vec.size(); ++i)
+  {
+    Console::printf(Console::Color::BRIGHT_CYAN, "%d ", vec[i]);
+  }
+  Console::printf(Console::Color::BRIGHT_BLUE, "]\n");
+}
+
+// Function to show a vector
+void show_vector(int *vec, int size, const std::string vec_name)
+{
+  Console::printf(Console::Color::BRIGHT_BLUE, "%s: [ ", vec_name.c_str());
+  for (int i = 0; i < size; ++i)
+  {
+    Console::printf(Console::Color::BRIGHT_CYAN, "%d ", vec[i]);
+  }
+  Console::printf(Console::Color::BRIGHT_BLUE, "]\n");
+}

@@ -373,6 +373,11 @@ bool BBSolver::update_x_h(bool verbose)
     success = switch_pumps_off(x_new, pumps_sorted, allowed_10, counter_10);
   }
 
+  if (verbose)
+  {
+    Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: update_x_h[%d]: success=%d, y_new=%d, y_old=%d\n", mpi_rank, h, success, y_new, y_old);
+    show_vector(x_new, num_pumps, "   x_new");
+  }
   return success;
 }
 
@@ -778,7 +783,7 @@ void BBSolver::solve_sync(int h_threshold, int &done_loc, int &done_all, bool ve
 
   if (verbose)
   {
-    Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: MPI_Barrier\n");
+    Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: MPI_Barrier\n", mpi_rank);
   }
 
   MPI_Barrier(MPI_COMM_WORLD);

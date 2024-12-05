@@ -70,3 +70,9 @@ void show_timer(int mpi_rank, unsigned int niter, int h, int done_loc, int done_
 
 // Function to write a vector to a file
 void write_vector(std::ofstream &ofs, const std::vector<int> &vec, const std::string vec_name);
+
+// Function to write a vector to a file
+void show_vector(const std::vector<int> &vec, const std::string vec_name);
+
+// Function to show a vector
+void show_vector(int *vec, int size, const std::string vec_name);

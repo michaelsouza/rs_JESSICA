@@ -60,9 +60,10 @@
                 "--max_actuations",
                 "1",
                 "--h_max",
-                "5"
+                "4",
+                "--verbose"                
             ],
-            "stopAtEntry": false,
+            "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [
                 {

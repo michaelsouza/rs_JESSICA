@@ -3,11 +3,11 @@
 #include "BBConfig.h"
 #include "BBSolver.h"
 #include "BBTests.h"
+#include "Profiler.h"
 
 #include <mpi.h>
-#include <unistd.h>
-
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 void run_tests(int argc, char *argv[])
@@ -51,20 +51,26 @@ void run_tests(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-  run_tests(argc, argv);
-
   // Initialize MPI
   MPI_Init(nullptr, nullptr);
 
-  // Create configuration from command-line arguments
-  BBConfig config(argc, argv);
-  config.show();
+  {
+    ProfileScope scope("main");
+    run_tests(argc, argv);
 
-  // Create solver instance
-  BBSolver solver(config);
+    // Create configuration from command-line arguments
+    BBConfig config(argc, argv);
+    config.show();
 
-  // Start solving
-  solver.solve();
+    // Create solver instance
+    BBSolver solver(config);
+
+    // Start solving
+    solver.solve();
+  }
+
+  // Print profiling results
+  Profiler::print();
 
   // Finalize MPI
   MPI_Finalize();

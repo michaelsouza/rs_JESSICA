@@ -1,6 +1,8 @@
 // src/CLI/ColorStream.cpp
 
 #include "Console.h"
+#include "Profiler.h"
+
 #include <cstdio> // For vsnprintf
 #include <memory> // For std::unique_ptr
 #include <vector> // For dynamic buffer
@@ -115,6 +117,8 @@ void CHK(int err, const std::string &message)
 void show_timer(int mpi_rank, unsigned int niter, int h, int done_loc, int done_all, double cost, std::vector<int> &y, int is_feasible,
                 std::chrono::high_resolution_clock::time_point tic, int interval_niter, int interval_solver)
 {
+  ProfileScope scope("show_timer");
+
   // Only show the timer every `interval` iterations
   if (mpi_rank == 0 && niter % interval_niter == 0)
   {

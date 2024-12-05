@@ -1,6 +1,8 @@
 // src/CLI/BBSolver.cpp
 #include "BBSolver.h"
 #include "Console.h"
+#include "Profiler.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -36,18 +38,28 @@ BBSolver::BBSolver(BBConfig &config)
 
 bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
 {
+  ProfileScope scope("process_node");
+
   is_feasible = true;
   int t = 0, dt = 0, t_max = 3600 * h;
   bool pumps_update_full = true;
 
   Project p;
-  CHK(p.load(config.inpFile.c_str()), "Load project");
+  {
+    ProfileScope scope("load_project");
 
-  // Set the total duration of the simulation
-  p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+    CHK(p.load(config.inpFile.c_str()), "Load project");
+  }
 
-  // Initialize the solver
-  CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+    // Set the total duration of the simulation
+    p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+
+  {
+    ProfileScope scope("init_solver");
+
+    // Initialize the solver
+    CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+  }
 
   // Set the project and constraints
   update_pumps(p, pumps_update_full, verbose);
@@ -159,6 +171,8 @@ bool BBSolver::set_y(const std::vector<int> &y)
 
 bool BBSolver::update_y()
 {
+  ProfileScope scope("update_y");
+
   if (h < h_min || h > h_max)
   {
     // pass: invalid hour
@@ -234,6 +248,8 @@ bool BBSolver::update_y()
 
 bool BBSolver::update_x(bool verbose)
 {
+  ProfileScope scope("update_x");
+
   // Update x core
   is_feasible = this->update_x_h(verbose);
 
@@ -680,6 +696,8 @@ void BBSolver::update_cost_ub(double cost, bool update_xy)
 
 void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
 {
+  ProfileScope scope("solve_iteration");
+
   if (done_loc) return;
 
   double cost = 0.0;
@@ -718,6 +736,8 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
 
 void BBSolver::solve_sync(int h_threshold, int &done_loc, int &done_all, bool verbose)
 {
+  ProfileScope scope("solve_sync");
+
   static int num_calls = 0;
   num_calls++;
 
@@ -824,6 +844,8 @@ void show_input_args(const char *inpFile, int h_max, int max_actuations, int h_t
 
 void BBSolver::solve()
 {
+  ProfileScope scope("solve");
+
   // Get MPI rank and size
   int rank = mpi_rank;
 

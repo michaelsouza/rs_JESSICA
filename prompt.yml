@@ -20,17 +20,18 @@ epanet-dev/src/CLI: yes
   BBCounter.cpp: none
   BBStats.h: none
   BBStats.cpp: none
-  main.cpp: none
-  BBSolver.h: none
-  BBSolver.cpp: none
+  BBSolver.h: all
+  BBSolver.cpp: all
   BBConstraints.h: none
   BBConstraints.cpp: none
   Helper.h: none
   Helper.cpp: none
-  Console.h: all
-  Console.cpp: all
-  Utils.h: all
-  Utils.cpp: all
+  Console.h: none
+  Console.cpp: none
+  Utils.h: none
+  Utils.cpp: none
+  Profiler.h: none
+  main.cpp: none
 
 epanet-dev/src/Elements: no
   pump.h: all
@@ -43,5 +44,5 @@ epanet-dev/: no
 
 # user_request
 """
-Pls, show_vector(int n, int *x, std::string name) function to the Console.cpp and Console.h
+In order to improve readability and profiling, let's breaking down the process_node function.
 """

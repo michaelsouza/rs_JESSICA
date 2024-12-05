@@ -156,9 +156,9 @@ public:
   Project p;                   ///< EPANET project object.
 
 private:
-  bool load_project(Project &p, int t_max, bool verbose);
-  bool initialize_solver(Project &p, bool verbose);
-  bool call_epanet(Project &p, int &t, int &dt, bool verbose, double &cost);
+  bool epanet_load(Project &p, int t_max, bool verbose);
+  bool epanet_init(Project &p, bool verbose);
+  bool epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost);
   bool check_stability(bool verbose);
   void save_project(Project &p, bool dump);
 };

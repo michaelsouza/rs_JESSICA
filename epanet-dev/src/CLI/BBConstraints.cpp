@@ -53,28 +53,22 @@ void BBConstraints::show() const
 
 void BBConstraints::get_nodes_tanks_ids(std::string inpFile)
 {
-  EN_Project p = EN_createProject();
-  CHK(EN_loadProject(const_cast<char *>(inpFile.c_str()), p), "Load project");
+  Project p;
+  CHK(p.load(inpFile.c_str()), "Load project");
 
   // Find node IDs
   for (auto &node : nodes)
   {
     const std::string &node_name = node.first;
-    int node_id;
-    CHK(EN_getNodeIndex(const_cast<char *>(node_name.c_str()), &node_id, p), "Get node index");
-    node.second = node_id;
+    node.second = p.getNetwork()->indexOf(Element::NODE, node_name);
   }
 
   // Find tank IDs
   for (auto &tank : tanks)
   {
     const std::string &tank_name = tank.first;
-    int tank_id;
-    CHK(EN_getNodeIndex(const_cast<char *>(tank_name.c_str()), &tank_id, p), "Get tank index");
-    tank.second = tank_id;
+    tank.second = p.getNetwork()->indexOf(Element::NODE, tank_name);
   }
-
-  EN_deleteProject(p);
 }
 
 // Function to display pressure status

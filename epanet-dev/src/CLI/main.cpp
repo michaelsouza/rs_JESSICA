@@ -69,8 +69,11 @@ int main(int argc, char *argv[])
     solver.solve();
   }
 
-  // Print profiling results
-  Profiler::print();
+  // Print profiling results to separate files
+  Profiler::save();
+
+  // Make sure all ranks have finished writing their profiles
+  MPI_Barrier(MPI_COMM_WORLD);
 
   // Finalize MPI
   MPI_Finalize();

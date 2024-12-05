@@ -38,9 +38,9 @@ BBSolver::BBSolver(BBConfig &config)
 
 // Added implementations of the helper functions in BBSolver.cpp
 
-bool BBSolver::load_project(Project &p, int t_max, bool verbose)
+bool BBSolver::epanet_load(Project &p, int t_max, bool verbose)
 {
-  ProfileScope scope("load_project");
+  ProfileScope scope("epanet_load");
 
   CHK(p.load(config.inpFile.c_str()), "Load project");
 
@@ -50,9 +50,9 @@ bool BBSolver::load_project(Project &p, int t_max, bool verbose)
   return true;
 }
 
-bool BBSolver::initialize_solver(Project &p, bool verbose)
+bool BBSolver::epanet_init(Project &p, bool verbose)
 {
-  ProfileScope scope("init_solver");
+  ProfileScope scope("epanet_init");
 
   // Initialize the solver
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
@@ -60,9 +60,9 @@ bool BBSolver::initialize_solver(Project &p, bool verbose)
   return true;
 }
 
-bool BBSolver::call_epanet(Project &p, int &t, int &dt, bool verbose, double &cost)
+bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost)
 {
-  ProfileScope scope("call_epanet");
+  ProfileScope scope("epanet_solve");
 
   do
   {
@@ -148,13 +148,12 @@ bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
   int t = 0, dt = 0, t_max = 3600 * h;
   bool pumps_update_full = true;
 
-  Project p;
-
   // Load project
-  if (!load_project(p, t_max, verbose)) return false;
+  Project p;
+  if (!epanet_load(p, t_max, verbose)) return false;
 
   // Initialize solver
-  if (!initialize_solver(p, verbose)) return false;
+  if (!epanet_init(p, verbose)) return false;
 
   // Set the project and constraints
   update_pumps(p, pumps_update_full, verbose);
@@ -162,7 +161,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
   if (verbose) show(true);
 
   // Run simulation
-  if (!call_epanet(p, t, dt, verbose, cost)) return is_feasible;
+  if (!epanet_solve(p, t, dt, verbose, cost)) return is_feasible;
 
   // Check additional constraints
   check_stability(verbose);
@@ -900,15 +899,19 @@ void BBSolver::solve()
   int done_all = 0;
   auto tic = std::chrono::high_resolution_clock::now();
   int niters = 0;
+  int interval_niter = 1024;
 
   // Main loop
   while (!done_all)
   {
     ++niters;
 
-    show_timer(rank, niters, h, done_loc, done_all, cntrs.cost_ub, y_best, is_feasible, tic, 256, 1024);
     solve_iteration(done_loc, config.verbose, config.dump_project);
-    solve_sync(config.h_threshold, done_loc, done_all, config.verbose);
+    if (niters % interval_niter == 0)
+    {
+      show_timer(rank, niters, h, done_loc, done_all, cntrs.cost_ub, y, y_best, is_feasible, tic);
+      solve_sync(config.h_threshold, done_loc, done_all, config.verbose);
+    }
   }
 
   auto toc = std::chrono::high_resolution_clock::now();

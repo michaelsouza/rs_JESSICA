@@ -4,6 +4,9 @@
 #include "Console.h"
 #include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <iomanip>
+#include <mpi.h>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -34,9 +37,23 @@ public:
     return profile;
   }
 
-  static void print()
+  static void save()
   {
-    Console::printf(Console::Color::BRIGHT_BLUE, "\n=== Profiling Results ===\n");
+    // Get MPI rank
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // Only rank 0 prints the summary message
+    if (rank == 0)
+    {
+      Console::printf(Console::Color::BRIGHT_BLUE, "\nSaving profile_rank_*.txt files\n");
+    }
+
+    // Create filename for this rank
+    std::string filename = "profile_rank_" + std::to_string(rank) + ".txt";
+    std::ofstream outfile(filename);
+
+    outfile << "=== Profiling Results (Rank " << rank << ") ===\n";
 
     // Create vector of pairs to sort
     std::vector<std::pair<std::string, std::chrono::microseconds>> sorted_profile(profile.begin(), profile.end());
@@ -47,16 +64,19 @@ public:
     // Get the maximum duration for calculating percentages
     auto max_duration = sorted_profile.front().second.count();
 
+    // Set output format
+    outfile << std::fixed << std::setprecision(2);
+
     for (const auto &[name, duration] : sorted_profile)
     {
       double ms = duration.count() / 1000.0;
       double percentage = (duration.count() * 100.0) / max_duration;
 
-      Console::printf(Console::Color::BRIGHT_CYAN, "%-30s", name.c_str());
-      Console::printf(Console::Color::BRIGHT_WHITE, ": %8.2f ms", ms);
-      Console::printf(Console::Color::BRIGHT_GREEN, " (%5.1f%%)\n", percentage);
+      outfile << std::left << std::setw(30) << name << ": " << std::right << std::setw(8) << ms << " ms" << " (" << std::setw(5) << percentage
+              << "%)\n";
     }
-    Console::printf(Console::Color::BRIGHT_BLUE, "=====================\n");
+    outfile << "=====================\n";
+    outfile.close();
   }
 
 private:

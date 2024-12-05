@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
 
   // Create configuration from command-line arguments
   BBConfig config(argc, argv);
+  config.show();
 
   // Create solver instance
   BBSolver solver(config);

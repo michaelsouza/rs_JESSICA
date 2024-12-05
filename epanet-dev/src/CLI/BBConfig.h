@@ -8,6 +8,8 @@ class BBConfig
 public:
   BBConfig(int argc, char *argv[]);
 
+  void show() const;
+
   std::string inpFile;
   int h_max = 24;
   // Maximum number of times a pump can change state from 0 to 1 (i.e. turn ons)

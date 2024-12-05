@@ -424,7 +424,7 @@ private:
     if (!solver.is_feasible)
     {
       if (verbose) Console::printf(Console::Color::RED, "Rank[%d]: update_x is infeasible.\n", rank);
-      solver.add_prune(PruneReason::ACTUATIONS);
+      solver.add_prune(PruneReason::ACTUATIONS, verbose);
       return;
     }
     solver.show_xy(verbose);
@@ -437,7 +437,7 @@ private:
     if (!solver.is_feasible)
     {
       // Just for testing, we prune on pressures
-      solver.add_prune(PruneReason::PRESSURES);
+      solver.add_prune(PruneReason::PRESSURES, verbose);
       return;
     }
 
@@ -600,7 +600,7 @@ public:
       solver.is_feasible = solver.cntrs.check_cost(cost, verbose);
       if (!solver.is_feasible)
       {
-        solver.add_prune(PruneReason::COST);
+        solver.add_prune(PruneReason::COST, verbose);
         solver.jump_to_end();
         break;
       }
@@ -616,7 +616,7 @@ public:
       solver.is_feasible = solver.cntrs.check_pressures(verbose);
       if (!solver.is_feasible)
       {
-        solver.add_prune(PruneReason::PRESSURES);
+        solver.add_prune(PruneReason::PRESSURES, verbose);
         break;
       }
 
@@ -624,7 +624,7 @@ public:
       solver.is_feasible = solver.cntrs.check_levels(verbose);
       if (!solver.is_feasible)
       {
-        solver.add_prune(PruneReason::LEVELS);
+        solver.add_prune(PruneReason::LEVELS, verbose);
         break;
       }
 
@@ -687,7 +687,7 @@ public:
     if (solver.is_feasible && solver.h == solver.h_max)
     {
       solver.is_feasible = solver.cntrs.check_stability(verbose);
-      if (!solver.is_feasible) solver.add_prune(PruneReason::STABILITY);
+      if (!solver.is_feasible) solver.add_prune(PruneReason::STABILITY, verbose);
     }
 
     // Assert solver.is_feasible

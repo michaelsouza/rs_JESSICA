@@ -62,7 +62,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     is_feasible = cntrs.check_cost(cost, verbose);
     if (!is_feasible)
     {
-      add_prune(PruneReason::COST);
+      add_prune(PruneReason::COST, verbose);
       jump_to_end();
       break;
     }
@@ -79,7 +79,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     is_feasible = cntrs.check_pressures(verbose);
     if (!is_feasible)
     {
-      add_prune(PruneReason::PRESSURES);
+      add_prune(PruneReason::PRESSURES, verbose);
       break;
     }
 
@@ -87,7 +87,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     is_feasible = cntrs.check_levels(verbose);
     if (!is_feasible)
     {
-      add_prune(PruneReason::LEVELS);
+      add_prune(PruneReason::LEVELS, verbose);
       break;
     }
 
@@ -100,7 +100,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   if (is_feasible && h == h_max)
   {
     is_feasible = cntrs.check_stability(verbose);
-    if (!is_feasible) add_prune(PruneReason::STABILITY);
+    if (!is_feasible) add_prune(PruneReason::STABILITY, verbose);
   }
 
   if (save_project)
@@ -416,9 +416,10 @@ int BBSolver::get_free_level()
 }
 
 /** Update Reason functions */
-void BBSolver::add_prune(PruneReason reason)
+void BBSolver::add_prune(PruneReason reason, bool verbose)
 {
   stats.add_pruning(reason, h);
+  if (verbose) Console::printf(Console::Color::BRIGHT_RED, "Rank[%d]: Pruned at h=%d, reason=%s\n", mpi_rank, h, to_string(reason).c_str());
 }
 
 void BBSolver::add_feasible()
@@ -489,7 +490,7 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free, bool ver
   // Update status
   h = h_min;
   is_feasible = false;
-  add_prune(PruneReason::SPLIT);
+  add_prune(PruneReason::SPLIT, verbose);
 
   // Show the current state
   // if (verbose) show();
@@ -694,7 +695,7 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
   update_x(verbose);
   if (!is_feasible)
   {
-    add_prune(PruneReason::ACTUATIONS);
+    add_prune(PruneReason::ACTUATIONS, verbose);
     return;
   }
 

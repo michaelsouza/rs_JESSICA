@@ -101,7 +101,7 @@ public:
    */
   void read_buffer();
 
-  void add_prune(PruneReason reason);
+  void add_prune(PruneReason reason, bool verbose);
 
   /**
    * @brief Updates the pump states in the EPANET project based on the current solution

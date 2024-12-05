@@ -36,35 +36,33 @@ BBSolver::BBSolver(BBConfig &config)
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 }
 
-bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
+// Added implementations of the helper functions in BBSolver.cpp
+
+bool BBSolver::load_project(Project &p, int t_max, bool verbose)
 {
-  ProfileScope scope("process_node");
+  ProfileScope scope("load_project");
 
-  is_feasible = true;
-  int t = 0, dt = 0, t_max = 3600 * h;
-  bool pumps_update_full = true;
+  CHK(p.load(config.inpFile.c_str()), "Load project");
 
-  Project p;
-  {
-    ProfileScope scope("load_project");
+  // Set the total duration of the simulation
+  p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
 
-    CHK(p.load(config.inpFile.c_str()), "Load project");
-  }
+  return true;
+}
 
-    // Set the total duration of the simulation
-    p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+bool BBSolver::initialize_solver(Project &p, bool verbose)
+{
+  ProfileScope scope("init_solver");
 
-  {
-    ProfileScope scope("init_solver");
+  // Initialize the solver
+  CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
-    // Initialize the solver
-    CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
-  }
+  return true;
+}
 
-  // Set the project and constraints
-  update_pumps(p, pumps_update_full, verbose);
-
-  if (verbose) show(true);
+bool BBSolver::call_epanet(Project &p, int &t, int &dt, bool verbose, double &cost)
+{
+  ProfileScope scope("call_epanet");
 
   do
   {
@@ -79,8 +77,8 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     // Show the current state
     if (verbose)
     {
-      Console::printf(Console::Color::CYAN, "════════════════════════════════════════\n");
-      Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d\n", t_new, t_max, t, dt);
+      Console::printf(Console::Color::CYAN, "===========================================");
+      Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d\n", t_new, 3600 * h, t, dt);
     }
 
     // Check cost
@@ -111,6 +109,11 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
 
   } while (dt > 0);
 
+  return is_feasible;
+}
+
+bool BBSolver::check_stability(bool verbose)
+{
   // Check stability for the last hour
   if (is_feasible && h == h_max)
   {
@@ -118,7 +121,12 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     if (!is_feasible) add_prune(PruneReason::STABILITY, verbose);
   }
 
-  if (save_project)
+  return is_feasible;
+}
+
+void BBSolver::save_project(Project &p, bool dump)
+{
+  if (dump)
   {
     // Create a file with timestamp based name
     auto now = std::chrono::system_clock::now();
@@ -128,12 +136,47 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
     p.save(ss.str().c_str());
     Console::printf(Console::Color::BRIGHT_GREEN, "Project saved to: %s\n", ss.str().c_str());
   }
+}
+
+// Modified process_node function in BBSolver.cpp
+
+bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
+{
+  ProfileScope scope("process_node");
+
+  is_feasible = true;
+  int t = 0, dt = 0, t_max = 3600 * h;
+  bool pumps_update_full = true;
+
+  Project p;
+
+  // Load project
+  if (!load_project(p, t_max, verbose)) return false;
+
+  // Initialize solver
+  if (!initialize_solver(p, verbose)) return false;
+
+  // Set the project and constraints
+  update_pumps(p, pumps_update_full, verbose);
+
+  if (verbose) show(true);
+
+  // Run simulation
+  if (!call_epanet(p, t, dt, verbose, cost)) return is_feasible;
+
+  // Check additional constraints
+  check_stability(verbose);
+
+  // Save project if required
+  save_project(p, dump_project);
 
   return is_feasible;
 }
 
 void BBSolver::update_pumps(Project &p, bool full_update, bool verbose)
 {
+  ProfileScope scope("update_pumps");
+
   if (full_update)
   {
     // Update pumps for all time periods
@@ -694,7 +737,7 @@ void BBSolver::update_cost_ub(double cost, bool update_xy)
   }
 }
 
-void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
+void BBSolver::solve_iteration(int &done_loc, bool verbose, bool dump_project)
 {
   ProfileScope scope("solve_iteration");
 
@@ -719,7 +762,7 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
   }
 
   // Process node
-  process_node(cost, verbose, save_project);
+  process_node(cost, verbose, dump_project);
 
   // Update feasible counter
   if (is_feasible)
@@ -864,7 +907,7 @@ void BBSolver::solve()
     ++niters;
 
     show_timer(rank, niters, h, done_loc, done_all, cntrs.cost_ub, y_best, is_feasible, tic, 256, 1024);
-    solve_iteration(done_loc, config.verbose, config.save_project);
+    solve_iteration(done_loc, config.verbose, config.dump_project);
     solve_sync(config.h_threshold, done_loc, done_all, config.verbose);
   }
 

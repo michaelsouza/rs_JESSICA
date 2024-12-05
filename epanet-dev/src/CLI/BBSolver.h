@@ -132,16 +132,7 @@ public:
    */
   bool update_x_h(bool verbose = false);
 
-  /**
-   * @brief Calculates the cumulative sum of actuations for each pump up to a given time.
-   *
-   * @param actuations_csum Array to store the cumulative actuations per pump.
-   * @param x The current state vector of pump actuations.
-   * @param h The current time period index.
-   */
-  void calc_actuations_csum(int *actuations_csum, const std::vector<int> &x, int h);
-
-  void solve_iteration(int &done_loc, bool verbose, bool save_project);
+  void solve_iteration(int &done_loc, bool verbose, bool dump_project);
 
   void solve_sync(const int h_threshold, int &done_loc, int &done_all, bool verbose);
 
@@ -163,4 +154,11 @@ public:
   BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
   BBConfig config;             ///< Configuration object for solver parameters.
   Project p;                   ///< EPANET project object.
+
+private:
+  bool load_project(Project &p, int t_max, bool verbose);
+  bool initialize_solver(Project &p, bool verbose);
+  bool call_epanet(Project &p, int &t, int &dt, bool verbose, double &cost);
+  bool check_stability(bool verbose);
+  void save_project(Project &p, bool dump);
 };

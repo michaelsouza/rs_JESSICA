@@ -16,7 +16,7 @@ public:
   // during the simulation period
   int max_actuations = 3;
   bool verbose = false;
-  bool save_project = false;
+  bool dump_project = false;
   bool use_logger = false;
   int h_threshold = 18;
 

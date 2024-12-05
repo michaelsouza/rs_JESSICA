@@ -104,7 +104,7 @@ public:
 
     // Initialize branch-and-bound solver and statistics
     BBConfig config(0, nullptr);
-    config.save_project = false;
+    config.dump_project = false;
     config.verbose = verbose;
     BBSolver solver(config);
 
@@ -116,7 +116,7 @@ public:
     }
 
     double cost = 0.0;
-    bool is_feasible = solver.process_node(cost, verbose, config.save_project);
+    bool is_feasible = solver.process_node(cost, verbose, config.dump_project);
     if (!is_feasible)
     {
       Console::printf(Console::Color::RED, "Error: Process node returned infeasible solution.\n");
@@ -289,7 +289,7 @@ public:
     for (int i = 0; i < niter; ++i)
     {
       double cost = 0.0;
-      bool is_feasible = solver.process_node(cost, verbose, config.save_project);
+      bool is_feasible = solver.process_node(cost, verbose, config.dump_project);
       if (!is_feasible)
       {
         Console::printf(Console::Color::RED, "TestMPI[rank=%d]: Process node returned infeasible solution.\n", rank);

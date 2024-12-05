@@ -1,16 +1,17 @@
 // src/CLI/main.cpp
 
-#include "BBSolver.h"
 #include "BBConfig.h"
+#include "BBSolver.h"
 #include "BBTests.h"
 
 #include <mpi.h>
 #include <unistd.h>
 
-#include <vector>
 #include <string>
+#include <vector>
 
-void run_tests(int argc, char*argv[]){
+void run_tests(int argc, char *argv[])
+{
   std::vector<std::string> test_names;
   bool run_tests_flag = false;
 
@@ -22,9 +23,11 @@ void run_tests(int argc, char*argv[]){
     {
       run_tests_flag = true;
       // Collect all subsequent arguments as test names
-      while(++i < argc){
+      while (++i < argc)
+      {
         std::string test_name = argv[i];
-        if(test_name.rfind("--", 0) == 0){
+        if (test_name.rfind("--", 0) == 0)
+        {
           // Encountered another flag, stop collecting test names
           i--;
           break;
@@ -34,11 +37,12 @@ void run_tests(int argc, char*argv[]){
     }
   }
 
-  if(run_tests_flag){
-    if(test_names.empty())
+  if (run_tests_flag)
+  {
+    if (test_names.empty())
     {
       Console::printf(Console::Color::BRIGHT_RED, "No test names provided\n");
-      exit(EXIT_FAILURE); 
+      exit(EXIT_FAILURE);
     }
     else
       test_all(test_names);
@@ -47,7 +51,7 @@ void run_tests(int argc, char*argv[]){
 
 int main(int argc, char *argv[])
 {
-  run_tests(argc, argv);  
+  run_tests(argc, argv);
 
   // Initialize MPI
   MPI_Init(nullptr, nullptr);

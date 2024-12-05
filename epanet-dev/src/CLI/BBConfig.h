@@ -10,6 +10,8 @@ public:
 
   std::string inpFile;
   int h_max = 24;
+  // Maximum number of times a pump can change state from 0 to 1 (i.e. turn ons)
+  // during the simulation period
   int max_actuations = 3;
   bool verbose = false;
   bool save_project = false;

@@ -8,7 +8,6 @@
 #include "Core/network.h"
 #include "Core/project.h"
 #include "Elements/pump.h"
-#include "Utils.h"
 #include "epanet3.h"
 
 #include <algorithm>
@@ -378,6 +377,7 @@ public:
     // Sum niters across all ranks
     int total_niters = 0;
     MPI_Reduce(&niters, &total_niters, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (rank == 0)
     {
@@ -591,7 +591,7 @@ public:
     {
       // Run the solver
       CHK(p.runSolver(&t), "Run solver");
-      
+
       // Advance the solver
       CHK(p.advanceSolver(&dt), "Advance solver");
 
@@ -607,15 +607,12 @@ public:
 
       const int t_new = t + dt;
 
-      // Show t_new
-      // Console::printf(Console::Color::BLUE, "t_new=%d, t_max=%d, dt=%d\n", t_new, t_max, dt);
-
-      if (verbose || true) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d, cost=%.2f\n", t_new, t_max, t, dt, cost);
+      if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d, cost=%.2f\n", t_new, t_max, t, dt, cost);
 
       // The last hour is different, because we can have "t_new" > "t_max", but only the "cost" will be updated not the "t".
       if (t_new > t_max && h != solver.h_max) break;
-      
-      // Check node pressures      
+
+      // Check node pressures
       solver.is_feasible = solver.cntrs.check_pressures(verbose);
       if (!solver.is_feasible)
       {
@@ -631,8 +628,6 @@ public:
         break;
       }
 
-      
-
     } while (dt > 0);
   }
 
@@ -645,7 +640,7 @@ public:
     config.max_actuations = 3;
     config.verbose = verbose;
     config.h_max = 24;
-    
+
     BBSolver solver(config);
     solver.is_feasible = true;
 
@@ -676,13 +671,15 @@ public:
     }
 
     // Assert fabs(cost - expected_cost) < 0.01
-    if(std::fabs(cost_vec.back() - expected_cost) < 0.01)
+    if (std::fabs(cost_vec.back() - expected_cost) < 0.01)
     {
-      Console::printf(Console::Color::GREEN, "Rank[%d]: cost=%.2f is within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(), expected_cost);
+      Console::printf(Console::Color::GREEN, "Rank[%d]: cost=%.2f is within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(),
+                      expected_cost);
     }
     else
     {
-      Console::printf(Console::Color::RED, "Rank[%d]: cost=%.2f is not within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(), expected_cost);
+      Console::printf(Console::Color::RED, "Rank[%d]: cost=%.2f is not within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(),
+                      expected_cost);
       return false;
     }
 
@@ -708,7 +705,8 @@ class TestEpanetReuse1 : public TestEpanetReuseBase
 {
 public:
   // y.size == 25, expected_cost = 3578.66
-  TestEpanetReuse1() : TestEpanetReuseBase({0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0}, 3578.66, "test_epanet_reuse_1")
+  TestEpanetReuse1()
+      : TestEpanetReuseBase({0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0}, 3578.66, "test_epanet_reuse_1")
   {
   }
 };
@@ -717,12 +715,94 @@ class TestEpanetReuse2 : public TestEpanetReuseBase
 {
 public:
   // y.size == 25, expected_cost = 3916.98
-  TestEpanetReuse2() : TestEpanetReuseBase({0, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1}, 3916.98, "test_epanet_reuse_2")
+  TestEpanetReuse2()
+      : TestEpanetReuseBase({0, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1}, 3916.98, "test_epanet_reuse_2")
   {
   }
 };
 
-void test_all(const std::vector<std::string>& test_names)
+class TestUpdateXBase : public BBTest
+{
+protected:
+  int max_actuations;
+  std::vector<int> initial_y;
+  std::vector<int> expected_x;
+  bool expected_is_feasible;
+
+public:
+  /**
+   * @brief Constructor to initialize the test parameters.
+   *
+   * @param max_actuations The maximum number of actuations allowed.
+   * @param initial_y The vector representing actuator states.
+   * @param expected_is_feasible The expected feasibility outcome.
+   * @param test_name The name of the test.
+   */
+  TestUpdateXBase(int max_actuations, const std::vector<int> &initial_y, const std::vector<int> &expected_x, bool expected_is_feasible, const std::string &test_name)
+      : max_actuations(max_actuations), initial_y(initial_y), expected_x(expected_x), expected_is_feasible(expected_is_feasible)
+  {
+    this->test_name = test_name;
+  }
+
+  /**
+   * @brief Overrides the run method from BBTest to execute the test.
+   *
+   * @param verbose Flag to control verbose output.
+   * @return bool Indicates whether the test passed or failed.
+   */
+  bool run(bool verbose) override
+  {
+    this->verbose = verbose;
+    set_up();
+    return execute_test();
+  }
+
+  /**
+   * @brief Executes the test logic.
+   *
+   * @return bool Indicates whether the test passed or failed.
+   */
+  bool execute_test()
+  {
+    print_test_name();
+
+    // Set config
+    BBConfig config(0, nullptr);
+    config.max_actuations = max_actuations;
+    config.verbose = verbose;
+    config.h_max = initial_y.size() - 1;
+
+    BBSolver solver(config);
+    solver.is_feasible = true;
+
+    solver.y = initial_y;
+
+    for(solver.h = 1; solver.h <= config.h_max; ++solver.h){
+      bool is_feasible = solver.update_x_h(verbose);
+      if( is_feasible != expected_is_feasible){
+        Console::printf(Console::Color::RED, "   Failed: The is_feasible=%d is different from expected_is_feasible=%d\n", is_feasible, expected_is_feasible);
+      }
+    }
+    Console::printf(Console::Color::GREEN, "   Passed\n");
+
+    return true;
+  }
+};
+
+class TestUpdateX : public TestUpdateXBase
+{
+public:
+  TestUpdateX()
+      : TestUpdateXBase(1,                  // max_actuations
+                        {0, 0, 1, 2, 1, 2}, // initial_y (y.size = h_max + 1)
+                        true,              // expected_is_feasible
+                        "test_update_x_1"   // test_name
+        )
+  {
+  }
+};
+
+void test_all(const std::vector<std::string> &test_names)
 {
   // Initialize MPI
   MPI_Init(nullptr, nullptr);
@@ -731,7 +811,7 @@ void test_all(const std::vector<std::string>& test_names)
   int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  if(rank == 0) Console::printf(Console::Color::BRIGHT_WHITE, "Running tests with %d ranks.\n", size);
+  if (rank == 0) Console::printf(Console::Color::BRIGHT_WHITE, "Running tests with %d ranks.\n", size);
 
   // Instantiate and run all tests
   TestCost1 testCost1;
@@ -743,29 +823,38 @@ void test_all(const std::vector<std::string>& test_names)
   TestSetY testSetY;
   TestEpanetReuse1 testEpanetReuse1;
   TestEpanetReuse2 testEpanetReuse2;
+  TestUpdateX testUpdateX1;
+
+  bool run_all = false;
+  for (const auto &test_name : test_names)
+  {
+    if (test_name == "test_all") run_all = true;
+  }
 
   if (rank == 0)
   {
-    for(const auto& test_name : test_names)
+    for (const auto &test_name : test_names)
     {
-      if (test_name == "test_cost_1") testCost1.run(false);
-      if (test_name == "test_cost_2") testCost2.run(false);
-      if (test_name == "test_cost_3") testCost3.run(false);
-      if (test_name == "test_top_level") testTopLevel.run(false);
-      if (test_name == "test_set_y") testSetY.run(false);
-      if (test_name == "test_epanet_reuse_1") testEpanetReuse1.run(false);
-      if (test_name == "test_epanet_reuse_2") testEpanetReuse2.run(false);
+      if (run_all || test_name == "test_cost_1") testCost1.run(false);
+      if (run_all || test_name == "test_cost_2") testCost2.run(false);
+      if (run_all || test_name == "test_cost_3") testCost3.run(false);
+      if (run_all || test_name == "test_top_level") testTopLevel.run(false);
+      if (run_all || test_name == "test_set_y") testSetY.run(false);
+      if (run_all || test_name == "test_epanet_reuse_1") testEpanetReuse1.run(false);
+      if (run_all || test_name == "test_epanet_reuse_2") testEpanetReuse2.run(false);
+      if (run_all || test_name == "test_update_x_1") testUpdateX1.run(false);
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  for(const auto& test_name : test_names)
+  for (const auto &test_name : test_names)
   {
-    if (test_name == "test_mpi") {
+    if (run_all || test_name == "test_mpi")
+    {
       testMPI.run(false);
       MPI_Barrier(MPI_COMM_WORLD);
     }
-    if (test_name == "test_split") 
+    if (run_all || test_name == "test_split")
     {
       testSplit.run(false);
       MPI_Barrier(MPI_COMM_WORLD);

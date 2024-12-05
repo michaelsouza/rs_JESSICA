@@ -1,6 +1,5 @@
 // src/CLI/BBStats.cpp
 #include "BBStats.h"
-#include "Utils.h" // For ColorStream
 
 #include <iomanip>  // For std::setw
 #include <iostream> // For std::cout
@@ -8,7 +7,7 @@
 #include <mpi.h>
 #include <sstream> // For std::ostringstream
 
-BBStats::BBStats(int h_max, int max_actuations)
+BBStats::BBStats(int h_max)
 {
   feasible_counter = std::vector<int>(h_max + 1, 0);
   split_counter = 0;
@@ -37,7 +36,7 @@ void BBStats::add_feasible(int h)
   feasible_counter[h]++;
 }
 
-void BBStats::to_json(const BBConfig &config, const BBConstraints& cnstr, double eta_secs, std::vector<int>& y_best, std::vector<int>& x_best)
+void BBStats::to_json(const BBConfig &config, const BBConstraints &cnstr, double eta_secs, std::vector<int> &y_best, std::vector<int> &x_best)
 {
   // Construct filename with date, time, and rank
   int rank, size;

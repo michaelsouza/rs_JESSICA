@@ -27,8 +27,7 @@
             "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
             "args": [
                 "--test",
-                "test_cost_2",
-                "test_epanet_reuse_2"
+                "test_update_x_1"
             ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",

@@ -15,7 +15,7 @@ codes: no
   economic_custom.py: all
 
 epanet-dev/src/CLI: yes
-  BBTests.h: all
+  BBTests.h: none
   BBCounter.h: none
   BBCounter.cpp: none
   BBStats.h: none
@@ -27,8 +27,10 @@ epanet-dev/src/CLI: yes
   BBConstraints.cpp: none
   Helper.h: none
   Helper.cpp: none
-  ColorStream.h: none
-  ColorStream.cpp: none
+  Console.h: all
+  Console.cpp: all
+  Utils.h: all
+  Utils.cpp: all
 
 epanet-dev/src/Elements: no
   pump.h: all
@@ -41,5 +43,5 @@ epanet-dev/: no
 
 # user_request
 """
-Pls, change the TestEpanetReuse. It should be like extended like TestCostBase is by the classes TestCostBase1, TestCostBase2, etc. The idea is to have different "y" and "expected_cost" values for each particular test.
+Pls, show_vector(int n, int *x, std::string name) function to the Console.cpp and Console.h
 """

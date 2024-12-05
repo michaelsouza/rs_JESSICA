@@ -1,6 +1,5 @@
 // src/CLI/BBConstraints.cpp
 #include "BBConstraints.h"
-#include "Utils.h" // Assuming Utils.h contains the CHK macro and other utilities
 
 #include "Elements/pattern.h"
 
@@ -43,7 +42,7 @@ void BBConstraints::show() const
   for (const auto &pump : pumps)
     Console::printf(Console::Color::BRIGHT_WHITE, "%s ", pump.first.c_str());
   Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
-  for(auto &pump : pumps)
+  for (auto &pump : pumps)
     pump.second->speedPattern->show();
 
   Console::printf(Console::Color::BRIGHT_WHITE, "Tanks: [ ");
@@ -294,5 +293,5 @@ void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int>
       // Update speed factor
       pattern->setFactor(factor_id, factor_new);
     }
-  }  
+  }
 }

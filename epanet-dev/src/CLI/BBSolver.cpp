@@ -10,11 +10,9 @@
 #include <thread>
 
 BBSolver::BBSolver(BBConfig &config)
-    : inpFile(config.inpFile), cntrs(config.inpFile), stats(config.h_max, config.max_actuations), config(config)
+    : cntrs(config.inpFile), stats(config.h_max), config(config), h_max(config.h_max), max_actuations(config.max_actuations)
 {
   // Initialize scalar variables
-  h_max = config.h_max;
-  max_actuations = config.max_actuations;
   num_pumps = cntrs.get_num_pumps();
   h = 0;
   h_cut = 0;
@@ -27,21 +25,23 @@ BBSolver::BBSolver(BBConfig &config)
   y_best = std::vector<int>(h_max + 1, 0);
   x_best = std::vector<int>(num_pumps * (h_max + 1), 0);
 
+  // Initialize the project
+  // CHK(p.load(this->inpFile.c_str()), "Load project");
+
   // Allocate the recv buffer
   mpi_buffer.resize(4 + y.size() + x.size());
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 }
 
-/** Main functions */
 bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
 {
   is_feasible = true;
-  int t = 0, dt = 0, t_max = 3600 * this->h;
+  int t = 0, dt = 0, t_max = 3600 * h_max;
   bool pumps_update_full = true;
 
   Project p;
-  CHK(p.load(this->inpFile.c_str()), "Load project");
+  CHK(p.load(config.inpFile.c_str()), "Load project");
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
   // Set the project and constraints
@@ -53,11 +53,9 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   {
     // Run the solver
     CHK(p.runSolver(&t), "Run solver");
-    
+
     // Advance the solver
     CHK(p.advanceSolver(&dt), "Advance solver");
-
-    const int t_new = t + dt;
 
     // Check cost
     cost = cntrs.calc_cost();
@@ -68,6 +66,11 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
       jump_to_end();
       break;
     }
+
+    const int t_new = t + dt;
+
+    // Early stop if the t_max is reached for non-final hours
+    if (t_new > t_max && h != h_max) break;
 
     // Show the current state
     if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d, cost=%.2f\n", t_new, t_max, t, dt, cost);
@@ -87,7 +90,6 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
       add_prune(PruneReason::LEVELS);
       break;
     }
-    
 
   } while (dt > 0);
 
@@ -95,7 +97,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool save_project)
   if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_max=%d, t=%d, dt=%d\n, cost=%.2f", t_max, t, dt, cost);
 
   // Check stability for the last hour
-  if (is_feasible && this->h == this->h_max)
+  if (is_feasible && h == h_max)
   {
     is_feasible = cntrs.check_stability(verbose);
     if (!is_feasible) add_prune(PruneReason::STABILITY);
@@ -140,7 +142,7 @@ bool BBSolver::set_y(const std::vector<int> &y)
   // Start assuming the y vector is feasible
   is_feasible = true;
 
-  // Set y and update x
+  // Set y and update x for all hours
   h = 0;
   for (int i = 0; i < h_max; ++i)
   {
@@ -229,11 +231,8 @@ bool BBSolver::update_y()
 
 bool BBSolver::update_x(bool verbose)
 {
-  // Record feasible if the current state is feasible
-  if (is_feasible) stats.add_feasible(h);
-
   // Update x core
-  is_feasible = this->update_x_core(verbose);
+  is_feasible = this->update_x_h(verbose);
 
   // Check consistency sum(x[h]) == y[h]
   if (is_feasible)
@@ -246,67 +245,135 @@ bool BBSolver::update_x(bool verbose)
   return is_feasible;
 }
 
-bool BBSolver::update_x_core(bool verbose)
+bool switch_pumps_off(int *x_new, const std::vector<int> &pumps_sorted, const std::vector<int> &allowed_10, int &counter_10)
 {
-  // Get handle variables
-  const int h = this->h;
-  const int max_actuations = this->max_actuations;
-  const std::vector<int> &y = this->y;
-  std::vector<int> &x = this->x;
+  for (const int pump_id : pumps_sorted)
+  {
+    if (counter_10 <= 0) break;
 
+    if (x_new[pump_id] == 1)
+    {
+      if (allowed_10[pump_id] <= 0) return false; // Cannot turn off this pump
+
+      x_new[pump_id] = 0; // Turn off the pump
+      --counter_10;
+    }
+  }
+  return counter_10 == 0;
+}
+
+void compute_allowed_switches(const int num_pumps, const int *x, int current_h, std::vector<int> &allowed_01, std::vector<int> &allowed_10)
+{
+  for (int pump_id = 0; pump_id < num_pumps; ++pump_id)
+  {
+    for (int i = 2; i < current_h; ++i)
+    {
+      int x_old = x[pump_id + num_pumps * (i - 1)];
+      int x_new = x[pump_id + num_pumps * i];
+      if (x_old < x_new)
+      {
+        // Pump was turned on (0 -> 1)
+        --allowed_01[pump_id];
+      }
+      else if (x_old > x_new)
+      {
+        // Pump was turned off (1 -> 0)
+        --allowed_10[pump_id];
+      }
+    }
+  }
+}
+
+void sort_pumps(std::vector<int> &pumps_sorted, const std::vector<int> &allowed_01, const std::vector<int> &allowed_10, bool switch_on)
+{
+  if (switch_on)
+  {
+    // Sort pumps by decreasing (allowed_01, allowed_10)
+    std::sort(pumps_sorted.begin(), pumps_sorted.end(),
+              [&allowed_01, &allowed_10](int a, int b)
+              {
+                if (allowed_01[a] != allowed_01[b])
+                {
+                  return allowed_01[a] > allowed_01[b];
+                }
+                return allowed_10[a] > allowed_10[b];
+              });
+  }
+  else
+  {
+    // Sort pumps by decreasing (allowed_10, allowed_01)
+    std::sort(pumps_sorted.begin(), pumps_sorted.end(),
+              [&allowed_01, &allowed_10](int a, int b)
+              {
+                if (allowed_10[a] != allowed_10[b])
+                {
+                  return allowed_10[a] > allowed_10[b];
+                }
+                return allowed_01[a] > allowed_01[b];
+              });
+  }
+}
+
+bool switch_pumps_on(int *x_new, const std::vector<int> &pumps_sorted, const std::vector<int> &allowed_01, int &counter_01)
+{
+  for (const int pump_id : pumps_sorted)
+  {
+    if (counter_01 <= 0) break;
+
+    if (x_new[pump_id] == 0)
+    {
+      if (allowed_01[pump_id] <= 0) return false; // Cannot turn on this pump
+
+      x_new[pump_id] = 1; // Turn on the pump
+      --counter_01;
+    }
+  }
+  return counter_01 == 0;
+}
+
+bool BBSolver::update_x_h(bool verbose)
+{
   // Get the previous and new states
   const int &y_old = y[h - 1];
   const int &y_new = y[h];
-  const int *x_old = &x[this->num_pumps * (h - 1)];
-  int *x_new = &x[this->num_pumps * h];
+  const int *x_old = &x[num_pumps * (h - 1)];
+  int *x_new = &x[num_pumps * h];
 
   // Start by copying the previous state
   std::copy(x_old, x_old + this->num_pumps, x_new);
 
+  // Nothing to be done
   if (y_new == y_old) return true;
 
-  // Calculate the cumulative actuations up to hour h
-  int actuations_csum[this->num_pumps];
-  this->calc_actuations_csum(actuations_csum, x, h);
+  // Initialize allowed switches
+  std::vector<int> allowed_01(num_pumps, max_actuations);
+  std::vector<int> allowed_10(num_pumps, max_actuations);
 
-  // Get the sorted indices of the actuations_csum
-  int pumps_sorted[this->num_pumps];
-  std::iota(pumps_sorted, pumps_sorted + this->num_pumps, 0);
-  std::sort(pumps_sorted, pumps_sorted + this->num_pumps, [&](int i, int j) { return actuations_csum[i] < actuations_csum[j]; });
+  // Compute allowed switches based on history
+  compute_allowed_switches(num_pumps, &x[0], h, allowed_01, allowed_10);
 
-  if (y_new > y_old)
+  // Create and initialize pump indices
+  std::vector<int> pumps_sorted(num_pumps);
+  for (int pump_id = 0; pump_id < num_pumps; ++pump_id)
   {
-    int num_actuations = y_new - y_old;
-    // Identify pumps that are not currently actuating
-    for (int i = 0; i < this->num_pumps && num_actuations > 0; i++)
-    {
-      const int pump = pumps_sorted[i];
-      if (x_new[pump] == 0)
-      {
-        if (actuations_csum[pump] >= max_actuations) return false;
-        x_new[pump] = 1;
-        --num_actuations;
-      }
-    }
-    return num_actuations == 0;
+    pumps_sorted[pump_id] = pump_id;
   }
 
-  if (y_new < y_old)
+  bool success = true;
+  if (y_new > y_old) // Switch on pumps
   {
-    int num_deactuations = y_old - y_new;
-    for (int i = 0; i < this->num_pumps && num_deactuations > 0; i++)
-    {
-      const int pump = pumps_sorted[i];
-      if (x_new[pump] == 1)
-      {
-        x_new[pump] = 0;
-        --num_deactuations;
-      }
-    }
-    return num_deactuations == 0;
+    sort_pumps(pumps_sorted, allowed_01, allowed_10, true);
+    int counter_01 = y_new - y_old;
+    success = switch_pumps_on(x_new, pumps_sorted, allowed_01, counter_01);
+  }
+  else if (y_new < y_old) // Switch off pumps
+  {
+    sort_pumps(pumps_sorted, allowed_01, allowed_10, false);
+    int counter_10 = y_old - y_new;
+    success = switch_pumps_off(x_new, pumps_sorted, allowed_10, counter_10);
   }
 
-  return true;
+  return success;
 }
 
 void BBSolver::jump_to_end()
@@ -315,23 +382,6 @@ void BBSolver::jump_to_end()
     y[h] = h_cut;
   else
     y[h] = num_pumps;
-}
-
-void BBSolver::calc_actuations_csum(int *actuations_csum, const std::vector<int> &x, int h)
-{
-  // Set actuations_csum to 0
-  std::fill(actuations_csum, actuations_csum + this->num_pumps, 0);
-
-  // Calculate the cumulative actuations up to hour h
-  for (int i = 2; i < h; i++)
-  {
-    const int *x_old = &x[this->num_pumps * (i - 1)];
-    const int *x_new = &x[this->num_pumps * i];
-    for (int j = 0; j < this->num_pumps; j++)
-    {
-      if (x_new[j] > x_old[j]) ++actuations_csum[j];
-    }
-  }
 }
 
 int BBSolver::get_free_level()
@@ -645,7 +695,6 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool save_project)
 
   // Process node
   process_node(cost, false, save_project);
-  // std::this_thread::sleep_for(std::chrono::milliseconds(300)); //TODO: remove
 
   // Update feasible counter
   if (is_feasible)

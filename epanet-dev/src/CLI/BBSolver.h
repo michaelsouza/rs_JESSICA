@@ -1,9 +1,9 @@
 // src/CLI/BBSolver.h
 #pragma once
 
+#include "BBConfig.h"
 #include "BBConstraints.h"
 #include "BBPruneReason.h"
-#include "BBConfig.h"
 #include "BBStats.h"
 
 #include <string>
@@ -24,9 +24,7 @@ public:
   /**
    * @brief Constructs a BBCounter instance with specified parameters.
    *
-   * @param inpFile The input file name.
-   * @param h_max The total number of time periods (hours) to manage.
-   * @param max_actuations The maximum number of actuations permitted for each pump.
+   * @param config The configuration object.
    */
   BBSolver(BBConfig &config);
 
@@ -40,6 +38,14 @@ public:
    */
   bool set_y(const std::vector<int> &y);
 
+  /**
+   * @brief Processes a node in the branch and bound tree by simulating hydraulics and checking constraints
+   *
+   * @param cost Reference to store the total operating cost
+   * @param verbose If true, prints detailed simulation information
+   * @param save_project If true, saves project state to timestamped file
+   * @return true if node solution is feasible, false if any constraints violated
+   */
   bool process_node(double &cost, bool verbose, bool save_project);
 
   /**
@@ -99,7 +105,7 @@ public:
 
   /**
    * @brief Updates the pump states in the EPANET project based on the current solution
-   * 
+   *
    * @param p The EPANET project to update
    * @param full_update If true, updates pumps for all time periods. If false, only updates current period
    * @param verbose If true, prints detailed information about the pump updates
@@ -124,7 +130,7 @@ public:
    * @param verbose If true, prints detailed update information.
    * @return true if the update is feasible, false otherwise.
    */
-  bool update_x_core(bool verbose = false);
+  bool update_x_h(bool verbose = false);
 
   /**
    * @brief Calculates the cumulative sum of actuations for each pump up to a given time.
@@ -140,14 +146,13 @@ public:
   void solve_sync(const int h_threshold, int &done_loc, int &done_all, bool verbose);
 
   int h;                       ///< Current time period index.
-  int h_max;                   ///< Total number of time periods.
   std::vector<int> y;          ///< Vector tracking actuations per time period.
   std::vector<int> x;          ///< Vector tracking pump states across time periods.
-  int max_actuations;          ///< Maximum actuations allowed per pump.
   int num_pumps;               ///< Number of pumps being managed.
   int h_min;                   ///< Current top level in the counter.
   int h_cut;                   ///< Threshold for top level operations.
-  std::string inpFile;         ///< Input file name.
+  int &h_max;                  ///< Total number of time periods.
+  int &max_actuations;         ///< Maximum actuations (turn off) allowed per pump.
   BBConstraints cntrs;         ///< Constraints object for the network.
   std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
   int mpi_rank;                ///< Rank of the current process.
@@ -157,4 +162,5 @@ public:
   int is_feasible;             ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
   BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
   BBConfig config;             ///< Configuration object for solver parameters.
+  Project p;                   ///< EPANET project object.
 };

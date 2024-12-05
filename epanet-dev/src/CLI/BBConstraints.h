@@ -1,8 +1,7 @@
 // src/CLI/BBConstraints.h
 #pragma once
 
-#include "Console.h"
-
+#include "CLI/Console.h"
 #include "Core/network.h"
 #include "Core/project.h"
 #include "Elements/pump.h"

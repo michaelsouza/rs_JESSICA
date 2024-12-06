@@ -99,7 +99,7 @@ void BBConstraints::show_stability(bool is_feasible, const std::string &tank_nam
 }
 
 // Function to check node pressures
-bool BBConstraints::check_pressures(bool verbose)
+bool BBConstraints::check_pressures(Project *p, bool verbose)
 {
   if (verbose)
   {
@@ -138,7 +138,7 @@ bool BBConstraints::check_pressures(bool verbose)
 }
 
 // Function to check tank levels
-bool BBConstraints::check_levels(bool verbose)
+bool BBConstraints::check_levels(Project *p, bool verbose)
 {
   if (verbose)
   {
@@ -176,7 +176,7 @@ bool BBConstraints::check_levels(bool verbose)
 }
 
 // Function to check tank stability
-bool BBConstraints::check_stability(bool verbose)
+bool BBConstraints::check_stability(Project *p, bool verbose)
 {
   if (verbose)
   {
@@ -213,7 +213,7 @@ bool BBConstraints::check_stability(bool verbose)
 }
 
 // Function to check the cost
-bool BBConstraints::check_cost(const double cost, bool verbose)
+bool BBConstraints::check_cost(Project *p, const double cost, bool verbose)
 {
   bool is_feasible = cost < cost_ub;
   if (verbose)
@@ -239,13 +239,10 @@ double BBConstraints::calc_cost() const
   return cost;
 }
 
-void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose)
+void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int> &x, bool verbose)
 {
-  // Set project pointer. This is used by the "check" methods.
-  this->p = &p;
-
   // Get project network
-  Network *nw = p.getNetwork();
+  Network *nw = p->getNetwork();
 
   // Find pumps
   for (auto &pump : pumps)
@@ -267,7 +264,7 @@ void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int>
   for (int i = 1; i <= h; i++)
   {
     const int *xi = &x[num_pumps * i];
-    j = 0;
+    j = 0; // Reset index of the pump pattern
     for (auto &pump : pumps)
     {
       const auto &pump_name = pump.first;

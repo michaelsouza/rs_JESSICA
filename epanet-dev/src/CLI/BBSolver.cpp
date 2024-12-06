@@ -3,6 +3,11 @@
 #include "Console.h"
 #include "Profiler.h"
 
+#include "Core/network.h"
+#include "Core/project.h"
+#include "Elements/node.h"
+#include "Elements/tank.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -27,8 +32,8 @@ BBSolver::BBSolver(BBConfig &config)
   y_best = std::vector<int>(h_max + 1, 0);
   x_best = std::vector<int>(num_pumps * (h_max + 1), 0);
 
-  // Initialize the project
-  // CHK(p.load(this->inpFile.c_str()), "Load project");
+  // Initialize tanks head vector
+  tanks_head = std::vector<double>((h_max + 1) * cntrs.tanks.size(), 0);
 
   // Allocate the recv buffer
   mpi_buffer.resize(4 + y.size() + x.size());
@@ -36,16 +41,27 @@ BBSolver::BBSolver(BBConfig &config)
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 }
 
-// Added implementations of the helper functions in BBSolver.cpp
-
 bool BBSolver::epanet_load(Project &p, int t_max, bool verbose)
 {
   ProfileScope scope("epanet_load");
 
   CHK(p.load(config.inpFile.c_str()), "Load project");
 
+  Network *nw = p.getNetwork();
+
   // Set the total duration of the simulation
-  p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+  nw->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+
+  // Set the initial hour
+  nw->options.setOption(Options::TimeOption::START_TIME, h);
+
+  // Set the initial levels
+  int j = 0;
+  for (auto &tank_name_index : cntrs.tanks)
+  {
+    Tank *tank = static_cast<Tank *>(nw->node(tank_name_index.second));
+    tank->initHead = tanks_head[h - 1, ++j];
+  }
 
   return true;
 }
@@ -83,7 +99,7 @@ bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
 
     // Check cost
     cost = cntrs.calc_cost();
-    is_feasible = cntrs.check_cost(cost, verbose);
+    is_feasible = cntrs.check_cost(&p, cost, verbose);
     if (!is_feasible)
     {
       add_prune(PruneReason::COST, verbose);
@@ -92,7 +108,7 @@ bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
     }
 
     // Check node pressures
-    is_feasible = cntrs.check_pressures(verbose);
+    is_feasible = cntrs.check_pressures(&p, verbose);
     if (!is_feasible)
     {
       add_prune(PruneReason::PRESSURES, verbose);
@@ -100,7 +116,7 @@ bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
     }
 
     // Check tank levels
-    is_feasible = cntrs.check_levels(verbose);
+    is_feasible = cntrs.check_levels(&p, verbose);
     if (!is_feasible)
     {
       add_prune(PruneReason::LEVELS, verbose);
@@ -109,16 +125,10 @@ bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
 
   } while (dt > 0);
 
-  return is_feasible;
-}
-
-bool BBSolver::check_stability(bool verbose)
-{
-  // Check stability for the last hour
+  // Check stability
   if (is_feasible && h == h_max)
   {
-    is_feasible = cntrs.check_stability(verbose);
-    if (!is_feasible) add_prune(PruneReason::STABILITY, verbose);
+    is_feasible = cntrs.check_stability(&p, verbose);
   }
 
   return is_feasible;
@@ -138,8 +148,6 @@ void BBSolver::save_project(Project &p, bool dump)
   }
 }
 
-// Modified process_node function in BBSolver.cpp
-
 bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
 {
   ProfileScope scope("process_node");
@@ -156,15 +164,12 @@ bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
   if (!epanet_init(p, verbose)) return false;
 
   // Set the project and constraints
-  update_pumps(p, pumps_update_full, verbose);
+  update_pumps(&p, pumps_update_full, verbose);
 
   if (verbose) show(true);
 
   // Run simulation
   if (!epanet_solve(p, t, dt, verbose, cost)) return is_feasible;
-
-  // Check additional constraints
-  check_stability(verbose);
 
   // Save project if required
   save_project(p, dump_project);
@@ -172,7 +177,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
   return is_feasible;
 }
 
-void BBSolver::update_pumps(Project &p, bool full_update, bool verbose)
+void BBSolver::update_pumps(Project *p, bool full_update, bool verbose)
 {
   ProfileScope scope("update_pumps");
 

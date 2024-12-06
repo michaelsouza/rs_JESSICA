@@ -110,7 +110,7 @@ public:
    * @param full_update If true, updates pumps for all time periods. If false, only updates current period
    * @param verbose If true, prints detailed information about the pump updates
    */
-  void update_pumps(Project &p, bool full_update, bool verbose);
+  void update_pumps(Project *p, bool full_update, bool verbose);
 
   void add_feasible();
 
@@ -136,29 +136,31 @@ public:
 
   void solve_sync(const int h_threshold, int &done_loc, int &done_all, bool verbose);
 
-  int h;                       ///< Current time period index.
-  std::vector<int> y;          ///< Vector tracking actuations per time period.
-  std::vector<int> x;          ///< Vector tracking pump states across time periods.
-  int num_pumps;               ///< Number of pumps being managed.
-  int h_min;                   ///< Current top level in the counter.
-  int h_cut;                   ///< Threshold for top level operations.
-  int &h_max;                  ///< Total number of time periods.
-  int &max_actuations;         ///< Maximum actuations (turn off) allowed per pump.
-  BBConstraints cntrs;         ///< Constraints object for the network.
+  int h;                          ///< Current time period index.
+  std::vector<int> y;             ///< Vector tracking actuations per time period.
+  std::vector<int> x;             ///< Vector tracking pump states across time periods.
+  int num_pumps;                  ///< Number of pumps being managed.
+  int h_min;                      ///< Current top level in the counter.
+  int h_cut;                      ///< Threshold for top level operations.
+  int &h_max;                     ///< Total number of time periods.
+  int &max_actuations;            ///< Maximum actuations (turn off) allowed per pump.
+  BBConstraints cntrs;            ///< Constraints object for the network.
+  int is_feasible;                ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
+  std::vector<double> tanks_head; ///< Initial levels of tanks.
+
+  BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
+  BBConfig config; ///< Configuration object for solver parameters.
+
+  // MPI variables
   std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
   int mpi_rank;                ///< Rank of the current process.
   int mpi_size;                ///< Size of the MPI communicator.
   std::vector<int> y_best;     ///< Best y vector found.
   std::vector<int> x_best;     ///< Best x vector found.
-  int is_feasible;             ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
-  BBStats stats;               ///< Statistics object for tracking feasibility and pruning.
-  BBConfig config;             ///< Configuration object for solver parameters.
-  Project p;                   ///< EPANET project object.
 
 private:
   bool epanet_load(Project &p, int t_max, bool verbose);
   bool epanet_init(Project &p, bool verbose);
   bool epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost);
-  bool check_stability(bool verbose);
   void save_project(Project &p, bool dump);
 };

@@ -597,7 +597,7 @@ public:
 
       // Check cost
       cost = solver.cntrs.calc_cost();
-      solver.is_feasible = solver.cntrs.check_cost(cost, verbose);
+      solver.is_feasible = solver.cntrs.check_cost(&p, cost, verbose);
       if (!solver.is_feasible)
       {
         solver.add_prune(PruneReason::COST, verbose);
@@ -613,7 +613,7 @@ public:
       if (t_new > t_max && h != solver.h_max) break;
 
       // Check node pressures
-      solver.is_feasible = solver.cntrs.check_pressures(verbose);
+      solver.is_feasible = solver.cntrs.check_pressures(&p, verbose);
       if (!solver.is_feasible)
       {
         solver.add_prune(PruneReason::PRESSURES, verbose);
@@ -621,7 +621,7 @@ public:
       }
 
       // Check tank levels
-      solver.is_feasible = solver.cntrs.check_levels(verbose);
+      solver.is_feasible = solver.cntrs.check_levels(&p, verbose);
       if (!solver.is_feasible)
       {
         solver.add_prune(PruneReason::LEVELS, verbose);
@@ -656,7 +656,7 @@ public:
       Console::printf(Console::Color::RED, "Failed to set y vector for full.\n");
       return false;
     }
-    solver.update_pumps(p, true, false);
+    solver.update_pumps(&p, true, false);
 
     for (size_t i = 0; i < h_vec.size(); ++i)
     {
@@ -686,7 +686,7 @@ public:
     // Check stability for the last hour
     if (solver.is_feasible && solver.h == solver.h_max)
     {
-      solver.is_feasible = solver.cntrs.check_stability(verbose);
+      solver.is_feasible = solver.cntrs.check_stability(&p, verbose);
       if (!solver.is_feasible) solver.add_prune(PruneReason::STABILITY, verbose);
     }
 

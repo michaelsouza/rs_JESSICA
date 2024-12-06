@@ -33,7 +33,7 @@ BBSolver::BBSolver(BBConfig &config)
   x_best = std::vector<int>(num_pumps * (h_max + 1), 0);
 
   // Initialize tanks head vector
-  tanks_head = std::vector<double>((h_max + 1) * cntrs.tanks.size(), 0);
+  tanks_initHead = std::vector<double>((h_max + 1) * cntrs.tanks.size(), 0);
 
   // Allocate the recv buffer
   mpi_buffer.resize(4 + y.size() + x.size());
@@ -41,7 +41,7 @@ BBSolver::BBSolver(BBConfig &config)
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 }
 
-bool BBSolver::epanet_load(Project &p, int t_max, bool verbose)
+void BBSolver::epanet_load(Project &p, int t_max, bool verbose)
 {
   ProfileScope scope("epanet_load");
 
@@ -55,28 +55,23 @@ bool BBSolver::epanet_load(Project &p, int t_max, bool verbose)
   // Set the initial hour
   nw->options.setOption(Options::TimeOption::START_TIME, h);
 
-  // Set the initial levels
-  int j = 0;
-  for (auto &tank_name_index : cntrs.tanks)
+  // Adjust the initial levels, only if the current hour is greater than 1
+  if (h > 1)
   {
-    Tank *tank = static_cast<Tank *>(nw->node(tank_name_index.second));
-    tank->initHead = tanks_head[h - 1, ++j];
+    int j = 0;
+    for (auto &tank_name_index : cntrs.tanks)
+    {
+      Tank *tank = static_cast<Tank *>(nw->node(tank_name_index.second));
+      tank->initHead = tanks_initHead[(h - 1) * cntrs.tanks.size() + j];
+      ++j;
+    }
   }
-
-  return true;
-}
-
-bool BBSolver::epanet_init(Project &p, bool verbose)
-{
-  ProfileScope scope("epanet_init");
 
   // Initialize the solver
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
-
-  return true;
 }
 
-bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost)
+void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost)
 {
   ProfileScope scope("epanet_solve");
 
@@ -104,7 +99,7 @@ bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
     {
       add_prune(PruneReason::COST, verbose);
       jump_to_end();
-      break;
+      return;
     }
 
     // Check node pressures
@@ -112,7 +107,7 @@ bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
     if (!is_feasible)
     {
       add_prune(PruneReason::PRESSURES, verbose);
-      break;
+      return;
     }
 
     // Check tank levels
@@ -120,18 +115,22 @@ bool BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
     if (!is_feasible)
     {
       add_prune(PruneReason::LEVELS, verbose);
-      break;
+      return;
     }
 
   } while (dt > 0);
 
-  // Check stability
+  // Check stability if the the solution is feasible and the current hour is the last hour
   if (is_feasible && h == h_max)
   {
     is_feasible = cntrs.check_stability(&p, verbose);
   }
 
-  return is_feasible;
+  // Update tanks initial head
+  if (is_feasible)
+  {
+    update_tanks_initHead(p);
+  }
 }
 
 void BBSolver::save_project(Project &p, bool dump)
@@ -158,18 +157,15 @@ bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
 
   // Load project
   Project p;
-  if (!epanet_load(p, t_max, verbose)) return false;
-
-  // Initialize solver
-  if (!epanet_init(p, verbose)) return false;
+  epanet_load(p, t_max, verbose);
 
   // Set the project and constraints
-  update_pumps(&p, pumps_update_full, verbose);
+  update_pumps(p, pumps_update_full, verbose);
 
   if (verbose) show(true);
 
   // Run simulation
-  if (!epanet_solve(p, t, dt, verbose, cost)) return is_feasible;
+  epanet_solve(p, t, dt, verbose, cost);
 
   // Save project if required
   save_project(p, dump_project);
@@ -177,7 +173,7 @@ bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
   return is_feasible;
 }
 
-void BBSolver::update_pumps(Project *p, bool full_update, bool verbose)
+void BBSolver::update_pumps(Project &p, bool full_update, bool verbose)
 {
   ProfileScope scope("update_pumps");
 
@@ -186,13 +182,13 @@ void BBSolver::update_pumps(Project *p, bool full_update, bool verbose)
     // Update pumps for all time periods
     for (int i = 0; i <= h_max; ++i)
     {
-      cntrs.update_pumps(p, i, x, verbose);
+      cntrs.update_pumps(&p, i, x, verbose);
     }
   }
   else
   {
     // Update pumps only for current time period
-    cntrs.update_pumps(p, this->h, this->x, verbose);
+    cntrs.update_pumps(&p, h, x, verbose);
   }
 }
 
@@ -767,17 +763,17 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool dump_project)
 
   // Process node
   process_node(cost, verbose, dump_project);
+}
 
-  // Update feasible counter
-  if (is_feasible)
+void BBSolver::update_tanks_initHead(Project &p)
+{
+  int j = 0;
+  Network *nw = p.getNetwork();
+  for (auto &tank_name_index : cntrs.tanks)
   {
-    add_feasible();
-
-    // New solution found
-    if (h == h_max)
-    {
-      update_cost_ub(cost, true);
-    }
+    Tank *tank = static_cast<Tank *>(nw->node(tank_name_index.second));
+    tanks_initHead[(h - 1) * cntrs.tanks.size() + j] = tank->head;
+    ++j;
   }
 }
 

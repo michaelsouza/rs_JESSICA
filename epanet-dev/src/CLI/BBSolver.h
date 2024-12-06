@@ -100,7 +100,6 @@ public:
    * @param recv_buffer The vector containing the current state.
    */
   void read_buffer();
-
   void add_prune(PruneReason reason, bool verbose);
 
   /**
@@ -110,18 +109,13 @@ public:
    * @param full_update If true, updates pumps for all time periods. If false, only updates current period
    * @param verbose If true, prints detailed information about the pump updates
    */
-  void update_pumps(Project *p, bool full_update, bool verbose);
-
+  void update_pumps(Project &p, bool full_update, bool verbose);
+  void update_tanks_initHead(Project &p);
   void add_feasible();
-
   bool try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose);
-
   void update_cost_ub(double cost, bool update_xy);
-
   void to_json(double eta_secs);
-
   void send_work(int recv_rank, const std::vector<int> &h_free, bool verbose);
-
   void recv_work(int send_rank, const std::vector<int> &h_free, bool verbose);
 
   /**
@@ -131,22 +125,20 @@ public:
    * @return true if the update is feasible, false otherwise.
    */
   bool update_x_h(bool verbose = false);
-
   void solve_iteration(int &done_loc, bool verbose, bool dump_project);
-
   void solve_sync(const int h_threshold, int &done_loc, int &done_all, bool verbose);
 
-  int h;                          ///< Current time period index.
-  std::vector<int> y;             ///< Vector tracking actuations per time period.
-  std::vector<int> x;             ///< Vector tracking pump states across time periods.
-  int num_pumps;                  ///< Number of pumps being managed.
-  int h_min;                      ///< Current top level in the counter.
-  int h_cut;                      ///< Threshold for top level operations.
-  int &h_max;                     ///< Total number of time periods.
-  int &max_actuations;            ///< Maximum actuations (turn off) allowed per pump.
-  BBConstraints cntrs;            ///< Constraints object for the network.
-  int is_feasible;                ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
-  std::vector<double> tanks_head; ///< Initial levels of tanks.
+  int h;                              ///< Current time period index.
+  std::vector<int> y;                 ///< Vector tracking actuations per time period.
+  std::vector<int> x;                 ///< Vector tracking pump states across time periods.
+  int num_pumps;                      ///< Number of pumps being managed.
+  int h_min;                          ///< Current top level in the counter.
+  int h_cut;                          ///< Threshold for top level operations.
+  int &h_max;                         ///< Total number of time periods.
+  int &max_actuations;                ///< Maximum actuations (turn off) allowed per pump.
+  BBConstraints cntrs;                ///< Constraints object for the network.
+  int is_feasible;                    ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
+  std::vector<double> tanks_initHead; ///< Initial levels of tanks.
 
   BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
   BBConfig config; ///< Configuration object for solver parameters.
@@ -159,8 +151,7 @@ public:
   std::vector<int> x_best;     ///< Best x vector found.
 
 private:
-  bool epanet_load(Project &p, int t_max, bool verbose);
-  bool epanet_init(Project &p, bool verbose);
-  bool epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost);
+  void epanet_load(Project &p, int t_max, bool verbose);
+  void epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost);
   void save_project(Project &p, bool dump);
 };

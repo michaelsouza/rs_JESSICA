@@ -656,7 +656,7 @@ public:
       Console::printf(Console::Color::RED, "Failed to set y vector for full.\n");
       return false;
     }
-    solver.update_pumps(&p, true, false);
+    solver.update_pumps(p, true, false);
 
     for (size_t i = 0; i < h_vec.size(); ++i)
     {

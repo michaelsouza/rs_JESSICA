@@ -27,11 +27,9 @@
             "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
             "args": [
                 "--test",
-                "test_set_y",
-                "test_update_x_1",
-                "test_update_x_2"
+                "test_tank_state_consistency"
             ],
-            "stopAtEntry": true,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
                 {
@@ -60,7 +58,7 @@
                 "--max_actuations",
                 "1",
                 "--h_max",
-                "4",
+                "3",
                 "--verbose"                
             ],
             "stopAtEntry": true,

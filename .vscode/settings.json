@@ -69,6 +69,8 @@
         "forward_list": "cpp",
         "valarray": "cpp",
         "any": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp"
     }
 }

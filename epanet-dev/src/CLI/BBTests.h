@@ -5,9 +5,12 @@
 #include "BBConstraints.h"
 #include "BBSolver.h"
 #include "Console.h"
+
 #include "Core/network.h"
 #include "Core/project.h"
+#include "Elements/pattern.h"
 #include "Elements/pump.h"
+#include "Elements/tank.h"
 #include "epanet3.h"
 
 #include <algorithm>
@@ -596,7 +599,7 @@ public:
       CHK(p.advanceSolver(&dt), "Advance solver");
 
       // Check cost
-      cost = solver.cntrs.calc_cost();
+      cost = solver.cntrs.calc_cost(&p);
       solver.is_feasible = solver.cntrs.check_cost(&p, cost, verbose);
       if (!solver.is_feasible)
       {
@@ -836,6 +839,314 @@ public:
   }
 };
 
+// In BBTests.h (after including necessary headers and class definitions)
+
+class TestTankStateConsistency : public BBTest
+{
+protected:
+  int h_max;
+  std::vector<double> tank_levels_24hr;   // Tank levels recorded after each hour for the 24hr run
+  std::vector<double> tank_levels_hourly; // Tank levels recorded after each hour for the incremental runs
+  double cost_24hr;
+  double cost_hourly;
+
+public:
+  TestTankStateConsistency(int h_max = 24) : h_max(h_max)
+  {
+  }
+
+  bool run(bool verbose) override
+  {
+    this->test_name = "test_tank_state_consistency";
+    this->verbose = verbose;
+    set_up();
+    bool result = execute_test();
+    tear_down();
+    return result;
+  }
+
+  void set_up() override
+  {
+  }
+
+  void tear_down() override
+  {
+  }
+
+  bool execute_test()
+  {
+    print_test_name();
+
+    // Step 1: Single 24-hour run
+    if (!run_24h(tank_levels_24hr, verbose))
+    {
+      Console::printf(Console::Color::RED, "Failed: The single 24-hour run was not feasible.\n");
+      return false;
+    }
+
+    // Step 2: Run 24 successive 1-hour simulations
+    if (!run_01h(tank_levels_hourly, verbose))
+    {
+      Console::printf(Console::Color::RED, "Failed: One of the hourly runs was not feasible.\n");
+      return false;
+    }
+
+    // Step 3: Compare results
+    if (compare_cost_and_levels(tank_levels_24hr, tank_levels_hourly))
+    {
+      Console::printf(Console::Color::GREEN, "Passed: The cost and tank levels match for both methods.\n");
+      return true;
+    }
+    else
+    {
+      Console::printf(Console::Color::RED, "Failed: The cost and tank levels differ between methods.\n");
+      return false;
+    }
+  }
+
+private:
+  bool run_24h(std::vector<double> &levels_out, bool verbose)
+  {
+    if (verbose || true) Console::printf(Console::Color::BRIGHT_MAGENTA, "Running 24h.\n");
+
+    // Configure solver
+    BBConfig config(0, nullptr);
+    config.h_max = h_max;
+    BBSolver solver(config);
+    solver.is_feasible = true;
+
+    // Run the entire 24hr simulation continuously
+    // Record tank levels after each hour
+    levels_out.resize(config.h_max * solver.cntrs.tanks.size(), 0.0);
+
+    for (int hour = 1; hour <= config.h_max; ++hour)
+    {
+      int t = 0, dt = 0;
+      int t_max = 3600 * hour;
+
+      Project p;
+      if (p.load(config.inpFile.c_str()) != 0)
+      {
+        Console::printf(Console::Color::RED, "Error loading project.\n");
+        return false;
+      }
+
+      // Adjust simulation total duration
+      p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+
+      p.initSolver(EN_INITFLOW);
+
+      // Run hydraulics until we reach hour `hour`
+      do
+      {
+        if (p.runSolver(&t) != 0)
+        {
+          Console::printf(Console::Color::RED, "EPANET runSolver error.\n");
+          return false;
+        }
+
+        if (p.advanceSolver(&dt) != 0)
+        {
+          Console::printf(Console::Color::RED, "EPANET advanceSolver error.\n");
+          return false;
+        }
+
+      } while (dt > 0);
+
+      cost_24hr = solver.cntrs.calc_cost(&p);
+      if (verbose || true) show_status(hour, p, solver, cost_24hr);
+
+      // Store tank levels at the end of this hour
+      store_tank_levels(p, solver, hour, levels_out);
+    }
+
+    return true;
+  }
+
+  bool run_01h(std::vector<double> &levels_out, bool verbose)
+  {
+    if (verbose || true) Console::printf(Console::Color::BRIGHT_MAGENTA, "Running 01h.\n");
+
+    // We'll run 24 successive simulations, each with h_max=1.
+    // After finishing each 1-hour run, we record tank levels and use them as initial conditions for the next run.
+
+    // Prepare output
+    // We will store the tank levels after each hour. Same size as single run.
+    // total_hours * number_of_tanks
+    BBConfig config(0, nullptr);
+    config.h_max = h_max;
+    BBSolver solver(config);
+
+    // We'll store final tank heads after each run to use as initial conditions
+    std::vector<double> last_tank_heads;
+
+    // Initialize last_tank_heads with zero for the first run (tanks start as defined in input file)
+    // We'll run hour by hour
+    levels_out.resize(config.h_max * get_num_tanks(config), 0.0);
+
+    cost_hourly = 0.0;
+    for (int hour = 1; hour <= config.h_max; ++hour)
+    {
+      Project p;
+      if (p.load(config.inpFile.c_str()) != 0)
+      {
+        Console::printf(Console::Color::RED, "Error loading project.\n");
+        return false;
+      }
+
+      // If we have previously recorded tank heads, set them as initial heads for this run
+      if (!last_tank_heads.empty())
+      {
+        change_initial_conditions(hour, p, solver, last_tank_heads);
+      }
+
+      // Run for 1 hour (3600 seconds)
+      int t = 0, dt = 0;
+      int t_max = 3600 * 1;
+      p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+
+      // Initialize the solver
+      p.initSolver(EN_INITFLOW);
+
+      do
+      {
+        if (p.runSolver(&t) != 0 || p.advanceSolver(&dt) != 0)
+        {
+          Console::printf(Console::Color::RED, "EPANET solver error.\n");
+          return false;
+        }
+
+        if (!solver.is_feasible) return false;
+
+      } while (dt > 0);
+
+      // Store tank levels for this hour run
+      store_tank_levels(p, solver, hour, levels_out);
+
+      // Update last_tank_heads for next run
+      last_tank_heads = get_current_tank_levels(p, solver);
+
+      // Update cost_hourly
+      cost_hourly += solver.cntrs.calc_cost(&p);
+
+      // Show status
+      if (verbose || true) show_status(hour, p, solver, cost_hourly);
+    }
+
+    return true;
+  }
+
+  void show_status(int hour, Project &p, BBSolver &solver, double cost)
+  {
+    Network *nw = p.getNetwork();
+    Console::printf(Console::Color::BRIGHT_MAGENTA, "\nStatus h=%d:\n", hour);
+    for (auto &tank_pair : solver.cntrs.tanks)
+    {
+      Tank *tank = static_cast<Tank *>(nw->node(tank_pair.second));
+      Console::printf(Console::Color::BRIGHT_GREEN, "   Tank[%3s] head=%.5f\n", tank_pair.first.c_str(), tank->head);
+    }
+
+    // Show pump flow and speed
+    for (auto &pump_pair : solver.cntrs.pumps)
+    {
+      Pump *pump = static_cast<Pump *>(nw->link(pump_pair.second));
+      Console::printf(Console::Color::BRIGHT_GREEN, "   Pump[%3s] flow=%.5f speed=%.5f\n", pump_pair.first.c_str(), pump->flow, pump->speed);
+    }
+  }
+
+  bool compare_cost_and_levels(const std::vector<double> &levels_24hr, const std::vector<double> &levels_hourly)
+  {
+    if (levels_24hr.size() != levels_hourly.size()) return false;
+
+    if (std::fabs(cost_24hr - cost_hourly) / cost_24hr > 0.01)
+    {
+      Console::printf(Console::Color::RED, "Mismatch in cost: single=%.6f vs hourly=%.6f\n", cost_24hr, cost_hourly);
+      return false;
+    }
+
+    for (size_t i = 0; i < levels_24hr.size(); ++i)
+    {
+      if (std::fabs(levels_24hr[i] - levels_hourly[i]) / levels_24hr[i] > 0.01)
+      {
+        Console::printf(Console::Color::RED, "Mismatch at index %zu: single=%.6f vs hourly=%.6f\n", i, levels_24hr[i], levels_hourly[i]);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Utility functions
+
+  void store_tank_levels(Project &p, BBSolver &solver, int hour, std::vector<double> &levels_out)
+  {
+    // hour is 1-based index, we store at hour-1 based offset
+    int offset = (hour - 1) * (int)solver.cntrs.tanks.size();
+    int j = 0;
+    Network *nw = p.getNetwork();
+    for (auto &tank_pair : solver.cntrs.tanks)
+    {
+      Tank *tank = static_cast<Tank *>(nw->node(tank_pair.second));
+      levels_out[offset + j] = tank->head;
+      j++;
+    }
+  }
+
+  std::vector<double> get_current_tank_levels(Project &p, BBSolver &solver)
+  {
+    std::vector<double> heads(solver.cntrs.tanks.size(), 0.0);
+    int j = 0;
+    Network *nw = p.getNetwork();
+    for (auto &tank_pair : solver.cntrs.tanks)
+    {
+      Tank *tank = static_cast<Tank *>(nw->node(tank_pair.second));
+      heads[j++] = tank->head;
+    }
+    return heads;
+  }
+
+  void change_initial_conditions(int hour, Project &p, BBSolver &solver, const std::vector<double> &heads)
+  {
+    // Set the initial tank levels before the run
+    Network *nw = p.getNetwork();
+    int j = 0;
+    for (auto &tank_pair : solver.cntrs.tanks)
+    {
+      Tank *tank = static_cast<Tank *>(nw->node(tank_pair.second));
+      tank->initHead = heads[j++];
+    }
+
+    // Change the price of the first hour (index 0)
+    Pattern *prices = (Pattern *)nw->pattern(solver.cntrs.prices.first);
+    prices->setFactor(0, solver.cntrs.prices.second[hour - 1]);
+
+    // Change the demand pattern for each node
+    std::vector<std::string> demand_ids = {"DEM", "DEM90", "DEM55", "DEM170"};
+    for (auto &demand_id : demand_ids)
+    {
+      int demand_index = nw->indexOf(Element::PATTERN, demand_id);
+      FixedPattern *demand = dynamic_cast<FixedPattern *>(nw->pattern(demand_index));
+      double demand_hour = demand->factor(hour - 1);
+      demand->setFactor(0, demand_hour);
+    }
+
+    // Change the pumps actuation pattern
+    for (auto &pump_pair : solver.cntrs.pumps)
+    {
+      Pump *pump = static_cast<Pump *>(nw->link(pump_pair.second));
+      FixedPattern *speed = dynamic_cast<FixedPattern *>(pump->speedPattern);
+      double speed_hour = speed->factor(hour - 1);
+      speed->setFactor(0, speed_hour);
+    }
+  }
+
+  int get_num_tanks(BBConfig &config)
+  {
+    // Temporary solver to get tank count
+    BBSolver solver(config);
+    return (int)solver.cntrs.tanks.size();
+  }
+};
+
 void test_all(const std::vector<std::string> &test_names)
 {
   int rank = 0;
@@ -857,7 +1168,9 @@ void test_all(const std::vector<std::string> &test_names)
   TestEpanetReuse2 testEpanetReuse2;
   TestUpdateX1 testUpdateX1;
   TestUpdateX2 testUpdateX2;
+  TestTankStateConsistency testTankStateConsistency;
 
+  // Serial tests
   std::vector<std::pair<BBTest *, std::string>> tests_serial = {{&testCost1, "test_cost_1"},
                                                                 {&testCost2, "test_cost_2"},
                                                                 {&testCost3, "test_cost_3"},
@@ -866,8 +1179,10 @@ void test_all(const std::vector<std::string> &test_names)
                                                                 {&testEpanetReuse1, "test_epanet_reuse_1"},
                                                                 {&testEpanetReuse2, "test_epanet_reuse_2"},
                                                                 {&testUpdateX1, "test_update_x_1"},
-                                                                {&testUpdateX2, "test_update_x_2"}};
+                                                                {&testUpdateX2, "test_update_x_2"},
+                                                                {&testTankStateConsistency, "test_tank_state_consistency"}};
 
+  // Parallel tests
   std::vector<std::pair<BBTest *, std::string>> tests_parallel = {{&testMPI, "test_mpi"}, {&testSplit, "test_split"}};
 
   bool run_all = false;

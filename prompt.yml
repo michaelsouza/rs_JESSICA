@@ -15,7 +15,7 @@ codes: no
   economic_custom.py: all
 
 epanet-dev/src/CLI: yes
-  BBTests.h: none
+  BBTests.h: all
   BBCounter.h: none
   BBCounter.cpp: none
   BBStats.h: none
@@ -44,5 +44,5 @@ epanet-dev/: no
 
 # user_request
 """
-In order to improve readability and profiling, let's breaking down the process_node function.
+Pls, create a test that compares a unique run with h_max=24 and another one with 24 sucessive runs with h_max=1 and remembering the last tank levels. The idea is to check if the tank sequence of levels are the same. If this is the case, then the test is successful. With this info, we can create a version of the code that stores the tank levels of each hour and use it to speed up the simulation.
 """

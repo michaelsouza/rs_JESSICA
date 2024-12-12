@@ -1,0 +1,47 @@
+\chapter{Revisão Bibliográfica}
+\label{cap:revisao-bibliografica}
+
+A análise estatística é uma ferramenta vital para a interpretação e compreensão de dados. No cenário de grandes volumes de informações, como as relacionadas ao abastecimento de água, os fundamentos estatísticos e técnicas de otimização são essenciais \cite{Bulmer}.
+
+\section{Fundamentos Estatísticos}
+Água e energia, recursos críticos, exibem padrões de consumo que podem ser elucidados por meio de análises estatísticas rigorosas dos dados. A identificação e compreensão desses padrões são essenciais para a gestão eficiente desses recursos \cite{reiter14EnergyConsumption}. Tal compreensão desempenha um papel central no desenvolvimento e implementação de estratégias efetivas. Uma combinação de infraestrutura robusta e gestão informada pode maximizar a eficiência no uso da água e da energia. Isso inclui a alocação efetiva de recursos, aprimoramento da infraestrutura existente e formulação de políticas tarifárias apropriadas \cite{sancho19WaterConsumption}.
+
+Os padrões de consumo são influenciados por uma gama de fatores. Atividades humanas, variações climáticas, políticas públicas e infraestrutura de abastecimento são alguns exemplos que contribuem para as flutuações no uso de recursos como água e energia, e tais ocorrências podem ter escala diária, semanal ou sazonal. No consumo de água, por exemplo, rotinas diárias, processos industriais e agrícolas moldam a demanda, enquanto as condições climáticas, como estações secas ou chuvosas, alteram significativamente a necessidade de água. Além disso, a eficiência e manutenção de sistemas de distribuição de água são fatores determinantes na gestão do recurso, impactando diretamente seu consumo.
+
+Uma das maneiras de identificarmos padrões de consumo é com a utilização de modelos estatísticos, como regressão linear ou análise de séries temporais. Com os gráficos de séries temporais, por exemplo, podemos visualizar tendências, sazonalidades e irregularidades no consumo. Outra alternativa é a análise de agrupamento, onde os dados são segmentados e agrupados de forma homogênea e com isso podem fornecer informações sobre possíveis padrões e anomalias \cite{bishop2006pattern}.
+
+\subsection*{Análise Temporal do Consumo de Água}\label{sec:2.1}
+
+
+\section{Modelagem Matemática}
+
+A modelagem matemática é um processo que busca replicar, matematicamente, o comportamento do sistema de forma robusta. Leva em consideração as variáveis, os parâmetros, e as restrições do problema, na elaboração de uma função objetivo, que será o alvo da otimização \cite{Mark}. É a descrição quantitativa do problema em questão.
+
+
+\subsection*{Técnicas de Otimização}
+
+Existem várias técnicas analíticas que podem ser empregadas para resolver modelos de otimização. A escolha do método depende da natureza do modelo (linear, não linear, inteiro, etc.) e das características do problema \cite{Chambers1976}.
+
+\begin{itemize}
+
+\item[-] Métodos Analíticos: São ideais para modelos que podem ser expressos de forma contínua e diferenciável. Buscam encontrar a solução ótima explorando as propriedades matemáticas do modelo. 
+\item[-] Métodos Estocásticos: Em situações onde existem incertezas ou variações nos dados, a otimização estocástica pode ser empregada. Esta abordagem leva em consideração a variabilidade dos dados e busca soluções que sejam robustas em diferentes cenários.
+\item[-] Métodos Metaheurísticos: Para problemas mais complexos, onde os métodos analíticos podem ser computacionalmente intensivos ou ineficazes, métodos metaheurísticos, como algoritmos genéticos ou colônia de formigas, podem ser empregados. Estes algoritmos não garantem uma solução ótima global, mas são capazes de fornecer soluções de alta qualidade em um tempo computacional razoável \cite{GasparCunha2012}.
+
+\end{itemize}
+
+\subsection{Análise de Sensibilidade e Validação} 
+A análise de sensibilidade e a validação de modelos são etapas cruciais em qualquer processo de modelagem. A análise de sensibilidade é usada para avaliar o impacto de alterações nos parâmetros do modelo na solução ótima, enquanto a validação é usada para verificar se o modelo é adequado para os dados. Ambas são essenciais para garantir que o modelo seja robusto e aplicável sob diferentes condições operacionais \cite{SALTELLI201929}.
+
+A análise de sensibilidade em modelos de otimização desempenha um papel fundamental ao revelar como variações nos parâmetros do modelo influenciam a solução ótima \cite{CASTILLO20081788}. Esta análise permite aos pesquisadores e gestores entenderem o grau de confiança que podem ter nas soluções propostas sob diferentes condições. Por exemplo, ao ajustar os custos dos recursos ou as capacidades de produção em um modelo de otimização de recursos hídricos, a análise de sensibilidade ajuda a identificar quais parâmetros têm o maior impacto na solução final. Isso é particularmente valioso em cenários onde os dados de entrada podem ser incertos ou sujeitos a mudanças. Identificar os parâmetros mais sensíveis auxilia na priorização de esforços para coletar dados mais precisos ou na formulação de planos de contingência para lidar com possíveis variações. Ao proporcionar uma compreensão mais profunda da estabilidade das soluções de otimização, a análise de sensibilidade torna-se uma ferramenta indispensável para garantir soluções eficazes e resilientes em gestão de recursos.
+
+Na modelagem estatística, focamos na análise dos resíduos, que são as diferenças entre os valores reais e os previstos pelo modelo. A análise detalhada dos resíduos é essencial, pois indica quão bem o modelo se ajusta aos dados \cite{draper1998applied}. A validação dos resíduos envolve verificar se eles se comportam de forma aleatória e sem autocorrelação, um conceito conhecido como "ruído branco".
+
+Entre os métodos de validação, destaca-se o teste de Ljung-Box, utilizado para detectar autocorrelação nos resíduos. Este teste usa um p-valor para determinar a independência dos resíduos: um p-valor abaixo de 0,05 indica autocorrelação significativa, sugerindo que o modelo pode não ter captado todas as informações relevantes dos dados.
+
+Outro teste importante é o de Shapiro-Wilk, que verifica se os resíduos seguem uma distribuição normal. Resíduos normalmente distribuídos indicam que o modelo é adequado, sem tendências para valores mais altos ou mais baixos. Um p-valor menor que 0,05 neste teste sugere que o modelo pode estar produzindo estimativas tendenciosas.
+
+Assim, a análise de sensibilidade e a compreensão apropriada desses testes de validação são fundamentais para ajustes e validação do modelo, assegurando a confiabilidade das previsões e inferências derivadas dele.
+
+Finalmente, uma abordagem integrada que combina métodos estatísticos com técnicas de otimização é indispensável para enfrentar os desafios na gestão de recursos hídricos e energéticos. Tal abordagem permite desenvolver soluções otimizadas que atendem às demandas crescentes de forma sustentável e econômica.
+

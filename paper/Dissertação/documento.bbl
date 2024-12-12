@@ -1,0 +1,359 @@
+\providecommand{\abntreprintinfo}[1]{%
+ \citeonline{#1}}
+\setlength{\labelsep}{0pt}\begin{thebibliography}{}
+\providecommand{\abntrefinfo}[3]{}
+\providecommand{\abntbstabout}[1]{}
+\abntbstabout{v-1.9.7 }
+
+\bibitem[Behzadian \textit{et al.} 2009]{behzadian2009stochastic}
+\abntrefinfo{Behzadian \textit{et al.}}{BEHZADIAN \textit{et al.}}{2009}
+{BEHZADIAN, K.; KAPELAN, Z.; SAVIC, D.; ARDESHIR, A. Stochastic sampling design
+  using a multi-objective genetic algorithm and adaptive neural networks.
+\textbf{Environmental Modelling \& Software}, Elsevier, v.~24, n.~4, p.
+  530--541, 2009.}
+
+\bibitem[Bene \textit{et al.} 2013]{bene2013comparison}
+\abntrefinfo{Bene \textit{et al.}}{BENE \textit{et al.}}{2013}
+{BENE, J.; SELEK, I.; H{\H{O}}S, C. Comparison of deterministic and heuristic
+  optimization solvers for water network scheduling problems.
+\textbf{Water Science and Technology: Water Supply}, IWA Publishing, v.~13,
+  n.~5, p. 1367--1376, 2013.}
+
+\bibitem[Bishop e Nasrabadi 2006]{bishop2006pattern}
+\abntrefinfo{Bishop e Nasrabadi}{BISHOP; NASRABADI}{2006}
+{BISHOP, C.~M.; NASRABADI, N.~M. \textbf{Pattern recognition and machine
+  learning}. [\textit{S. l.}]: Springer, 2006. v.~4.}
+
+\bibitem[Boulos \textit{et al.} 2001]{boulos2001optimal}
+\abntrefinfo{Boulos \textit{et al.}}{BOULOS \textit{et al.}}{2001}
+{BOULOS, P.~F.; WU, Z.; ORR, C.~H.; MOORE, M.; HSIUNG, P.; THOMAS, D. Optimal
+  pump operation of water distribution systems using genetic algorithms. In:
+  CITESEER. \textbf{Distribution system symposium}. [\textit{S. l.}], 2001.}
+
+\bibitem[Broad \textit{et al.} 2005]{broad2005water}
+\abntrefinfo{Broad \textit{et al.}}{BROAD \textit{et al.}}{2005}
+{BROAD, D.; DANDY, G.~C.; MAIER, H.~R. Water distribution system optimization
+  using metamodels.
+\textbf{Journal of Water Resources Planning and Management}, American Society
+  of Civil Engineers, v.~131, n.~3, p. 172--180, 2005.}
+
+\bibitem[Bulmer 1979]{Bulmer}
+\abntrefinfo{Bulmer}{BULMER}{1979}
+{BULMER, M.~G. \textbf{Principles of statistics - archive.org}. 1979.
+  \url{https://archive.org/details/principlesofstat0000bulm}.
+[Accessed 06-11-2023].}
+
+\bibitem[Castillo \textit{et al.} 2008]{CASTILLO20081788}
+\abntrefinfo{Castillo \textit{et al.}}{CASTILLO \textit{et al.}}{2008}
+{CASTILLO, E.; MíNGUEZ, R.; CASTILLO, C. Sensitivity analysis in optimization
+  and reliability problems.
+\textbf{Reliability Engineering \& System Safety}, v.~93, n.~12, p. 1788--1800,
+  2008.
+ISSN 0951-8320.
+17th European Safety and Reliability Conference.
+Dispon{\'\i}vel em:
+  \url{https://www.sciencedirect.com/science/article/pii/S0951832008000999}.}
+
+\bibitem[Chambers \textit{et al.} 1976]{Chambers1976}
+\abntrefinfo{Chambers \textit{et al.}}{CHAMBERS \textit{et al.}}{1976}
+{CHAMBERS, M.~L.; HILLIER, F.~S.; LIEBERMAN, G.~J. Introduction to operations
+  research.
+\textbf{Journal of the Royal Statistical Society. Series A (General)}, {JSTOR},
+  v.~139, n.~2, p.~273, 1976.
+Dispon{\'\i}vel em: \url{https://doi.org/10.2307/2345190}.}
+
+\bibitem[Chase e Ormsbee 1993]{chase1993computer}
+\abntrefinfo{Chase e Ormsbee}{CHASE; ORMSBEE}{1993}
+{CHASE, D.~V.; ORMSBEE, L.~E. Computer-generated pumping schedules for
+  satisfying operational objectives.
+\textbf{Journal-American Water Works Association}, Wiley Online Library, v.~85,
+  n.~7, p. 54--61, 1993.}
+
+\bibitem[Costa \textit{et al.} 2001]{costa2001global}
+\abntrefinfo{Costa \textit{et al.}}{COSTA \textit{et al.}}{2001}
+{COSTA, A.~L.; MEDEIROS, J.~L. de; PESSOA, F.~L. Global optimization of water
+  distribution networks through a reduced space branch-and-bound search.
+\textbf{Water Resources Research}, Wiley Online Library, v.~37, n.~4, p.
+  1083--1090, 2001.}
+
+\bibitem[Costa \textit{et al.} 2015]{Costa2015}
+\abntrefinfo{Costa \textit{et al.}}{COSTA \textit{et al.}}{2015}
+{COSTA, L. H.~M.; PRATA, B. de A.; RAMOS, H.~M.; CASTRO, M. A.~H. de. A
+  branch-and-bound algorithm for optimal pump scheduling in water distribution
+  networks.
+\textbf{Water Resources Management}, Springer Science and Business Media LLC,
+  v.~30, n.~3, p. 1037–1052, dez. 2015.
+ISSN 1573-1650.
+Dispon{\'\i}vel em: \url{http://dx.doi.org/10.1007/s11269-015-1209-2}.}
+
+\bibitem[Cunha \textit{et al.} 2012]{GasparCunha2012}
+\abntrefinfo{Cunha \textit{et al.}}{CUNHA \textit{et al.}}{2012}
+{CUNHA, A.~G.; TAKAHASHI, R.; ANTUNES, C.~H. \textbf{Manual de
+  computa{\c{c}}{\~{a}}o evolutiva e metaheur{\'{\i}}stica}. Imprensa da
+  Universidade de Coimbra, 2012. Dispon{\'\i}vel em:
+  \url{https://doi.org/10.14195/978-989-26-0583-8}.}
+
+\bibitem[Draper e Smith 1998]{draper1998applied}
+\abntrefinfo{Draper e Smith}{DRAPER; SMITH}{1998}
+{DRAPER, N.~R.; SMITH, H. \textbf{Applied regression analysis}. [\textit{S.
+  l.}]: John Wiley \& Sons, 1998. v.~326.}
+
+\bibitem[Ghaddar \textit{et al.} 2015]{Ghaddar2015}
+\abntrefinfo{Ghaddar \textit{et al.}}{GHADDAR \textit{et al.}}{2015}
+{GHADDAR, B.; NAOUM-SAWAYA, J.; KISHIMOTO, A.; TAHERI, N.; ECK, B. A lagrangian
+  decomposition approach for the pump scheduling problem in water networks.
+\textbf{European Journal of Operational Research}, Elsevier BV, v.~241, n.~2,
+  p. 490–501, mar. 2015.
+ISSN 0377-2217.
+Dispon{\'\i}vel em: \url{http://dx.doi.org/10.1016/j.ejor.2014.08.033}.}
+
+\bibitem[Goldman e Mays 1999]{goldman1999application}
+\abntrefinfo{Goldman e Mays}{GOLDMAN; MAYS}{1999}
+{GOLDMAN, F.~E.; MAYS, L.~W. The application of simulated annealing to the
+  optimal operation of water systems. In:  \textbf{WRPMD'99: Preparing for the
+  21st Century}. [\textit{S. l.}: \textit{s. n.}], 1999. p. 1--16.}
+
+\bibitem[Hernandez-Sancho 2019]{sancho19WaterConsumption}
+\abntrefinfo{Hernandez-Sancho}{HERNANDEZ-SANCHO}{2019}
+{HERNANDEZ-SANCHO, F. (Ed.). \textbf{Water Consumption, Tariffs and
+  Regulation}. {IWA} Publishing, 2019. Dispon{\'\i}vel em:
+  \url{https://doi.org/10.2166/9781780404684}.}
+
+\bibitem[IEA 2017]{ieaWEO2016Special}
+\abntrefinfo{IEA}{IEA}{2017}
+{IEA. \textbf{{W}{E}{O}-2016 {S}pecial {R}eport: {W}ater-{E}nergy {N}exus –
+  {A}nalysis - {I}{E}{A} --- iea.org}. 2017.
+  \url{https://www.iea.org/reports/water-energy-nexus}.
+[Accessed 08-02-2024].}
+
+\bibitem[Jowitt e Germanopoulos 1992]{jowitt1992optimal}
+\abntrefinfo{Jowitt e Germanopoulos}{JOWITT; GERMANOPOULOS}{1992}
+{JOWITT, P.~W.; GERMANOPOULOS, G. Optimal pump scheduling in water-supply
+  networks.
+\textbf{Journal of Water Resources Planning and Management}, American Society
+  of Civil Engineers, v.~118, n.~4, p. 406--422, 1992.}
+
+\bibitem[Kelner e L{\'e}onard 2003]{kelner2003optimal}
+\abntrefinfo{Kelner e L{\'e}onard}{KELNER; L{\'E}ONARD}{2003}
+{KELNER, V.; L{\'E}ONARD, O. Optimal pump scheduling for water supply using
+  genetic algorithms. In:  \textbf{5th International Conference on Evolutionary
+  Computing for Industrial Applications (EUROGEN’03)}. [\textit{S. l.}:
+  \textit{s. n.}], 2003.}
+
+\bibitem[Kerimov \textit{et al.} 2023]{Kerimov2023}
+\abntrefinfo{Kerimov \textit{et al.}}{KERIMOV \textit{et al.}}{2023}
+{KERIMOV, B.; BENTIVOGLIO, R.; GARZóN, A.; ISUFI, E.; TSCHEIKNER-GRATL, F.;
+  STEFFELBAUER, D.~B.; TAORMINA, R. Assessing the performances and
+  transferability of graph neural network metamodels for water distribution
+  systems.
+\textbf{Journal of Hydroinformatics}, IWA Publishing, v.~25, n.~6, p.
+  2223–2234, out. 2023.
+ISSN 1465-1734.
+Dispon{\'\i}vel em: \url{http://dx.doi.org/10.2166/hydro.2023.031}.}
+
+\bibitem[Land e Doig 2010]{land2010automatic}
+\abntrefinfo{Land e Doig}{LAND; DOIG}{2010}
+{LAND, A.~H.; DOIG, A.~G. \textbf{An automatic method for solving discrete
+  programming problems}. [\textit{S. l.}]: Springer, 2010.}
+
+\bibitem[Lansey e Awumah 1994]{lansey1994optimal}
+\abntrefinfo{Lansey e Awumah}{LANSEY; AWUMAH}{1994}
+{LANSEY, K.~E.; AWUMAH, K. Optimal pump operations considering pump switches.
+\textbf{Journal of Water Resources Planning and Management}, American Society
+  of Civil Engineers, v.~120, n.~1, p. 17--35, 1994.}
+
+\bibitem[Lopez-Ibanez \textit{et al.} 2005]{lopez2005multi}
+\abntrefinfo{Lopez-Ibanez \textit{et al.}}{LOPEZ-IBANEZ \textit{et al.}}{2005}
+{LOPEZ-IBANEZ, M.; PRASAD, T.~D.; PAECHTER, B. Multi-objective optimisation of
+  the pump scheduling problem using spea2. In:  IEEE. \textbf{2005 IEEE
+  Congress on Evolutionary Computation}. [\textit{S. l.}], 2005. v.~1, p.
+  435--442.}
+
+\bibitem[L{\'o}pez-Ib{\'a}{\~n}ez \textit{et al.} 2008]{lopez2008ant}
+\abntrefinfo{L{\'o}pez-Ib{\'a}{\~n}ez \textit{et al.}}{L{\'O}PEZ-IB{\'A}{\~N}EZ
+  \textit{et al.}}{2008}
+{L{\'O}PEZ-IB{\'A}{\~N}EZ, M.; PRASAD, T.~D.; PAECHTER, B. Ant colony
+  optimization for optimal control of pumps in water distribution networks.
+\textbf{Journal of water resources planning and management}, American Society
+  of Civil Engineers, v.~134, n.~4, p. 337--346, 2008.}
+
+\bibitem[M. \textit{et al.} 2012]{M2012}
+\abntrefinfo{M. \textit{et al.}}{M. \textit{et al.}}{2012}
+{M., H.; COSTA, L.~H. M.; V., F. Energy efficiency in water supply systems: Ga
+  for pump schedule optimization and ann for hybrid energy prediction.
+In:  \underline{\ \ \ \ \ \ \ \ }. \textbf{Water Supply System Analysis -
+  Selected Topics}. InTech, 2012.
+ISBN 9789535108894.
+Dispon{\'\i}vel em: \url{http://dx.doi.org/10.5772/50458}.}
+
+\bibitem[Mackle 1995]{Mackle1995}
+\abntrefinfo{Mackle}{MACKLE}{1995}
+{MACKLE, G. Application of genetic algorithms to pump scheduling for water
+  supply. In:  \textbf{1st International Conference on Genetic Algorithms in
+  Engineering Systems: Innovations and Applications ({GALESIA})}. {IEE}, 1995.
+  Dispon{\'\i}vel em: \url{https://doi.org/10.1049/cp:19951082}.}
+
+\bibitem[Makaremi \textit{et al.} 2017]{Makaremi2017}
+\abntrefinfo{Makaremi \textit{et al.}}{MAKAREMI \textit{et al.}}{2017}
+{MAKAREMI, Y.; HAGHIGHI, A.; GHAFOURI, H.~R. Optimization of pump scheduling
+  program in water supply systems using a self-adaptive nsga-ii; a review of
+  theory to real application.
+\textbf{Water Resources Management}, Springer Science and Business Media LLC,
+  v.~31, n.~4, p. 1283–1304, fev. 2017.
+ISSN 1573-1650.
+Dispon{\'\i}vel em: \url{http://dx.doi.org/10.1007/s11269-017-1577-x}.}
+
+\bibitem[Mala-Jetmarova \textit{et al.} 2017]{MalaJetmarova2017}
+\abntrefinfo{Mala-Jetmarova \textit{et al.}}{MALA-JETMAROVA \textit{et
+  al.}}{2017}
+{MALA-JETMAROVA, H.; SULTANOVA, N.; SAVIC, D. Lost in optimisation of water
+  distribution systems? a literature review of system operation.
+\textbf{Environmental Modelling \&amp; Software}, Elsevier BV, v.~93, p.
+  209–254, jul. 2017.
+ISSN 1364-8152.
+Dispon{\'\i}vel em: \url{http://dx.doi.org/10.1016/j.envsoft.2017.02.009}.}
+
+\bibitem[Meerschaert 2013]{Mark}
+\abntrefinfo{Meerschaert}{MEERSCHAERT}{2013}
+{MEERSCHAERT, M.~M. \textbf{Mathematical Modeling}. Elsevier, 2013.
+  Dispon{\'\i}vel em: \url{https://doi.org/10.1016/c2010-0-66940-9}.}
+
+\bibitem[Moreira e Ramos 2013]{Moreira2013}
+\abntrefinfo{Moreira e Ramos}{MOREIRA; RAMOS}{2013}
+{MOREIRA, D.~F.; RAMOS, H.~M. Energy cost optimization in a water supply system
+  case study.
+\textbf{Journal of Energy}, Hindawi Limited, v.~2013, p. 1–9, 2013.
+ISSN 2314-615X.
+Dispon{\'\i}vel em: \url{http://dx.doi.org/10.1155/2013/620698}.}
+
+\bibitem[Moura 2010]{moura2010relaccao}
+\abntrefinfo{Moura}{MOURA}{2010}
+{MOURA, G. N. P.~d. A rela{\c{c}}{\~a}o entre {\'a}gua e energia: gest{\~a}o
+  energ{\'e}tica nos sistemas de abastecimento de {\'a}gua das companhias de
+  saneamento b{\'a}sico do brasil.
+\textbf{Rio de Janeiro: sn}, 2010.
+Dispon{\'\i}vel em:
+  \url{http://www.ppe.ufrj.br/ppe/production/tesis/gustavo\_nikolaus.pdf}.}
+
+\bibitem[Nault e Papa 2015]{Nault2015}
+\abntrefinfo{Nault e Papa}{NAULT; PAPA}{2015}
+{NAULT, J.; PAPA, F. Lifecycle assessment of a water distribution system pump.
+\textbf{Journal of Water Resources Planning and Management}, American Society
+  of Civil Engineers (ASCE), v.~141, n.~12, dez. 2015.
+ISSN 1943-5452.
+Dispon{\'\i}vel em:
+  \url{http://dx.doi.org/10.1061/(ASCE)WR.1943-5452.0000546}.}
+
+\bibitem[Nitivattananon \textit{et al.} 1996]{Nitivattananon1996}
+\abntrefinfo{Nitivattananon \textit{et al.}}{NITIVATTANANON \textit{et
+  al.}}{1996}
+{NITIVATTANANON, V.; SADOWSKI, E.~C.; QUIMPO, R.~G. Optimization of water
+  supply system operation.
+\textbf{Journal of Water Resources Planning and Management}, American Society
+  of Civil Engineers (ASCE), v.~122, n.~5, p. 374–384, set. 1996.
+ISSN 1943-5452.
+Dispon{\'\i}vel em:
+  \url{http://dx.doi.org/10.1061/(ASCE)0733-9496(1996)122:5(374)}.}
+
+\bibitem[Ostadrahimi \textit{et al.} 2012]{ostadrahimi2012multi}
+\abntrefinfo{Ostadrahimi \textit{et al.}}{OSTADRAHIMI \textit{et al.}}{2012}
+{OSTADRAHIMI, L.; MARI{\~N}O, M.~A.; AFSHAR, A. Multi-reservoir operation
+  rules: multi-swarm pso-based optimization approach.
+\textbf{Water resources management}, Springer, v.~26, p. 407--427, 2012.}
+
+\bibitem[OWA 2024]{epanet}
+\abntrefinfo{OWA}{OWA}{2024}
+{OWA, O. W.~A. \textbf{EPANET - Water Distribution Modeling and Analysis
+  Software}. 2024.
+Acesso em: 6 de agosto de 2024.
+Dispon{\'\i}vel em: \url{http://wateranalytics.org/EPANET/}.}
+
+\bibitem[Rao e Alvarruiz 2007]{rao2007use}
+\abntrefinfo{Rao e Alvarruiz}{RAO; ALVARRUIZ}{2007}
+{RAO, Z.; ALVARRUIZ, F. Use of an artificial neural network to capture the
+  domain knowledge of a conventional hydraulic simulation model.
+\textbf{Journal of Hydroinformatics}, IWA Publishing, v.~9, n.~1, p. 15--24,
+  2007.}
+
+\bibitem[Reis \textit{et al.} 2006]{reis2006water}
+\abntrefinfo{Reis \textit{et al.}}{REIS \textit{et al.}}{2006}
+{REIS, L. F.~R.; BESSLER, F.~T.; WALTERS, G.~A.; SAVIC, D. Water supply
+  reservoir operation by combined genetic algorithm--linear programming (ga-lp)
+  approach.
+\textbf{Water resources management}, Springer, v.~20, p. 227--255, 2006.}
+
+\bibitem[Reiter 2014]{reiter14EnergyConsumption}
+\abntrefinfo{Reiter}{REITER}{2014}
+{REITER, S. \textbf{Energy Consumption: Impacts of Human Activity, Current and
+  Future Challenges, Environmental and Socio-Economic Effects}. [\textit{S.
+  l.}: \textit{s. n.}], 2014. 1-215~p.}
+
+\bibitem[S.A. 2023]{Schneider}
+\abntrefinfo{S.A.}{S.A.}{2023}
+{S.A., F. E. I. D.~M. \textbf{Tabela de Seleção de Bombas e Motobombas}.
+  2023.
+  \url{https://schneidermotobombas.blob.core.windows.net/media/321009/schneider_tabela_selecao_2023_10.pdf}.
+[Accessed 06-11-2023].}
+
+\bibitem[Saltelli \textit{et al.} 2019]{SALTELLI201929}
+\abntrefinfo{Saltelli \textit{et al.}}{SALTELLI \textit{et al.}}{2019}
+{SALTELLI, A.; ALEKSANKINA, K.; BECKER, W.; FENNELL, P.; FERRETTI, F.; HOLST,
+  N.; LI, S.; WU, Q. Why so many published sensitivity analyses are false: A
+  systematic review of sensitivity analysis practices.
+\textbf{Environmental Modelling \& Software}, v.~114, p. 29--39, 2019.
+ISSN 1364-8152.
+Dispon{\'\i}vel em:
+  \url{https://www.sciencedirect.com/science/article/pii/S1364815218302822}.}
+
+\bibitem[S{\'a}nchez e Esquerre 2018]{ufopREPOSITORIOINSTITUCIONAL}
+\abntrefinfo{S{\'a}nchez e Esquerre}{S{\'A}NCHEZ; ESQUERRE}{2018}
+{S{\'A}NCHEZ, A.~S.; ESQUERRE, K. P. S. O.~R. \textbf{Internet of things for a
+  smart campus : on-line monitoring of water consumption in university
+  buildings. --- repositorio.ufop.br}. 2018.
+  \url{http://www.repositorio.ufop.br/jspui/handle/123456789/10923}.
+[Accessed 03-11-2023].}
+
+\bibitem[Savic \textit{et al.} 1997]{savic1997multiobjective}
+\abntrefinfo{Savic \textit{et al.}}{SAVIC \textit{et al.}}{1997}
+{SAVIC, D.~A.; WALTERS, G.~A.; SCHWAB, M. Multiobjective genetic algorithms for
+  pump scheduling in water supply. In:  SPRINGER. \textbf{Evolutionary
+  Computing: AISB International Workshop Manchester, UK, April 7--8, 1997
+  Selected Papers}. [\textit{S. l.}], 1997. p. 227--235.}
+
+\bibitem[Sterling e Coulbeck 1975]{sterling1975dynamic}
+\abntrefinfo{Sterling e Coulbeck}{STERLING; COULBECK}{1975}
+{STERLING, M.; COULBECK, B. A dynamic programming solution to optimization of
+  pumping costs.
+\textbf{Proceedings of the Institution of Civil Engineers}, Thomas Telford-ICE
+  Virtual Library, v.~59, n.~4, p. 813--818, 1975.}
+
+\bibitem[Teegavarapu e Simonovic 2002]{teegavarapu2002optimal}
+\abntrefinfo{Teegavarapu e Simonovic}{TEEGAVARAPU; SIMONOVIC}{2002}
+{TEEGAVARAPU, R.~S.; SIMONOVIC, S.~P. Optimal operation of reservoir systems
+  using simulated annealing.
+\textbf{Water Resources Management}, Springer, v.~16, p. 401--428, 2002.}
+
+\bibitem[Verleye e Aghezzaf 2016]{verleye2016generalized}
+\abntrefinfo{Verleye e Aghezzaf}{VERLEYE; AGHEZZAF}{2016}
+{VERLEYE, D.; AGHEZZAF, E.-H. Generalized benders decomposition to reoptimize
+  water production and distribution operations in a real water supply network.
+\textbf{Journal of Water Resources Planning and Management}, American Society
+  of Civil Engineers, v.~142, n.~2, p. 04015059, 2016.}
+
+\bibitem[Zessler e Shamir 1989]{zessler1989optimal}
+\abntrefinfo{Zessler e Shamir}{ZESSLER; SHAMIR}{1989}
+{ZESSLER, U.; SHAMIR, U. Optimal operation of water distribution systems.
+\textbf{Journal of water resources planning and management}, American Society
+  of Civil Engineers, v.~115, n.~6, p. 735--752, 1989.}
+
+\bibitem[Zyl \textit{et al.} 2004]{vanZyl2004}
+\abntrefinfo{Zyl \textit{et al.}}{ZYL \textit{et al.}}{2004}
+{ZYL, J.~E. van; SAVIC, D.~A.; WALTERS, G.~A. Operational optimization of water
+  distribution systems using a hybrid genetic algorithm.
+\textbf{Journal of Water Resources Planning and Management}, American Society
+  of Civil Engineers (ASCE), v.~130, n.~2, p. 160–170, mar. 2004.
+ISSN 1943-5452.
+Dispon{\'\i}vel em:
+  \url{http://dx.doi.org/10.1061/(ASCE)0733-9496(2004)130:2(160)}.}
+
+\end{thebibliography}

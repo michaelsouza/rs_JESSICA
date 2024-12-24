@@ -58,13 +58,13 @@ public:
    * @brief Loads node and tank IDs from input file
    * @param inpFile Path to the EPANET input file
    */
-  void get_nodes_tanks_ids(std::string inpFile);
+  void get_network_elements_indices(std::string inpFile);
 
   /**
    * @brief Calculates total pump operation cost
    * @return Total operational cost
    */
-  double calc_cost() const;
+  double calc_cost(Project *p) const;
 
   /**
    * @brief Gets number of nodes in network
@@ -107,11 +107,11 @@ public:
    */
   void update_pumps(Project *p, const int h, const std::vector<int> &x, bool verbose);
 
-  std::map<std::string, int> nodes;    ///< Map of node names to indices
-  std::map<std::string, int> tanks;    ///< Map of tank names to indices
-  std::map<std::string, Pump *> pumps; ///< Map of pump names to pump objects
-  double cost_ub;                      ///< Maximum cost allowed (upper bound)
-  std::string inpFile;                 ///< Path to input file
+  std::map<std::string, int> nodes;           ///< Map of node names to indices
+  std::map<std::string, int> tanks;           ///< Map of tank names to indices
+  std::map<std::string, int> pumps;           ///< Map of pump names to indices
+  double cost_ub;                             ///< Maximum cost allowed (upper bound)
+  std::string inpFile;                        ///< Path to input file
 
 private:
   /**

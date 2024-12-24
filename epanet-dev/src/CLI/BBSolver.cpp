@@ -75,7 +75,7 @@ void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
     }
 
     // Check cost
-    cost = cntrs.calc_cost();
+    cost = cntrs.calc_cost(&p);
     is_feasible = cntrs.check_cost(&p, cost, verbose);
     if (!is_feasible)
     {

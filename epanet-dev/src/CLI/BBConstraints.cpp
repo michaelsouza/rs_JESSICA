@@ -14,13 +14,13 @@
 BBConstraints::BBConstraints(std::string inpFile) : inpFile(inpFile)
 {
   // Initialize nodes and tanks with placeholder IDs
-  this->nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
-  this->tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
-  this->pumps = {{"111", nullptr}, {"222", nullptr}, {"333", nullptr}};
-  this->cost_ub = std::numeric_limits<double>::max();
+  nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
+  tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
+  pumps = {{"111", 0}, {"222", 0}, {"333", 0}};
+  cost_ub = std::numeric_limits<double>::max();
 
   // Retrieve node and tank IDs from the input file
-  get_nodes_tanks_ids(inpFile);
+  get_network_elements_indices(inpFile);
 }
 
 // Destructor
@@ -32,45 +32,58 @@ BBConstraints::~BBConstraints()
 // Function to display the constraints
 void BBConstraints::show() const
 {
+  // Print horizontal line separator
   Console::hline(Console::Color::BRIGHT_WHITE);
+
+  // Print header
   Console::printf(Console::Color::BRIGHT_WHITE, "BBConstraints\n");
+
+  // Print list of node IDs
   Console::printf(Console::Color::BRIGHT_WHITE, "Nodes: [ ");
   for (const auto &node : nodes)
     Console::printf(Console::Color::BRIGHT_WHITE, "%s ", node.first.c_str());
   Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
 
-  Console::printf(Console::Color::BRIGHT_WHITE, "Pumps: [ ");
-  for (const auto &pump : pumps)
-    Console::printf(Console::Color::BRIGHT_WHITE, "%s ", pump.first.c_str());
-  Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
-  for (auto &pump : pumps)
-    pump.second->speedPattern->show();
-
+  // Print list of tank IDs
   Console::printf(Console::Color::BRIGHT_WHITE, "Tanks: [ ");
   for (const auto &tank : tanks)
     Console::printf(Console::Color::BRIGHT_WHITE, "%s ", tank.first.c_str());
   Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
+
+  // Print list of pump IDs
+  Console::printf(Console::Color::BRIGHT_WHITE, "Pumps: [ ");
+  for (const auto &pump : pumps)
+    Console::printf(Console::Color::BRIGHT_WHITE, "%s ", pump.first.c_str());
+  Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
 }
 
-// Function to get node and tank IDs from the input file
-void BBConstraints::get_nodes_tanks_ids(std::string inpFile)
+void BBConstraints::get_network_elements_indices(std::string inpFile)
 {
   Project p;
   CHK(p.load(inpFile.c_str()), "Load project");
+
+  Network *nw = p.getNetwork();
 
   // Find node IDs
   for (auto &node : nodes)
   {
     const std::string &node_name = node.first;
-    node.second = p.getNetwork()->indexOf(Element::NODE, node_name);
+    node.second = nw->indexOf(Element::NODE, node_name);
   }
 
   // Find tank IDs
   for (auto &tank : tanks)
   {
     const std::string &tank_name = tank.first;
-    tank.second = p.getNetwork()->indexOf(Element::NODE, tank_name);
+    tank.second = nw->indexOf(Element::NODE, tank_name);
   }
+
+  // Find pump IDs
+  for (auto &pump : pumps)
+  {
+    const std::string &pump_name = pump.first;
+    pump.second = nw->indexOf(Element::LINK, pump_name);
+  }  
 }
 
 // Function to display pressure status
@@ -238,12 +251,14 @@ bool BBConstraints::check_cost(Project *p, const double cost, bool verbose)
 }
 
 // Function to calculate the total cost of pump operations
-double BBConstraints::calc_cost() const
+double BBConstraints::calc_cost(Project *p) const
 {
+  Network *nw = p->getNetwork();
   double cost = 0.0;
   for (const auto &pump : pumps)
   {
-    cost += pump.second->pumpEnergy.getCost();
+    Pump *pump_link = (Pump *)nw->link(pump.second);
+    cost += pump_link->pumpEnergy.adjustedTotalCost;
   }
   return cost;
 }
@@ -251,23 +266,6 @@ double BBConstraints::calc_cost() const
 // Function to update pump speed patterns
 void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int> &x, bool verbose)
 {
-  // Get project network
-  Network *nw = p->getNetwork();
-
-  // Find pumps
-  for (auto &pump : pumps)
-  {
-    const std::string pump_name = pump.first;
-    Pump *link = (Pump *)nw->link(pump_name);
-    if (!link)
-    {
-      Console::printf(Console::Color::RED, "  The pump %s could not be found.\n", pump_name);
-      exit(EXIT_FAILURE);
-    }
-    // Update pointer
-    pump.second = link;
-  }
-
   // Update pump speed patterns based on vector x
   int j = 0;
   const size_t num_pumps = get_num_pumps();
@@ -278,7 +276,8 @@ void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int>
     for (auto &pump : pumps)
     {
       const auto &pump_name = pump.first;
-      const auto &pump_link = pump.second;
+      const auto &pump_index = pump.second;
+      Pump *pump_link = (Pump *)p->getNetwork()->link(pump_index);
       FixedPattern *pattern = dynamic_cast<FixedPattern *>(pump_link->speedPattern);
       if (!pattern)
       {
@@ -290,7 +289,6 @@ void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int>
       double factor_new = static_cast<double>(xi[j++]);
       // Retrieve old speed factor
       const int factor_id = i - 1; // pattern index is 0-based
-      double factor_old = pattern->factor(factor_id);
       // Update speed factor
       pattern->setFactor(factor_id, factor_new);
     }

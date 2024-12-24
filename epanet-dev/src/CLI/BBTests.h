@@ -5,9 +5,12 @@
 #include "BBConstraints.h"
 #include "BBSolver.h"
 #include "Console.h"
+
 #include "Core/network.h"
 #include "Core/project.h"
+#include "Elements/pattern.h"
 #include "Elements/pump.h"
+#include "Elements/tank.h"
 #include "epanet3.h"
 
 #include <algorithm>
@@ -288,7 +291,8 @@ public:
     const int niter = 1024;
     for (int i = 0; i < niter; ++i)
     {
-      double cost = 0.0;
+      double cost = 0.0; // reset the cost
+      solver.cntrs.cost_ub = 1000000000; // reset the cost upper bound
       bool is_feasible = solver.process_node(cost, verbose, config.dump_project);
       if (!is_feasible)
       {
@@ -596,7 +600,7 @@ public:
       CHK(p.advanceSolver(&dt), "Advance solver");
 
       // Check cost
-      cost = solver.cntrs.calc_cost();
+      cost = solver.cntrs.calc_cost(&p);
       solver.is_feasible = solver.cntrs.check_cost(&p, cost, verbose);
       if (!solver.is_feasible)
       {
@@ -858,6 +862,7 @@ void test_all(const std::vector<std::string> &test_names)
   TestUpdateX1 testUpdateX1;
   TestUpdateX2 testUpdateX2;
 
+  // Serial tests
   std::vector<std::pair<BBTest *, std::string>> tests_serial = {{&testCost1, "test_cost_1"},
                                                                 {&testCost2, "test_cost_2"},
                                                                 {&testCost3, "test_cost_3"},
@@ -868,6 +873,8 @@ void test_all(const std::vector<std::string> &test_names)
                                                                 {&testUpdateX1, "test_update_x_1"},
                                                                 {&testUpdateX2, "test_update_x_2"}};
 
+
+  // Parallel tests
   std::vector<std::pair<BBTest *, std::string>> tests_parallel = {{&testMPI, "test_mpi"}, {&testSplit, "test_split"}};
 
   bool run_all = false;

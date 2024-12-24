@@ -15,7 +15,7 @@ codes: no
   economic_custom.py: all
 
 epanet-dev/src/CLI: yes
-  BBTests.h: none
+  BBTests.h: all
   BBCounter.h: none
   BBCounter.cpp: none
   BBStats.h: none

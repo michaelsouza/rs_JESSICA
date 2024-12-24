@@ -12,10 +12,10 @@ CXXFLAGS_BASE = -std=c++17 -Isrc -MMD -MP -fPIC
 # Compiler flags for different build types
 ifeq ($(BUILD_TYPE), debug)
     CXXFLAGS = $(CXXFLAGS_BASE) -g -pg
-    LDFLAGS = -pg
+    LDFLAGS = -pg -Wl,-rpath,'$$ORIGIN'
 else ifeq ($(BUILD_TYPE), release)
     CXXFLAGS = $(CXXFLAGS_BASE) -O3 -DNDEBUG -march=native -funroll-loops -fomit-frame-pointer -flto
-    LDFLAGS = -flto
+    LDFLAGS = -flto -Wl,-rpath,'$$ORIGIN'
 else
     $(error Invalid BUILD_TYPE specified. Use 'debug' or 'release'.)
 endif

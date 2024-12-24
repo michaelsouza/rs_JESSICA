@@ -60,7 +60,7 @@ void BBConstraints::show() const
 void BBConstraints::get_network_elements_indices(std::string inpFile)
 {
   Project p;
-  CHK(p.load(inpFile.c_str()), "Load project");
+  CHK(p.load(inpFile.c_str()), "BBConstraints::get_network_elements_indices: Load project");
 
   Network *nw = p.getNetwork();
 

@@ -101,7 +101,7 @@
         {
             "label": "build-release",
             "type": "shell",
-            "command": "make -BUILD_TYPE=release",
+            "command": "make BUILD_TYPE=release",
             "group": {
                 "kind": "build",
                 "isDefault": false

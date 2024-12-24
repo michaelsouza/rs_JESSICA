@@ -32,8 +32,6 @@ void BBConfig::parse_args(int argc, char *argv[])
       use_logger = true;
     else if (arg == "-t" || arg == "--h_threshold")
       h_threshold = std::stoi(argv[++i]);
-    else
-      inpFile = arg; // Assume the input file is the last argument
   }
 }
 

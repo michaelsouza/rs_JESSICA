@@ -57,6 +57,9 @@ void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
 {
   ProfileScope scope("epanet_solve");
 
+  const int t_min = 3600 * (h - 1);
+
+  // Run the solver
   do
   {
     // Run the solver
@@ -66,6 +69,9 @@ void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
     CHK(p.advanceSolver(&dt), "Advance solver");
 
     const int t_new = t + dt;
+
+    // Skip feasibility check for previous time periods, they are already feasible
+    if (t < t_min) continue;
 
     // Show the current state
     if (verbose)
@@ -201,6 +207,7 @@ bool BBSolver::update_y()
   }
   else if (is_feasible)
   {
+    // If the current level is not the last level, move to the next level and reset its value
     if (h < h_max)
     {
       y[++h] = 0;
@@ -220,6 +227,7 @@ bool BBSolver::update_y()
         return true;
       }
 
+      // The last level can be incremented
       if (y[h] < num_pumps)
       {
         y[h]++;
@@ -680,15 +688,19 @@ void BBSolver::update_cost_ub(double cost, bool update_xy)
   }
 
   // Print cost_ub
-  if (cntrs.cost_ub > 999999999)
+  if (config.verbose)
   {
-    // Print cost_ub as inf
-    Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (inf) %s\n", mpi_rank, cost, update_xy ? "new" : "");
-  }
-  else
-  {
-    // Print cost_ub as a number
-    Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (%.2f) %s\n", mpi_rank, cost, cntrs.cost_ub, update_xy ? "new" : "");
+    if (cntrs.cost_ub > 999999999)
+    {
+      // Print cost_ub as inf
+      Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (inf) %s\n", mpi_rank, cost, update_xy ? "new" : "");
+    }
+    else
+    {
+      // Print cost_ub as a number
+      Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (%.2f) %s\n", mpi_rank, cost, cntrs.cost_ub,
+                      update_xy ? "new" : "");
+    }
   }
 
   // Update cost_ub
@@ -699,27 +711,31 @@ void BBSolver::update_cost_ub(double cost, bool update_xy)
   {
     y_best = y;
     x_best = x;
-    Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: y = {", mpi_rank);
-    for (size_t i = 0; i < y.size(); ++i)
+    // Show the best solution
+    if (config.verbose)
     {
-      Console::printf(Console::Color::BRIGHT_GREEN, "%d", y[i]);
-      if (i < y.size() - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
-    }
-    Console::printf(Console::Color::BRIGHT_GREEN, "}\n");
-
-    Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: x = {", mpi_rank);
-    for (size_t i = 0; i < y.size(); ++i)
-    {
-      Console::printf(Console::Color::BRIGHT_GREEN, "{");
-      for (int j = 0; j < num_pumps; ++j)
+      Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: y = {", mpi_rank);
+      for (size_t i = 0; i < y.size(); ++i)
       {
-        Console::printf(Console::Color::BRIGHT_GREEN, "%d", x[i * num_pumps + j]);
-        if (j < num_pumps - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
+        Console::printf(Console::Color::BRIGHT_GREEN, "%d", y[i]);
+        if (i < y.size() - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
       }
-      Console::printf(Console::Color::BRIGHT_GREEN, "}");
-      if (i < y.size() - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
+      Console::printf(Console::Color::BRIGHT_GREEN, "}\n");
+
+      Console::printf(Console::Color::BRIGHT_GREEN, "Rank[%d]: x = {", mpi_rank);
+      for (size_t i = 0; i < y.size(); ++i)
+      {
+        Console::printf(Console::Color::BRIGHT_GREEN, "{");
+        for (int j = 0; j < num_pumps; ++j)
+        {
+          Console::printf(Console::Color::BRIGHT_GREEN, "%d", x[i * num_pumps + j]);
+          if (j < num_pumps - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
+        }
+        Console::printf(Console::Color::BRIGHT_GREEN, "}");
+        if (i < y.size() - 1) Console::printf(Console::Color::BRIGHT_GREEN, ", ");
+      }
+      Console::printf(Console::Color::BRIGHT_GREEN, "}\n");
     }
-    Console::printf(Console::Color::BRIGHT_GREEN, "}\n");
   }
 }
 
@@ -876,7 +892,7 @@ void BBSolver::solve()
   int done_all = 0;
   auto tic = std::chrono::high_resolution_clock::now();
   int niters = 0;
-  int interval_niter = 1024;
+  int interval_sync = config.interval_sync;
 
   // Main loop
   while (!done_all)
@@ -884,7 +900,7 @@ void BBSolver::solve()
     ++niters;
 
     solve_iteration(done_loc, config.verbose, config.dump_project);
-    if (niters % interval_niter == 0)
+    if (niters % interval_sync == 0)
     {
       show_timer(rank, niters, h, done_loc, done_all, cntrs.cost_ub, y, y_best, is_feasible, tic);
       solve_sync(config.h_threshold, done_loc, done_all, config.verbose);

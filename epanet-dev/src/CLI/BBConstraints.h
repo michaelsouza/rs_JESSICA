@@ -107,11 +107,11 @@ public:
    */
   void update_pumps(Project *p, const int h, const std::vector<int> &x, bool verbose);
 
-  std::map<std::string, int> nodes;           ///< Map of node names to indices
-  std::map<std::string, int> tanks;           ///< Map of tank names to indices
-  std::map<std::string, int> pumps;           ///< Map of pump names to indices
-  double cost_ub;                             ///< Maximum cost allowed (upper bound)
-  std::string inpFile;                        ///< Path to input file
+  std::map<std::string, int> nodes; ///< Map of node names to indices
+  std::map<std::string, int> tanks; ///< Map of tank names to indices
+  std::map<std::string, int> pumps; ///< Map of pump names to indices
+  double cost_ub;                   ///< Maximum cost allowed (upper bound)
+  std::string inpFile;              ///< Path to input file
 
 private:
   /**

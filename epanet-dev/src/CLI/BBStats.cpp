@@ -43,7 +43,8 @@ void BBStats::to_json(const BBConfig &config, const BBConstraints &cnstr, double
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   char filename[256];
-  sprintf(filename, "BBStats_size_%d_rank_%d_acts_%d_hmax_%d_hthr_%d.json", size, rank, config.max_actuations, config.h_max, config.h_threshold);
+  sprintf(filename, "BBStats_size_%d_rank_%d_acts_%d_hmax_%d_hthr_%d_sync_%d.json", size, rank, config.max_actuations, config.h_max,
+          config.h_threshold, config.interval_sync);
 
   // Create a JSON object
   // Write JSON to file

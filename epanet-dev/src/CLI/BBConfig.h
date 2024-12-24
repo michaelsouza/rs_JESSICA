@@ -19,6 +19,7 @@ public:
   bool dump_project = false;
   bool use_logger = false;
   int h_threshold = 18;
+  int interval_sync = 1024;
 
 private:
   void parse_args(int argc, char *argv[]);

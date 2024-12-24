@@ -291,7 +291,7 @@ public:
     const int niter = 1024;
     for (int i = 0; i < niter; ++i)
     {
-      double cost = 0.0; // reset the cost
+      double cost = 0.0;                 // reset the cost
       solver.cntrs.cost_ub = 1000000000; // reset the cost upper bound
       bool is_feasible = solver.process_node(cost, verbose, config.dump_project);
       if (!is_feasible)

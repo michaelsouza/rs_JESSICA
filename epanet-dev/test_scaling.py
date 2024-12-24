@@ -41,7 +41,7 @@ def run_test(executable: str, num_processes: int, num_runs: int = 3, h_max: int 
 
 def main():
     # Configuration
-    max_processes = 23
+    max_processes = 16
     num_runs = 3
     h_max = 12
     num_activations = 3

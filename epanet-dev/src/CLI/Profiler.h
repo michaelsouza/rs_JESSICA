@@ -72,8 +72,8 @@ public:
       double ms = duration.count() / 1000.0;
       double percentage = (duration.count() * 100.0) / max_duration;
 
-      outfile << std::left << std::setw(30) << name << ": " << std::right << std::setw(8) << ms << " ms"
-              << " (" << std::setw(5) << percentage << "%)\n";
+      outfile << std::left << std::setw(30) << name << ": " << std::right << std::setw(8) << ms << " ms" << " (" << std::setw(5) << percentage
+              << "%)\n";
     }
     outfile << "=====================\n";
     outfile.close();

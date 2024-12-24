@@ -83,7 +83,7 @@ void BBConstraints::get_network_elements_indices(std::string inpFile)
   {
     const std::string &pump_name = pump.first;
     pump.second = nw->indexOf(Element::LINK, pump_name);
-  }  
+  }
 }
 
 // Function to display pressure status
@@ -241,11 +241,10 @@ bool BBConstraints::check_cost(Project *p, const double cost, bool verbose)
       else
         Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%.2f\n", cost, cost_ub);
     }
+    else if (cost_ub > 999999999)
+      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=inf\n", cost);
     else
-      if (cost_ub > 999999999)
-        Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=inf\n", cost);
-      else
-        Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%.2f\n", cost, cost_ub);
+      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%.2f\n", cost, cost_ub);
   }
   return is_feasible;
 }

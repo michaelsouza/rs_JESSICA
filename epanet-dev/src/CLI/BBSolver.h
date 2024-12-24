@@ -128,16 +128,16 @@ public:
   void solve_iteration(int &done_loc, bool verbose, bool dump_project);
   void solve_sync(const int h_threshold, int &done_loc, int &done_all, bool verbose);
 
-  int h;                              ///< Current time period index.
-  std::vector<int> y;                 ///< Vector tracking actuations per time period.
-  std::vector<int> x;                 ///< Vector tracking pump states across time periods.
-  int num_pumps;                      ///< Number of pumps being managed.
-  int h_min;                          ///< Current top level in the counter.
-  int h_cut;                          ///< Threshold for top level operations.
-  int &h_max;                         ///< Total number of time periods.
-  int &max_actuations;                ///< Maximum actuations (turn off) allowed per pump.
-  BBConstraints cntrs;                ///< Constraints object for the network.
-  int is_feasible;                    ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
+  int h;               ///< Current time period index.
+  std::vector<int> y;  ///< Vector tracking actuations per time period.
+  std::vector<int> x;  ///< Vector tracking pump states across time periods.
+  int num_pumps;       ///< Number of pumps being managed.
+  int h_min;           ///< Current top level in the counter.
+  int h_cut;           ///< Threshold for top level operations.
+  int &h_max;          ///< Total number of time periods.
+  int &max_actuations; ///< Maximum actuations (turn off) allowed per pump.
+  BBConstraints cntrs; ///< Constraints object for the network.
+  int is_feasible;     ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
 
   BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
   BBConfig config; ///< Configuration object for solver parameters.

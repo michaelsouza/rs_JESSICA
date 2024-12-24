@@ -44,5 +44,5 @@ epanet-dev/: no
 
 # user_request
 """
-In order to improve readability and profiling, let's breaking down the process_node function.
+In order to improve readability and profiling, let's breaking down the process_node function into smaller functions. Just focus on the process_node function and give only the code that changes.
 """

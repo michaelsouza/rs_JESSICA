@@ -138,7 +138,6 @@ public:
   int &max_actuations;                ///< Maximum actuations (turn off) allowed per pump.
   BBConstraints cntrs;                ///< Constraints object for the network.
   int is_feasible;                    ///< Indicates whether the current state is feasible (Using int to match MPI_INT).
-  std::vector<double> tanks_initHead; ///< Initial levels of tanks.
 
   BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
   BBConfig config; ///< Configuration object for solver parameters.

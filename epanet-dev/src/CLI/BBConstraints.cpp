@@ -29,6 +29,7 @@ BBConstraints::~BBConstraints()
   // Clean up resources if necessary
 }
 
+// Function to display the constraints
 void BBConstraints::show() const
 {
   Console::hline(Console::Color::BRIGHT_WHITE);
@@ -51,6 +52,7 @@ void BBConstraints::show() const
   Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
 }
 
+// Function to get node and tank IDs from the input file
 void BBConstraints::get_nodes_tanks_ids(std::string inpFile)
 {
   Project p;
@@ -219,11 +221,18 @@ bool BBConstraints::check_cost(Project *p, const double cost, bool verbose)
   if (verbose)
   {
     Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking cost:\n");
-    std::string cost_max_str = (cost_ub > 999999999) ? "inf" : std::to_string(cost_ub);
     if (is_feasible)
-      Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%s\n", cost, cost_max_str.c_str());
+    {
+      if (cost_ub > 999999999)
+        Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=inf\n", cost);
+      else
+        Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%.2f\n", cost, cost_ub);
+    }
     else
-      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%s\n", cost, cost_max_str.c_str());
+      if (cost_ub > 999999999)
+        Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=inf\n", cost);
+      else
+        Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%.2f\n", cost, cost_ub);
   }
   return is_feasible;
 }
@@ -239,6 +248,7 @@ double BBConstraints::calc_cost() const
   return cost;
 }
 
+// Function to update pump speed patterns
 void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int> &x, bool verbose)
 {
   // Get project network

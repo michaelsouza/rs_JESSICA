@@ -31,3 +31,4 @@ logger_*.log
 =4.2.0
 output_*.inp
 BBStats_size_*.json
+profile_rank_0.txt

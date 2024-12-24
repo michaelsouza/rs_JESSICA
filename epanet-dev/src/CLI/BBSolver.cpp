@@ -32,9 +32,6 @@ BBSolver::BBSolver(BBConfig &config)
   y_best = std::vector<int>(h_max + 1, 0);
   x_best = std::vector<int>(num_pumps * (h_max + 1), 0);
 
-  // Initialize tanks head vector
-  tanks_initHead = std::vector<double>((h_max + 1) * cntrs.tanks.size(), 0);
-
   // Allocate the recv buffer
   mpi_buffer.resize(4 + y.size() + x.size());
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -51,21 +48,6 @@ void BBSolver::epanet_load(Project &p, int t_max, bool verbose)
 
   // Set the total duration of the simulation
   nw->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
-
-  // Set the initial hour
-  nw->options.setOption(Options::TimeOption::START_TIME, h);
-
-  // Adjust the initial levels, only if the current hour is greater than 1
-  if (h > 1)
-  {
-    int j = 0;
-    for (auto &tank_name_index : cntrs.tanks)
-    {
-      Tank *tank = static_cast<Tank *>(nw->node(tank_name_index.second));
-      tank->initHead = tanks_initHead[(h - 1) * cntrs.tanks.size() + j];
-      ++j;
-    }
-  }
 
   // Initialize the solver
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
@@ -124,12 +106,9 @@ void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
   if (is_feasible && h == h_max)
   {
     is_feasible = cntrs.check_stability(&p, verbose);
-  }
 
-  // Update tanks initial head
-  if (is_feasible)
-  {
-    update_tanks_initHead(p);
+    // Update cost_ub
+    if (is_feasible) update_cost_ub(cost, true);
   }
 }
 
@@ -668,7 +647,7 @@ void BBSolver::to_json(double eta_secs)
   stats.to_json(config, cntrs, eta_secs, y_best, x_best);
 }
 
-/** Main solve functions */
+// Function to parse command line arguments
 void parse_args(int argc, char *argv[], bool &verbose, int &h_max, int &max_actuations, bool &save_project, bool &use_logger, int &h_threshold)
 {
   // Parse command line arguments
@@ -690,25 +669,32 @@ void parse_args(int argc, char *argv[], bool &verbose, int &h_max, int &max_actu
   }
 }
 
+// Function to update cost_ub
 void BBSolver::update_cost_ub(double cost, bool update_xy)
 {
+  // Abort if cost is greater than cost_ub
   if (cost > cntrs.cost_ub)
   {
     Console::printf(Console::Color::RED, "ERR[rank=%d]: cost=%.2f > cost_max=%.2f\n", mpi_rank, cost, cntrs.cost_ub);
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
+  // Print cost_ub
   if (cntrs.cost_ub > 999999999)
   {
+    // Print cost_ub as inf
     Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (inf) %s\n", mpi_rank, cost, update_xy ? "new" : "");
   }
   else
   {
+    // Print cost_ub as a number
     Console::printf(Console::Color::GREEN, "\nRank[%d]: 💰 updated cost_ub=%.2f (%.2f) %s\n", mpi_rank, cost, cntrs.cost_ub, update_xy ? "new" : "");
   }
 
+  // Update cost_ub
   cntrs.cost_ub = cost;
 
+  // Update y_best and x_best
   if (update_xy)
   {
     y_best = y;
@@ -737,6 +723,7 @@ void BBSolver::update_cost_ub(double cost, bool update_xy)
   }
 }
 
+// Function to solve an iteration
 void BBSolver::solve_iteration(int &done_loc, bool verbose, bool dump_project)
 {
   ProfileScope scope("solve_iteration");
@@ -765,18 +752,7 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool dump_project)
   process_node(cost, verbose, dump_project);
 }
 
-void BBSolver::update_tanks_initHead(Project &p)
-{
-  int j = 0;
-  Network *nw = p.getNetwork();
-  for (auto &tank_name_index : cntrs.tanks)
-  {
-    Tank *tank = static_cast<Tank *>(nw->node(tank_name_index.second));
-    tanks_initHead[(h - 1) * cntrs.tanks.size() + j] = tank->head;
-    ++j;
-  }
-}
-
+// Function to synchronize the ranks
 void BBSolver::solve_sync(int h_threshold, int &done_loc, int &done_all, bool verbose)
 {
   ProfileScope scope("solve_sync");

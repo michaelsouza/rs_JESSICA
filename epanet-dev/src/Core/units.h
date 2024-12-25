@@ -40,7 +40,7 @@ class Units
 
     void        setUnits(Options& options);
     double      factor(Quantity quantity);
-    std::string name(Quantity quantity);
+    std::string name(Quantity quantity);    
 
   private:
 

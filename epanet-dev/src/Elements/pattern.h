@@ -11,6 +11,7 @@
 #ifndef PATTERN_H_
 #define PATTERN_H_
 
+#include "Utilities/utilities.h"
 #include "Elements/element.h"
 
 #include <string>
@@ -64,6 +65,8 @@ class Pattern: public Element
     // Properties
     int            type;                //!< type of time pattern
 
+    virtual void snapshot(std::vector<std::string>& lines) const = 0;
+
   protected:
     std::vector<double> factors;        //!< sequence of multiplier factors
     int                 currentIndex;   //!< index of current pattern interval
@@ -91,6 +94,17 @@ class FixedPattern : public Pattern
     void   advance(int t);
     void   setFactor(int idx, double f) { factors[idx] = f; }
 
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"type\": " + std::to_string(type) + ",");
+      snapshot_vector_double(lines, "\"factors\"", factors.data(), factors.size());
+      lines.push_back(",");
+      lines.push_back("\"currentIndex\": " + std::to_string(currentIndex) + ",");
+      lines.push_back("\"interval\": " + std::to_string(interval) + ",");
+      lines.push_back("\"startTime\": " + std::to_string(startTime));
+      lines.push_back("}");
+    }
+
   private:
     int    startTime;   //!< offset from time 0 when the pattern begins (sec)
 };
@@ -116,6 +130,17 @@ class VariablePattern : public Pattern
     void   init(int intrvl, int tstart);
     int    nextTime(int t);
     void   advance(int t);
+
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"type\": " + std::to_string(type) + ",");
+      snapshot_vector_double(lines, "\"factors\"", factors.data(), factors.size());
+      lines.push_back(",");
+      lines.push_back("\"currentIndex\": " + std::to_string(currentIndex) + ",");
+      lines.push_back("\"interval\": " + std::to_string(interval) + ",");
+      snapshot_vector_int(lines, "\"times\"", times.data(), times.size());
+      lines.push_back("}");
+    }
 
   private:
     std::vector<int>   times;  //!< times (sec) at which factors change

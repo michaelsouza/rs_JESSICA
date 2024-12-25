@@ -11,6 +11,7 @@
 #ifndef CURVE_H_
 #define CURVE_H_
 
+#include "Utilities/utilities.h"
 #include "Elements/element.h"
 
 #include <string>
@@ -53,6 +54,18 @@ class Curve: public Element
     void   findSegment(double xseg, double& slope, double& intercept);
     double getYofX(double x);
     double getXofY(double y);
+
+
+    void snapshot(std::vector<std::string>& lines) const{
+      lines.push_back("{");
+      lines.push_back("\"name\": " + name + ",");
+      lines.push_back("\"index\": " + std::to_string(index) + ",");
+      lines.push_back("\"type\": " + std::to_string(type) + ",");
+      snapshot_vector_double(lines, "\"xData\"", xData.data(), xData.size());
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"yData\"", yData.data(), yData.size());
+      lines.push_back("}"); 
+    }
 
   private:
     CurveType               type;           //!< curve type

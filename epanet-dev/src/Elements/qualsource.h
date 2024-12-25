@@ -46,6 +46,19 @@ class QualSource
     double      strength;    //!< pattern adjusted source quality (mass/ft3 or mass/sec)
     double      outflow;     //!< flow rate released from node into network (cfs)
     double      quality;     //!< node quality after source is added on (mass/ft3)
+
+    // // Custom
+    // void snapshot(std::vector<std::string>& lines) const {      
+    //   lines.push_back("{");
+    //   lines.push_back("type: " + std::to_string(type) + ";");
+    //   lines.push_back("base: " + std::to_string(base) + ";");
+    //   lines.push_back("pattern:" );
+    //   pattern->snapshot(lines);
+    //   lines.push_back("strength: " + std::to_string(strength) + ";");
+    //   lines.push_back("outflow: " + std::to_string(outflow) + ";");
+    //   lines.push_back("quality: " + std::to_string(quality) + ";");
+    //   lines.push_back("}" );
+    // }
 };
 
 #endif

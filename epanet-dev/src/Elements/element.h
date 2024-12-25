@@ -12,6 +12,7 @@
 #define ELEMENT_H_
 
 #include <string>
+#include <vector>
 
 //! \class Element
 //! \brief Abstract parent class for all pipe network components.
@@ -27,6 +28,8 @@ class Element
 
     std::string name;       //!< element's ID name
     int         index;      //!< index in array of elements
+
+    virtual void snapshot(std::vector<std::string>& lines) const = 0;
 
   private:
 

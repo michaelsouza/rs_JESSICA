@@ -12,13 +12,12 @@
 #define CONTROL_H_
 
 #include "Elements/element.h"
+#include "Elements/link.h"
+#include "Elements/node.h"
 
 #include <string>
 #include <ostream>
 
-class Node;
-class Tank;
-class Link;
 class Network;
 
 //! \class Control
@@ -66,6 +65,23 @@ class Control: public Element
 
     // Checks if the control's conditions are met
     void    apply(Network* network, int t, int tod);
+    
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("type: " + std::to_string(type) + ";");
+      lines.push_back("name: " + name + ";");
+      lines.push_back("index: " + std::to_string(index) + ";");
+      lines.push_back("link: " );
+      link->snapshot(lines);
+      lines.push_back("status: " + std::to_string(status) + ";");
+      lines.push_back("setting: " + std::to_string(setting) + ";");
+      lines.push_back("node: " + node->name + ";");
+      lines.push_back("head: " + std::to_string(head) + ";");
+      lines.push_back("volume: " + std::to_string(volume) + ";");
+      lines.push_back("levelType: " + std::to_string(levelType) + ";");
+      lines.push_back("time: " + std::to_string(time) + ";");
+      lines.push_back("}" );
+    }
 
   private:
     int         type;                  //!< type of control

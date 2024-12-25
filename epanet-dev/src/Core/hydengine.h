@@ -14,8 +14,9 @@
 #include <string>
 
 class Network;
-class HydSolver;
-class MatrixSolver;
+
+#include "Solvers/hydsolver.h"
+#include "Solvers/matrixsolver.h"
 
 //! \class HydEngine
 //! \brief Simulates extended period hydraulics.
@@ -44,6 +45,16 @@ class HydEngine
     int    getElapsedTime() { return currentTime; }
     double getPeakKwatts()  { return peakKwatts;  }
 
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{" );
+      lines.push_back("\"hydSolver\": ");
+      hydSolver->snapshot(lines);
+      lines.push_back(",");
+      lines.push_back("\"matrixSolver\": ");
+      matrixSolver->snapshot(lines);
+      lines.push_back("}" );
+    }
+
   private:
 
     // Engine state
@@ -69,6 +80,8 @@ class HydEngine
     int            timeOfDay;          //!< current time of day (sec)
     double         peakKwatts;         //!< peak energy usage (kwatts)
     std::string    timeStepReason;     //!< reason for taking next time step
+
+    
 
     // Simulation sub-tasks
 

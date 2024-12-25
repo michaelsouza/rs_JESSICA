@@ -74,6 +74,25 @@ class Node: public Element
     double         actualDemand;  //!< actual demand delivered (cfs)
     double         outflow;       //!< demand + emitter + leakage flow (cfs)
     double         quality;       //!< water quality concen. (mass/ft3)
+    
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"name\": " + name + ",");
+      lines.push_back("\"index\": " + std::to_string(index) + ",");
+      lines.push_back("\"rptFlag\": " + std::to_string(rptFlag) + ",");
+      lines.push_back("\"elev\": " + std::to_string(elev) + ",");
+      lines.push_back("\"xCoord\": " + std::to_string(xCoord) + ",");
+      lines.push_back("\"yCoord\": " + std::to_string(yCoord) + ",");
+      lines.push_back("\"initQual\": " + std::to_string(initQual) + ",");      
+      lines.push_back("\"fixedGrade\": " + std::to_string(fixedGrade) + ",");
+      lines.push_back("\"head\": " + std::to_string(head) + ",");
+      lines.push_back("\"qGrad\": " + std::to_string(qGrad) + ",");
+      lines.push_back("\"fullDemand\": " + std::to_string(fullDemand) + ",");
+      lines.push_back("\"actualDemand\": " + std::to_string(actualDemand) + ",");
+      lines.push_back("\"outflow\": " + std::to_string(outflow) + ",");
+      lines.push_back("\"quality\": " + std::to_string(quality));
+      lines.push_back("}" );
+    }
 };
 
 #endif

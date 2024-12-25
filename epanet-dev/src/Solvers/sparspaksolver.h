@@ -13,6 +13,9 @@
 
 #include "matrixsolver.h"
 
+
+
+
 //! \class SparspakSolver
 //! \brief Solves Ax = b using the SPARSPAK routines.
 //!
@@ -46,6 +49,37 @@ class SparspakSolver: public MatrixSolver
     void   addToOffDiag(int j, double a);
     void   addToRhs(int i, double b);
     int    solve(int n, double x[]);
+
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{" );
+      lines.push_back("\"nrows\": " + std::to_string(nrows) + ",");
+      lines.push_back("\"nnz\": " + std::to_string(nnz) + ",");
+      lines.push_back("\"nnzl\": " + std::to_string(nnzl) + ",");
+      snapshot_vector_int(lines, "\"xaij\"", xaij, nnz);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"perm\"", perm, nrows);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"invp\"", invp, nrows);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"xlnz\"", xlnz, nrows + 1);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"xnzsub\"", xnzsub, nrows + 1);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"nzsub\"", nzsub, nnzl);
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"lnz\"", lnz, nnzl);
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"diag\"", diag, nrows);
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"rhs\"", rhs, nrows);
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"temp\"", temp, nrows);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"first\"", first, nrows);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"link\"", link, nrows);    
+      lines.push_back("}" );
+    }
 
   private:
 

@@ -12,6 +12,7 @@
 #define DEMANDMODEL_H_
 
 #include <string>
+#include <vector>
 
 class Junction;
 
@@ -35,6 +36,12 @@ class DemandModel
 
     /// Changes fixed grade status depending on pressure deficit.
     virtual bool isPressureDeficient(Junction* junc) { return false; }
+
+    virtual void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"expon\": " + std::to_string(expon));
+      lines.push_back("}");
+    }
 
   protected:
     double expon;
@@ -90,6 +97,14 @@ class LogisticDemandModel : public DemandModel
   public:
     LogisticDemandModel(double expon_);
     double findDemand(Junction* junc, double p, double& dqdh);
+
+    virtual void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"expon\": " + std::to_string(expon) + ",");
+      lines.push_back("\"a\": " + std::to_string(a) + ",");
+      lines.push_back("\"b\": " + std::to_string(b));
+      lines.push_back("}");
+    }
 
   private:
     double a, b;  // logistic function coefficients

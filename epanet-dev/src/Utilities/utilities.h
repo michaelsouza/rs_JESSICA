@@ -15,6 +15,8 @@
 #include <sstream>
 #include <vector>
 
+#include "Elements/element.h"
+
 //! \class Utilities
 //! \brief Utility functions used throughout EPANET.
 
@@ -150,5 +152,13 @@ class Utilities
     }
 
 };
+
+void snapshot_vector_int(std::vector<std::string>& lines, const std::string& name, const int *vec, int size);
+
+void snapshot_vector_double(std::vector<std::string>& lines, const std::string& name, const double* vec, int size);
+
+void snapshot_vector_element(std::vector<std::string>& lines, const std::string& name, const Element* const* vec, int size);
+
+void snapshot_vector_string(std::vector<std::string>& lines, const std::string& name, const std::string* vec, int size);
 
 #endif

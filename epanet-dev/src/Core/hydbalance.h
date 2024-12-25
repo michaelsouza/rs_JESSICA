@@ -11,6 +11,9 @@
 #ifndef HYDBALANCE_H_
 #define HYDBALANCE_H_
 
+#include <string>
+#include <vector>
+
 class Network;
 
 //! \class HydBalance
@@ -36,6 +39,18 @@ struct HydBalance
     double    findHeadErrorNorm(
                   double lamda, double dH[], double dQ[], double xQ[], Network* nw);
     double    findFlowErrorNorm(double xQ[], Network* nw);
+
+    void snapshot(std::vector<std::string>& lines) const {
+        lines.push_back("{");
+        lines.push_back("\"maxFlowErr\": " + std::to_string(maxFlowErr) + ",");
+        lines.push_back("\"maxHeadErr\": " + std::to_string(maxHeadErr) + ",");
+        lines.push_back("\"maxFlowChange\": " + std::to_string(maxFlowChange) + ",");
+        lines.push_back("\"totalFlowChange\": " + std::to_string(totalFlowChange) + ",");
+        lines.push_back("\"maxHeadErrLink\": " + std::to_string(maxHeadErrLink) + ",");
+        lines.push_back("\"maxFlowErrNode\": " + std::to_string(maxFlowErrNode) + ",");
+        lines.push_back("\"maxFlowChangeLink\": " + std::to_string(maxFlowChangeLink));
+        lines.push_back("}");
+    }
 };
 
 #endif

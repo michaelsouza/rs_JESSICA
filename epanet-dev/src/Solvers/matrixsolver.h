@@ -12,7 +12,10 @@
 #define MATRIXSOLVER_H_
 
 #include <string>
+#include <vector>
 #include <ostream>
+
+#include "Utilities/utilities.h"
 
 //! \class MatrixSolver
 //! \brief Abstract class for solving a set of linear equations.
@@ -47,6 +50,8 @@ class MatrixSolver
     virtual int    solve(int nRows, double x[]) = 0;
 
     virtual void  debug(std::ostream& out) {}
+
+    virtual void snapshot(std::vector<std::string>& lines) const = 0;
 };
 
 #endif

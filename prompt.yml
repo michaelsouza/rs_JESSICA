@@ -15,13 +15,13 @@ codes: no
   economic_custom.py: all
 
 epanet-dev/src/CLI: yes
-  BBTests.h: all
+  BBTests.h: none
   BBCounter.h: none
   BBCounter.cpp: none
   BBStats.h: none
   BBStats.cpp: none
   BBSolver.h: all
-  BBSolver.cpp: all
+  BBSolver.cpp: none
   BBConstraints.h: none
   BBConstraints.cpp: none
   Helper.h: none
@@ -33,9 +33,31 @@ epanet-dev/src/CLI: yes
   Profiler.h: none
   main.cpp: none
 
-epanet-dev/src/Elements: no
+epanet-dev/src/Elements: yes
+  pipe.h: all
+  pipe.cpp: all
+  link.h: all
+  link.cpp: all
   pump.h: all
+  pump.cpp: all
 
+epanet-dev/src/Solvers/: yes
+  ggasolver.h: all
+  ggasolver.cpp: all
+
+epanet-dev/src/Core/: yes
+  project.h: all
+  project.cpp: all
+  hydbalance.h: all
+  hydbalance.cpp: all
+  hydengine.h: all
+  hydengine.cpp: all
+  network.h: all
+  network.cpp: all
+
+epanet-dev/src/Models/: yes
+  headlossmodel.h: all
+  headlossmodel.cpp: all
 epanet-dev/: no
   makefile: all
 
@@ -44,5 +66,86 @@ epanet-dev/: no
 
 # user_request
 """
-In order to improve readability and profiling, let's breaking down the process_node function into smaller functions. Just focus on the process_node function and give only the code that changes.
+====================
+Calls (function A calls function B: A -> B)
+====================
+BBSolver::epanet_solve -> Epanet::Project::advanceSolver
+BBSolver::epanet_solve -> Epanet::Project::runSolver
+Epanet::Project::advanceSolver -> HydEngine::advance
+Epanet::Project::runSolver -> HydEngine::solve
+GGASolver::findErrorNorm -> HydBalance::evaluate
+GGASolver::findHeadChanges -> GGASolver::setMatrixCoeffs
+GGASolver::findHeadChanges -> SparspakSolver::solve
+GGASolver::findStepSize -> GGASolver::findErrorNorm
+GGASolver::setLinkCoeffs -> Network::link
+GGASolver::setLinkCoeffs -> SparspakSolver::addToDiag
+GGASolver::setLinkCoeffs -> SparspakSolver::addToRhs
+GGASolver::setLinkCoeffs -> std::vector<double, std::allocator<double> >::operator[]
+GGASolver::setMatrixCoeffs -> GGASolver::setLinkCoeffs
+GGASolver::setMatrixCoeffs -> GGASolver::setNodeCoeffs
+GGASolver::setMatrixCoeffs -> GGASolver::setValveCoeffs
+GGASolver::setNodeCoeffs -> SparspakSolver::addToDiag
+GGASolver::setNodeCoeffs -> SparspakSolver::addToRhs
+GGASolver::setValveCoeffs -> bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std::allocator<Link*> -> >
+GGASolver::solve -> GGASolver::findFlowChanges
+GGASolver::solve -> GGASolver::findHeadChanges
+GGASolver::solve -> GGASolver::findStepSize
+GGASolver::solve -> GGASolver::setFixedGradeNodes
+GGASolver::solve -> GGASolver::updateSolution
+HW_HeadLossModel::findHeadLoss -> pow@@GLIBC_2.29
+HydBalance::evaluate -> HydBalance::findHeadErrorNorm
+HydBalance::evaluate -> findNodeOutflows
+HydBalance::evaluate -> findTotalFlowChange
+HydBalance::findHeadErrorNorm -> Pipe::findHeadLoss
+HydBalance::findHeadErrorNorm -> std::abs
+HydEngine::solve -> GGASolver::solve
+HydEngine::solve -> HydEngine::updateCurrentConditions
+Network::link -> std::vector<Link*, std::allocator<Link*> >::operator[]
+Pipe::findHeadLoss -> HW_HeadLossModel::findHeadLoss
+SparspakSolver::solve -> sp_numfct
+SparspakSolver::solve -> sp_solve
+findNodeOutflows -> Network::node
+====================
+Classes and functions:
+====================
+BBSolver
+    BBSolver::epanet_solve
+Epanet::Project
+    Epanet::Project::runSolver
+    Epanet::Project::advanceSolver
+GGASolver
+    GGASolver::setLinkCoeffs
+    GGASolver::setNodeCoeffs
+    GGASolver::findHeadChanges
+    GGASolver::setMatrixCoeffs
+    GGASolver::findStepSize
+    GGASolver::findErrorNorm
+    GGASolver::solve
+    GGASolver::setValveCoeffs
+    GGASolver::findFlowChanges
+    GGASolver::updateSolution
+    GGASolver::setFixedGradeNodes
+HW_HeadLossModel
+    HW_HeadLossModel::findHeadLoss
+HydBalance
+    HydBalance::findHeadErrorNorm
+    HydBalance::evaluate
+HydEngine
+    HydEngine::solve
+    HydEngine::updateCurrentConditions
+    HydEngine::advance
+Network
+    Network::link
+    Network::node
+Pipe
+    Pipe::findHeadLoss
+SparspakSolver
+    SparspakSolver::addToDiag
+    SparspakSolver::addToRhs
+    SparspakSolver::solve
+findNodeOutflows
+findTotalFlowChange
+====================
+I'm writing a branch-and-bound solver for EPANET. I wanna to improve speed in the backtracking phase. In order to do that, I need to implement a deep copy of the network data used in the BBSolver::epanet_solve function. Based on the calls above, write a deep copy function that creates a deep copy of the project object with all the data required by the BBSolver::epanet_solve function.
+
 """

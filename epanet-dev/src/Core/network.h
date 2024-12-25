@@ -15,21 +15,22 @@
 #include "Core/units.h"
 #include "Core/qualbalance.h"
 #include "Elements/element.h"
+#include "Elements/node.h"
+#include "Models/headlossmodel.h"
+#include "Models/demandmodel.h"
+#include "Models/leakagemodel.h"
+#include "Models/qualmodel.h"
 #include "Utilities/graph.h"
+#include "Utilities/utilities.h"
 
 #include <vector>
 #include <ostream>
 #include <unordered_map>
 
-class Node;
 class Link;
 class Pattern;
 class Curve;
 class Control;
-class HeadLossModel;
-class DemandModel;
-class LeakageModel;
-class QualModel;
 class MemPool;
 
 //! \class Network
@@ -111,6 +112,46 @@ class Network
     LeakageModel*            leakageModel;  //!< pipe leakage model
     QualModel*               qualModel;     //!< water quality model
 
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      snapshot_vector_element(lines, "\"nodes\"", reinterpret_cast<const Element* const*>(&nodes[0]), nodes.size());      
+      lines.push_back(",");
+      snapshot_vector_element(lines, "\"links\"", reinterpret_cast<const Element* const*>(&links[0]), links.size());
+      lines.push_back(",");
+      snapshot_vector_element(lines, "\"curves\"", reinterpret_cast<const Element* const*>(&curves[0]), curves.size());
+      lines.push_back(",");
+      snapshot_vector_element(lines, "\"patterns\"", reinterpret_cast<const Element* const*>(&patterns[0]), patterns.size());
+      lines.push_back(",");
+      snapshot_vector_element(lines, "\"controls\"", reinterpret_cast<const Element* const*>(&controls[0]), controls.size());
+      lines.push_back(",");
+      lines.push_back("\"options\":");
+      options.snapshot(lines);
+      lines.push_back(",");
+      lines.push_back("\"qualBalance\":");
+      qualBalance.snapshot(lines);
+      if(headLossModel) {
+        lines.push_back(",");
+        lines.push_back("\"headLossModel\":");
+        headLossModel->snapshot(lines);
+      }
+      if(demandModel) {
+        lines.push_back(",");
+        lines.push_back("\"demandModel\":");
+        demandModel->snapshot(lines);
+      }
+      if(leakageModel) {
+        lines.push_back(",");
+        lines.push_back("\"leakageModel\":");
+        leakageModel->snapshot(lines);
+      }
+      if(qualModel) {
+        lines.push_back(",");
+        lines.push_back("\"qualModel\":");
+        qualModel->snapshot(lines);
+      }
+      lines.push_back("}");
+    }
+
   private:
 
     // Hash tables that associate an element's ID name with its storage index.
@@ -120,6 +161,8 @@ class Network
     std::unordered_map<std::string, Element*>      patternTable;  //!< hash table for pattern ID names.
     std::unordered_map<std::string, Element*>      controlTable;  //!< hash table for control ID names.
     MemPool *      memPool;       //!< memory pool for network objects
+
+
 };
 
 //-----------------------------------------------------------------------------

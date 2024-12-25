@@ -12,11 +12,12 @@
 #define QUALMODEL_H_
 
 #include <string>
+#include <vector>
+#include "Elements/node.h"
 
 class Network;
 class Pipe;
 class Tank;
-class Node;
 
 //! \class QualModel
 //! \brief The interface for a water quality analysis model.
@@ -58,6 +59,12 @@ class QualModel
     virtual double findTracerAdded(Node* node, double qIn)
     { return 0.0; }
 
+    virtual void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("type: " + std::to_string(type));
+      lines.push_back("}");
+    }
+
     int type;
 };
 
@@ -76,6 +83,24 @@ class ChemModel : public QualModel
     void   findMassTransCoeff(Pipe* pipe);
     double pipeReact(Pipe* pipe, double c, double tstep);
     double tankReact(Tank* tank, double c, double tstep);
+
+    virtual void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("type: " + std::to_string(type));
+      lines.push_back("reactive: " + std::to_string(reactive));
+      lines.push_back("diffus: " + std::to_string(diffus));
+      lines.push_back("viscos: " + std::to_string(viscos));
+      lines.push_back("Sc: " + std::to_string(Sc));
+      lines.push_back("pipeOrder: " + std::to_string(pipeOrder));
+      lines.push_back("tankOrder: " + std::to_string(tankOrder));
+      lines.push_back("wallOrder: " + std::to_string(wallOrder));
+      lines.push_back("massTransCoeff: " + std::to_string(massTransCoeff));
+      lines.push_back("pipeUcf: " + std::to_string(pipeUcf));
+      lines.push_back("tankUcf: " + std::to_string(tankUcf));
+      lines.push_back("wallUcf: " + std::to_string(wallUcf));
+      lines.push_back("cLimit: " + std::to_string(cLimit));
+      lines.push_back("}");
+    }
 
   private:
     bool    reactive;         // true if chemical is reactive
@@ -108,6 +133,14 @@ class TraceModel : public QualModel
     TraceModel() : QualModel(TRACE) { }
     void   init(Network* nw);
     double findTracerAdded(Node* node, double qIn);
+
+    virtual void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("type: " + std::to_string(type));
+      lines.push_back("traceNode: ");
+      traceNode->snapshot(lines);
+      lines.push_back("}");
+    }
 
   private:
     Node* traceNode;

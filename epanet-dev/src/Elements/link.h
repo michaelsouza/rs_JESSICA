@@ -11,12 +11,11 @@
 #ifndef LINK_H_
 #define LINK_H_
 
-#include "Elements/element.h"
+#include "Elements/node.h"
 
 #include <string>
 #include <iostream>
 
-class Node;
 class Network;
 class MemPool;
 
@@ -109,6 +108,27 @@ class Link: public Element
     double         hGrad;            //!< head loss gradient (ft/cfs)
     double         setting;          //!< current setting
     double         quality;          //!< avg. quality concen. (mass/ft3)
+
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"name\": " + name + ",");
+      lines.push_back("\"index\": " + std::to_string(index) + ",");
+      lines.push_back("\"rptFlag\": " + std::to_string(rptFlag) + ",");
+      lines.push_back("\"fromNode\": " + std::to_string(fromNode->index) + ",");
+      lines.push_back("\"toNode\": " + std::to_string(toNode->index) + ",");
+      lines.push_back("\"initStatus\": " + std::to_string(initStatus) + ",");
+      lines.push_back("\"diameter\": " + std::to_string(diameter) + ",");
+      lines.push_back("\"lossCoeff\": " + std::to_string(lossCoeff) + ",");
+      lines.push_back("\"initSetting\": " + std::to_string(initSetting) + ",");
+      lines.push_back("\"status\": " + std::to_string(status) + ",");
+      lines.push_back("\"flow\": " + std::to_string(flow) + ",");
+      lines.push_back("\"leakage\": " + std::to_string(leakage) + ",");
+      lines.push_back("\"hLoss\": " + std::to_string(hLoss) + ",");
+      lines.push_back("\"hGrad\": " + std::to_string(hGrad) + ",");
+      lines.push_back("\"setting\": " + std::to_string(setting) + ",");
+      lines.push_back("\"quality\": " + std::to_string(quality));
+      lines.push_back("}");
+    }
 };
 
 #endif

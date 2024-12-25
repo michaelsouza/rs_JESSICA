@@ -12,6 +12,7 @@
 #define LEAKAGEMODEL_H_
 
 #include <string>
+#include <vector>
 
 //! \class LeakageModel
 //! \brief The interface for a pipe leakage model.
@@ -35,6 +36,14 @@ class LeakageModel
                             double length,
                             double h,
                             double& dqdh) = 0;
+
+    virtual void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("lengthUcf: " + std::to_string(lengthUcf));
+      lines.push_back("flowUcf: " + std::to_string(flowUcf));
+      lines.push_back("pressureUcf: " + std::to_string(pressureUcf));
+      lines.push_back("}");
+    }
 
   protected:
     double lengthUcf;

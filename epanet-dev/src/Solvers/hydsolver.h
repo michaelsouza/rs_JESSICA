@@ -12,6 +12,7 @@
 #define HYDSOLVER_H_
 
 #include <string>
+#include <vector>
 
 class Network;
 class MatrixSolver;
@@ -37,6 +38,8 @@ class HydSolver
     virtual ~HydSolver();
     static  HydSolver* factory(const std::string name, Network* nw, MatrixSolver* ms);
     virtual int solve(double tstep, int& trials) = 0;
+    
+    virtual void snapshot(std::vector<std::string>& lines) const = 0;
 
   protected:
 

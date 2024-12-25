@@ -1,5 +1,3 @@
-# Makefile for EPANET3 project with debug and release builds using wildcards
-
 # Compiler
 CXX = mpicxx
 
@@ -10,7 +8,10 @@ BUILD_TYPE ?= debug
 CXXFLAGS_BASE = -std=c++17 -Isrc -MMD -MP -fPIC
 
 # Compiler flags for different build types
-ifeq ($(BUILD_TYPE), debug)
+ifeq ($(BUILD_TYPE), valgrind)
+    CXXFLAGS = $(CXXFLAGS_BASE) -g -O0
+    LDFLAGS = -Wl,-rpath,'$$ORIGIN'
+else ifeq ($(BUILD_TYPE), debug)
     CXXFLAGS = $(CXXFLAGS_BASE) -g -pg
     LDFLAGS = -pg -Wl,-rpath,'$$ORIGIN'
 else ifeq ($(BUILD_TYPE), release)
@@ -84,3 +85,18 @@ clean:
 # Include dependency files
 -include $(DEPS_LIB)
 -include $(DEPS_EXE)
+
+# Generate call tree using Valgrind's Callgrind tool and visualize it
+call_tree: BUILD_TYPE = valgrind
+call_tree: $(TARGET_EXE)
+	@echo "Generating call tree..."
+	valgrind --tool=callgrind ./$(TARGET_EXE) --test test_cost_1
+	@echo "Extracting call edges to edges.txt..."
+	callgrind_annotate --tree=both callgrind.out.* > edges.txt
+	@echo "Processing callgrind output with gprof2dot..."
+	gprof2dot -f callgrind callgrind.out.* > call_tree.dot
+	dot -Tpng -o call_tree.png call_tree.dot
+	@echo "Call tree generated: call_tree.png"
+	@echo "Call edges exported to: edges.txt"
+
+.PHONY: all clean run_debug run_release call_tree

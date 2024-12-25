@@ -12,6 +12,8 @@
 #define QUALBALANCE_H_
 
 #include <ostream>
+#include <vector>
+#include <string>
 
 //! \class QualBalance
 //! \brief Computes a water quality mass balance across the pipe network.
@@ -36,6 +38,16 @@ struct QualBalance
     void      updateReacted(const double massReacted);
     void      updateStored(const double massStored);
     void      writeBalance(std::ostream& msgLog);
+
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"initMass\": " + std::to_string(initMass) + ",");
+      lines.push_back("\"inflowMass\": " + std::to_string(inflowMass) + ",");
+      lines.push_back("\"outflowMass\": " + std::to_string(outflowMass) + ",");
+      lines.push_back("\"reactedMass\": " + std::to_string(reactedMass) + ",");
+      lines.push_back("\"storedMass\": " + std::to_string(storedMass));
+      lines.push_back("}");
+    }
 };
 
 //-----------------------------------------------------------------------------

@@ -12,6 +12,7 @@
 #define HEADLOSSMODEL_H_
 
 #include <string>
+#include <vector>
 
 class Pipe;
 
@@ -46,6 +47,12 @@ class HeadLossModel
     virtual void findHeadLoss(
                      Pipe* pipe, double flow, double& headLoss, double& gradient) = 0;
 
+    virtual void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      lines.push_back("\"viscosity\": " + std::to_string(viscosity));
+      lines.push_back("}");
+    };
+
   protected:
     double  viscosity;         //!< water viscosity (ft2/sec)
 };
@@ -61,7 +68,7 @@ class HW_HeadLossModel : public HeadLossModel
   public:
     HW_HeadLossModel(double viscos);
     void   setResistance(Pipe* pipe);
-    void   findHeadLoss(Pipe* pipe, double flow, double& headLoss, double& gradient);
+    void   findHeadLoss(Pipe* pipe, double flow, double& headLoss, double& gradient);    
 };
 
 

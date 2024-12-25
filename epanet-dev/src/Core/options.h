@@ -12,6 +12,8 @@
 #define OPTIONS_H_
 
 #include "Output/reportfields.h"
+#include "Utilities/utilities.h"
+
 #include <string>
 #include <sstream>
 
@@ -182,6 +184,18 @@ class Options
     std::string reactOptionsToStr();
     std::string energyOptionsToStr(Network* network);
     std::string reportOptionsToStr();
+
+    void snapshot(std::vector<std::string>& lines) const {
+      lines.push_back("{");
+      snapshot_vector_string(lines, "\"stringOptions\"", stringOptions, MAX_STRING_OPTIONS);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"indexOptions\"", indexOptions, MAX_INDEX_OPTIONS);
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"valueOptions\"", valueOptions, MAX_VALUE_OPTIONS);
+      lines.push_back(",");
+      snapshot_vector_int(lines, "\"timeOptions\"", timeOptions, MAX_TIME_OPTIONS);
+      lines.push_back("}");
+    }
 
   private:
 

@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <unistd.h> // For mkstemp
 #include <filesystem>  // Ensure this is included
+#include <cmath> // For isnan
 
 namespace fs = std::filesystem;  // Add a namespace alias for clarity
 
@@ -33,6 +34,7 @@ static const string  s_Minute = "MIN";
 static const string  s_Second = "SEC";
 static const string  s_AM     = "AM";
 static const string  s_PM     = "PM";
+
 
 
 TempFile::TempFile() {
@@ -316,3 +318,77 @@ string Utilities::getTime(int seconds)
     sout << setw(2) << setfill('0') << seconds;
     return sout.str();
 }
+
+//-----------------------------------------------------------------------------
+//  Snapshot a vector of integers
+//-----------------------------------------------------------------------------
+
+void snapshot_vector_int(std::vector<std::string>& lines, const std::string& name, const int *vec, int size){
+    lines.push_back(name + ": [");
+    for(int i = 0; i < size; i++){
+        if(i < size - 1){
+            lines.push_back(std::to_string(vec[i]) + ", ");
+        } else {
+            lines.push_back(std::to_string(vec[i]));
+        }
+    }
+    lines.push_back("]");
+}
+
+//-----------------------------------------------------------------------------
+//  Snapshot a vector of doubles
+//-----------------------------------------------------------------------------
+
+void snapshot_vector_double(std::vector<std::string>& lines, const std::string& name, const double* vec, int size){
+    lines.push_back(name + ": [");
+    for(int i = 0; i < size; i++){
+        if(std::isnan(vec[i])) {
+            if(i < size - 1){
+                lines.push_back("null, ");
+            } else {
+                lines.push_back("null");
+            }
+        } else {
+            if(i < size - 1){
+                lines.push_back(std::to_string(vec[i]) + ", ");
+            } else {
+                lines.push_back(std::to_string(vec[i]));
+            }
+        }
+    }
+    lines.push_back("]");
+}
+
+//-----------------------------------------------------------------------------
+//  Snapshot a vector of elements
+//-----------------------------------------------------------------------------
+
+void snapshot_vector_element(std::vector<std::string>& lines, const std::string& name, const Element* const* vec, int size){
+    lines.push_back(name + ": [");
+    for(int i = 0; i < size; i++){
+        if (i < size - 1){ 
+            vec[i]->snapshot(lines);
+            lines.push_back(",");
+        } else {
+            vec[i]->snapshot(lines);
+        }
+    }
+    lines.push_back("]");
+}   
+
+//-----------------------------------------------------------------------------
+//  Snapshot a vector of strings
+//-----------------------------------------------------------------------------
+
+void snapshot_vector_string(std::vector<std::string>& lines, const std::string& name, const std::string* vec, int size){
+    lines.push_back(name + ": [");
+    for(int i = 0; i < size; i++){  
+        if(i < size - 1){
+            lines.push_back("\"" + vec[i] + "\", ");
+        } else {
+            lines.push_back("\"" + vec[i] + "\"");
+        }
+    }
+    lines.push_back("]");
+}
+

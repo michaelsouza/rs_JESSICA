@@ -13,9 +13,10 @@
 
 #include "Solvers/hydsolver.h"
 #include "Core/hydbalance.h"
+#include "Utilities/utilities.h"
 
 #include <vector>
-
+#include <string>
 class HydSolver;
 
 //! \class GGASolver
@@ -28,6 +29,33 @@ class GGASolver : public HydSolver
     GGASolver(Network* nw, MatrixSolver* ms);
     ~GGASolver();
     int solve(double tstep, int& trials);
+
+    void snapshot(std::vector<std::string>& lines) const{
+      lines.push_back("{" );
+      lines.push_back("\"nodeCount\": " + std::to_string(nodeCount) + ","); 
+      lines.push_back("\"linkCount\": " + std::to_string(linkCount) + ",");
+      lines.push_back("\"hLossEvalCount\": " + std::to_string(hLossEvalCount) + ",");
+      lines.push_back("\"stepSizing\": " + std::to_string(stepSizing) + ",");
+      lines.push_back("\"trialsLimit\": " + std::to_string(trialsLimit) + ",");
+      lines.push_back("\"reportTrials\": " + std::to_string(reportTrials) + ",");
+      lines.push_back("\"headErrLimit\": " + std::to_string(headErrLimit) + ",");
+      lines.push_back("\"flowErrLimit\": " + std::to_string(flowErrLimit) + ",");
+      lines.push_back("\"flowChangeLimit\": " + std::to_string(flowChangeLimit) + ",");
+      lines.push_back("\"flowRatioLimit\": " + std::to_string(flowRatioLimit) + ",");
+      lines.push_back("\"tstep\": " + std::to_string(tstep) + ","); 
+      lines.push_back("\"theta\": " + std::to_string(theta) + ",");
+      lines.push_back("\"errorNorm\": " + std::to_string(errorNorm) + ",");
+      lines.push_back("\"oldErrorNorm\": " + std::to_string(oldErrorNorm) + ",");
+      snapshot_vector_double(lines, "\"dH\"", &dH[0], dH.size());
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"dQ\"", &dQ[0], dQ.size());
+      lines.push_back(",");
+      snapshot_vector_double(lines, "\"xQ\"", &xQ[0], xQ.size());
+      lines.push_back(",");
+      lines.push_back("\"hydBalance\":");
+      hydBalance.snapshot(lines);      
+      lines.push_back("}" );
+    }
 
   private:
 

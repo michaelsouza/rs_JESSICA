@@ -70,6 +70,23 @@ namespace Epanet
         void  writeMsgLog();
         Network* getNetwork() { return &network; }
 
+        void snapshot(std::string& fn_json) const {
+          std::vector<std::string> lines;          
+          lines.push_back("{" );
+          lines.push_back("\"network\": " );
+          network.snapshot(lines);
+          lines.push_back(",");
+          lines.push_back("\"hydEngine\": " );
+          hydEngine.snapshot(lines);          
+          lines.push_back("}" );
+
+          // Write the snapshot to a file
+          std::ofstream file(fn_json);
+          for (const auto& line : lines) {
+            file << line << std::endl;
+          }
+        }
+
       private:
 
         Network        network;        //!< pipe network to be analyzed.
@@ -93,6 +110,7 @@ namespace Epanet
 
         void           finalizeSolver();
         void           closeReport();
+
     };
 }
 #endif

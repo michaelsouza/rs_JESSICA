@@ -1,31 +1,21 @@
-/* EPANET 3
- *
- * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
- *
- */
-
-//! \file qualsource.h
-//! \brief Describes the QualSource class.
-
 #ifndef QUALSOURCE_H_
 #define QUALSOURCE_H_
 
+#include "Elements/pattern.h"
+#include <nlohmann/json.hpp> // Include nlohmann/json for JSON handling
+
 class Node;
-class Pattern;
 
 //! \class QualSource
 //! \brief Externally applied water quality at a source node.
-
 class QualSource
 {
-  public:
-
+public:
     enum QualSourceType {
-        CONCEN,            //!< concentration of any external inflow
-        MASS,              //!< adds a fixed mass inflow to a node
-        FLOWPACED,         //!< boosts a node's concentration by a fixed amount
-        SETPOINT           //!< sets the concentration of water leaving a node
+        CONCEN,   //!< concentration of any external inflow
+        MASS,     //!< adds a fixed mass inflow to a node
+        FLOWPACED, //!< boosts a node's concentration by a fixed amount
+        SETPOINT  //!< sets the concentration of water leaving a node
     };
 
     static const char* SourceTypeWords[];
@@ -37,28 +27,44 @@ class QualSource
     static bool addSource(Node* node, int t, double b, Pattern* p);
 
     /// Determines quality concen. that source adds to a node's outflow
-    void        setStrength(Node* node);
-    double      getQuality(Node* node);
+    void setStrength(Node* node);
+    double getQuality(Node* node);
 
-    int         type;        //!< source type
-    double      base;        //!< baseline source quality (mass/L or mass/sec)
-    Pattern*    pattern;     //!< source time pattern
-    double      strength;    //!< pattern adjusted source quality (mass/ft3 or mass/sec)
-    double      outflow;     //!< flow rate released from node into network (cfs)
-    double      quality;     //!< node quality after source is added on (mass/ft3)
+    int type;          //!< source type
+    double base;       //!< baseline source quality (mass/L or mass/sec)
+    Pattern* pattern;  //!< source time pattern
+    double strength;   //!< pattern adjusted source quality (mass/ft3 or mass/sec)
+    double outflow;    //!< flow rate released from node into network (cfs)
+    double quality;    //!< node quality after source is added on (mass/ft3)
 
-    // // Custom
-    // void snapshot(std::vector<std::string>& lines) const {      
-    //   lines.push_back("{");
-    //   lines.push_back("type: " + std::to_string(type) + ";");
-    //   lines.push_back("base: " + std::to_string(base) + ";");
-    //   lines.push_back("pattern:" );
-    //   pattern->snapshot(lines);
-    //   lines.push_back("strength: " + std::to_string(strength) + ";");
-    //   lines.push_back("outflow: " + std::to_string(outflow) + ";");
-    //   lines.push_back("quality: " + std::to_string(quality) + ";");
-    //   lines.push_back("}" );
-    // }
+    //! Serialize to JSON
+    nlohmann::json to_json() const {
+        nlohmann::json jsonObj = {
+            {"type", type},
+            {"base", base},
+            {"strength", strength},
+            {"outflow", outflow},
+            {"quality", quality}
+        };
+
+        // Serialize pattern if it exists
+        jsonObj["pattern"] = pattern ? pattern->to_json(): nullptr;
+
+        return jsonObj;
+    }
+
+    //! Deserialize from JSON
+    void from_json(const nlohmann::json& j) {
+        type = j.at("type").get<int>();
+        base = j.at("base").get<double>();
+        strength = j.at("strength").get<double>();
+        outflow = j.at("outflow").get<double>();
+        quality = j.at("quality").get<double>();
+
+        if (!j.at("pattern").is_null()) {
+            pattern->from_json(j.at("pattern"));
+        }
+    }
 };
 
 #endif

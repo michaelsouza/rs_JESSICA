@@ -11,6 +11,8 @@
 #ifndef PUMPENERGY_H_
 #define PUMPENERGY_H_
 
+#include <nlohmann/json.hpp> // Include the JSON library
+
 class Pump;
 class Network;
 
@@ -37,6 +39,30 @@ class PumpEnergy
     double maxKwatts;        //!< max. kw consumed
     double totalCost;        //!< total pumping cost
     double adjustedTotalCost; //!< total pumping cost adjusted for efficiency
+
+//! Serialize to JSON for PumpEnergy
+nlohmann::json to_json() const {
+    return {
+        {"hrsOnLine", hrsOnLine},
+        {"efficiency", efficiency},
+        {"kwHrsPerCFS", kwHrsPerCFS},
+        {"kwHrs", kwHrs},
+        {"maxKwatts", maxKwatts},
+        {"totalCost", totalCost},
+        {"adjustedTotalCost", adjustedTotalCost}
+    };
+}
+
+//! Deserialize from JSON for PumpEnergy
+void from_json(const nlohmann::json& j) {
+    hrsOnLine = j.at("hrsOnLine").get<double>();
+    efficiency = j.at("efficiency").get<double>();
+    kwHrsPerCFS = j.at("kwHrsPerCFS").get<double>();
+    kwHrs = j.at("kwHrs").get<double>();
+    maxKwatts = j.at("maxKwatts").get<double>();
+    totalCost = j.at("totalCost").get<double>();
+    adjustedTotalCost = j.at("adjustedTotalCost").get<double>();
+}
 
   private:
 

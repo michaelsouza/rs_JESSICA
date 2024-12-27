@@ -14,6 +14,7 @@
 #include <ostream>
 #include <vector>
 #include <string>
+#include <nlohmann/json.hpp> // Include the JSON library
 
 //! \class QualBalance
 //! \brief Computes a water quality mass balance across the pipe network.
@@ -39,15 +40,26 @@ struct QualBalance
     void      updateStored(const double massStored);
     void      writeBalance(std::ostream& msgLog);
 
-    void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("\"initMass\": " + std::to_string(initMass) + ",");
-      lines.push_back("\"inflowMass\": " + std::to_string(inflowMass) + ",");
-      lines.push_back("\"outflowMass\": " + std::to_string(outflowMass) + ",");
-      lines.push_back("\"reactedMass\": " + std::to_string(reactedMass) + ",");
-      lines.push_back("\"storedMass\": " + std::to_string(storedMass));
-      lines.push_back("}");
-    }
+    //! Serialize to JSON for QualBalance
+nlohmann::json to_json() const {
+    return {
+        {"initMass", initMass},
+        {"inflowMass", inflowMass},
+        {"outflowMass", outflowMass},
+        {"reactedMass", reactedMass},
+        {"storedMass", storedMass}
+    };
+}
+
+//! Deserialize from JSON for QualBalance
+void from_json(const nlohmann::json& j) {
+    initMass = j.at("initMass").get<double>();
+    inflowMass = j.at("inflowMass").get<double>();
+    outflowMass = j.at("outflowMass").get<double>();
+    reactedMass = j.at("reactedMass").get<double>();
+    storedMass = j.at("storedMass").get<double>();
+}
+
 };
 
 //-----------------------------------------------------------------------------

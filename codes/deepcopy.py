@@ -2,7 +2,7 @@ import networkx as nx
 from networkx.drawing.nx_pydot import read_dot
 
 # Load the .dot file
-dot_file_path = "/home/michael/gitrepos/rs_JESSICA/epanet-dev/call_tree.dot"
+dot_file_path = "/home/michael/gitrepos/rs_JESSICA/epanet-dev/valgrind/call_tree.dot"
 graph = read_dot(dot_file_path)
 
 root = "BBSolver::epanet_solve(Epanet::Project&, int&, int&, bool, double&)"
@@ -56,7 +56,7 @@ print("Edges:")
 print("=" * 20)
 message = []
 for edge in graph.edges():
-    message.append(f"{edge[0]} > {edge[1]}")
+    message.append(f"{edge[0]} {edge[1]}")
 
 print("\n".join(sorted(message)))
 

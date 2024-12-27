@@ -45,15 +45,35 @@ class HydEngine
     int    getElapsedTime() { return currentTime; }
     double getPeakKwatts()  { return peakKwatts;  }
 
-    void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{" );
-      lines.push_back("\"hydSolver\": ");
-      hydSolver->snapshot(lines);
-      lines.push_back(",");
-      lines.push_back("\"matrixSolver\": ");
-      matrixSolver->snapshot(lines);
-      lines.push_back("}" );
-    }
+    //! Serialize to JSON for HydEngine
+nlohmann::json to_json() const {
+    return {
+        {"engineState", static_cast<int>(engineState)},
+        {"saveToFile", saveToFile},
+        {"halted", halted},
+        {"startTime", startTime},
+        {"rptTime", rptTime},
+        {"hydStep", hydStep},
+        {"currentTime", currentTime},
+        {"timeOfDay", timeOfDay},
+        {"peakKwatts", peakKwatts},
+        {"timeStepReason", timeStepReason}
+    };
+}
+
+//! Deserialize from JSON for HydEngine
+void from_json(const nlohmann::json& j) {
+    engineState = static_cast<EngineState>(j.at("engineState").get<int>());
+    saveToFile = j.at("saveToFile").get<bool>();
+    halted = j.at("halted").get<bool>();
+    startTime = j.at("startTime").get<int>();
+    rptTime = j.at("rptTime").get<int>();
+    hydStep = j.at("hydStep").get<int>();
+    currentTime = j.at("currentTime").get<int>();
+    timeOfDay = j.at("timeOfDay").get<int>();
+    peakKwatts = j.at("peakKwatts").get<double>();
+    timeStepReason = j.at("timeStepReason").get<std::string>();
+}
 
   private:
 

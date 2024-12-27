@@ -3,7 +3,7 @@ Any Town Model. Initial model for ANN training
 Tank levels unlimited. Optimisated results
 
 [JUNCTIONS]
-;ID              	Elev        	Demand      	Pattern         
+;ID              	Elev        	Demand      	Pattern
  20              	6.096       	113.56235   	DEM             	;
  30              	15.24       	45.42494    	DEM             	;
  110             	15.24       	113.56235   	DEM             	;
@@ -25,7 +25,7 @@ Tank levels unlimited. Optimisated results
  115             	24.384      	22.71247    	DEM             	;
 
 [RESERVOIRS]
-;ID              	Head        	Pattern         
+;ID              	Head        	Pattern
  10              	3.048       	                	;
 
 [TANKS]
@@ -85,7 +85,7 @@ Tank levels unlimited. Optimisated results
  333             	10              	20              	HEAD 1	PATTERN PMP333	;
 
 [VALVES]
-;ID              	Node1           	Node2           	Diameter    	Type	Setting     	MinorLoss   
+;ID              	Node1           	Node2           	Diameter    	Type	Setting     	MinorLoss
 
 [TAGS]
 
@@ -98,60 +98,60 @@ Tank levels unlimited. Optimisated results
 [PATTERNS]
 ;ID              	Multipliers
 ;General demand pattern
- DEM             	0.7         	0.7         	0.7         	0.6         	0.6         	0.6         
- DEM             	1.2         	1.2         	1.2         	1.3         	1.3         	1.3         
- DEM             	1.2         	1.2         	1.2         	1           	1           	1           
- DEM             	0.9         	0.9         	0.9         	0.7         	0.7         	0.7         
+ DEM             	0.7         	0.7         	0.7         	0.6         	0.6         	0.6
+ DEM             	1.2         	1.2         	1.2         	1.3         	1.3         	1.3
+ DEM             	1.2         	1.2         	1.2         	1           	1           	1
+ DEM             	0.9         	0.9         	0.9         	0.7         	0.7         	0.7
 ;
- PMP111          	1           	1           	1           	1           	1           	1           
- PMP111          	1           	1           	0           	0           	1           	1           
- PMP111          	1           	1           	1           	1           	1           	1           
- PMP111          	0           	0           	0           	1           	1           	0           
+ PMP111          	1           	1           	1           	1           	1           	1
+ PMP111          	1           	1           	0           	0           	1           	1
+ PMP111          	1           	1           	1           	1           	1           	1
+ PMP111          	0           	0           	0           	1           	1           	0
 ;
- PMP222          	0           	1           	0           	1           	0           	0           
- PMP222          	0           	0           	0           	0           	1           	1           
- PMP222          	1           	1           	1           	0           	0           	0           
- PMP222          	0           	0           	0           	0           	0           	0           
+ PMP222          	0           	1           	0           	1           	0           	0
+ PMP222          	0           	0           	0           	0           	1           	1
+ PMP222          	1           	1           	1           	0           	0           	0
+ PMP222          	0           	0           	0           	0           	0           	0
 ;
- PMP333          	0           	0           	0           	0           	0           	0           
- PMP333          	0           	0           	0           	0           	0           	0           
- PMP333          	0           	0           	0           	0           	1           	0           
- PMP333          	0           	0           	0           	1           	0           	0           
+ PMP333          	0           	0           	0           	0           	0           	0
+ PMP333          	0           	0           	0           	0           	0           	0
+ PMP333          	0           	0           	0           	0           	1           	0
+ PMP333          	0           	0           	0           	1           	0           	0
 ;
- PRICES          	18.14       	18.14       	18.14       	18.14       	18.14       	18.14       
- PRICES          	18.14       	35.28       	35.28       	35.28       	35.28       	35.28       
- PRICES          	35.28       	35.28       	35.28       	35.28       	35.28       	80.97       
- PRICES          	80.97       	80.97       	80.97       	18.14       	18.14       	18.14       
+ PRICES          	18.14       	18.14       	18.14       	18.14       	18.14       	18.14
+ PRICES          	18.14       	35.28       	35.28       	35.28       	35.28       	35.28
+ PRICES          	35.28       	35.28       	35.28       	35.28       	35.28       	80.97
+ PRICES          	80.97       	80.97       	80.97       	18.14       	18.14       	18.14
 ;Demand patter for node 90
- DEM90           	0.7         	0.7         	0.7         	0.6         	0.6         	0.6         
- DEM90           	1.2         	1.2         	1.2         	1.3         	1.3         	1.3         
- DEM90           	1.2         	1.2         	1.2         	1           	1           	1           
- DEM90           	0.9         	0.9         	0.9         	0.7         	0.7         	0.7         
+ DEM90           	0.7         	0.7         	0.7         	0.6         	0.6         	0.6
+ DEM90           	1.2         	1.2         	1.2         	1.3         	1.3         	1.3
+ DEM90           	1.2         	1.2         	1.2         	1           	1           	1
+ DEM90           	0.9         	0.9         	0.9         	0.7         	0.7         	0.7
 ;Demand pattern for node 55
- DEM55           	0.7         	0.7         	0.7         	0.6         	0.6         	0.6         
- DEM55           	1.2         	1.2         	1.2         	1.3         	1.3         	1.3         
- DEM55           	1.2         	1.2         	1.2         	1           	1           	1           
- DEM55           	0.9         	0.9         	0.9         	0.7         	0.7         	0.7         
+ DEM55           	0.7         	0.7         	0.7         	0.6         	0.6         	0.6
+ DEM55           	1.2         	1.2         	1.2         	1.3         	1.3         	1.3
+ DEM55           	1.2         	1.2         	1.2         	1           	1           	1
+ DEM55           	0.9         	0.9         	0.9         	0.7         	0.7         	0.7
 ;Demand pattern for node 170
- DEM170          	0.7         	0.7         	0.7         	0.6         	0.6         	0.6         
- DEM170          	1.2         	1.2         	1.2         	1.3         	1.3         	1.3         
- DEM170          	1.2         	1.2         	1.2         	1           	1           	1           
- DEM170          	0.9         	0.9         	0.9         	0.7         	0.7         	0.7         
+ DEM170          	0.7         	0.7         	0.7         	0.6         	0.6         	0.6
+ DEM170          	1.2         	1.2         	1.2         	1.3         	1.3         	1.3
+ DEM170          	1.2         	1.2         	1.2         	1           	1           	1
+ DEM170          	0.9         	0.9         	0.9         	0.7         	0.7         	0.7
 
 [CURVES]
 ;ID              	X-Value     	Y-Value
-;PUMP: PUMP:     
- 1               	0           	91.44       
- 1               	454.2494    	89.0016     
- 1               	908.4988    	82.296      
- 1               	1362.7482   	70.104      
- 1               	1816.9976   	55.1688     
-;PUMP: EFFICIENCY:     
- 2               	0           	0           
- 2               	454.2494    	50          
- 2               	908.4988    	65          
- 2               	1362.7482   	55          
- 2               	1816.9976   	40          
+;PUMP: PUMP:
+ 1               	0           	91.44
+ 1               	454.2494    	89.0016
+ 1               	908.4988    	82.296
+ 1               	1362.7482   	70.104
+ 1               	1816.9976   	55.1688
+;PUMP: EFFICIENCY:
+ 2               	0           	0
+ 2               	454.2494    	50
+ 2               	908.4988    	65
+ 2               	1362.7482   	55
+ 2               	1816.9976   	40
 
 [CONTROLS]
 
@@ -200,13 +200,13 @@ Tank levels unlimited. Optimisated results
 ;Tank            	Model
 
 [TIMES]
- Duration           	24:00 
+ Duration           	24:00
  Hydraulic Timestep 	0:30
- Quality Timestep   	0:05 
- Pattern Timestep   	1:00 
- Pattern Start      	0:00 
- Report Timestep    	1:00 
- Report Start       	0:00 
+ Quality Timestep   	0:05
+ Pattern Timestep   	1:00
+ Pattern Start      	0:00
+ Report Timestep    	1:00
+ Report Start       	0:00
  Start ClockTime    	0:00
  Statistic          	NONE
 
@@ -235,48 +235,48 @@ Tank levels unlimited. Optimisated results
 
 [COORDINATES]
 ;Node            	X-Coord         	Y-Coord
- 20              	98.22           	10.00           
- 30              	98.22           	71.56           
- 110             	49.33           	10.00           
- 70              	72.22           	30.67           
- 60              	72.22           	71.56           
- 90              	55.56           	53.11           
- 100             	51.56           	30.89           
- 40              	98.22           	94.22           
- 50              	42.44           	94.22           
- 80              	38.22           	73.78           
- 150             	31.56           	52.89           
- 140             	8.22            	66.67           
- 170             	-16.67          	42.00           
- 130             	-3.33           	21.11           
- 160             	8.22            	36.22           
- 120             	16.00           	8.67            
- 55              	31.53           	110.59          
- 75              	11.23           	102.56          
- 115             	-4.11           	87.46           
- 10              	118.67          	10.00           
- 65              	53.17           	81.60           
- 165             	-1.91           	42.79           
- 265             	-7.96           	72.25           
+ 20              	98.22           	10.00
+ 30              	98.22           	71.56
+ 110             	49.33           	10.00
+ 70              	72.22           	30.67
+ 60              	72.22           	71.56
+ 90              	55.56           	53.11
+ 100             	51.56           	30.89
+ 40              	98.22           	94.22
+ 50              	42.44           	94.22
+ 80              	38.22           	73.78
+ 150             	31.56           	52.89
+ 140             	8.22            	66.67
+ 170             	-16.67          	42.00
+ 130             	-3.33           	21.11
+ 160             	8.22            	36.22
+ 120             	16.00           	8.67
+ 55              	31.53           	110.59
+ 75              	11.23           	102.56
+ 115             	-4.11           	87.46
+ 10              	118.67          	10.00
+ 65              	53.17           	81.60
+ 165             	-1.91           	42.79
+ 265             	-7.96           	72.25
 
 [VERTICES]
 ;Link            	X-Coord         	Y-Coord
- 111             	108.27          	19.19           
- 333             	107.93          	2.51            
+ 111             	108.27          	19.19
+ 333             	107.93          	2.51
 
 [LABELS]
 ;X-Coord           Y-Coord          Label & Anchor Node
- 51.75            86.91            "65"                 
- -3.93            48.23            "165"                 
- -9.91            77.94            "265"                 
- 34.56            112.88           "50"                 
- 53.99            58.32            "90"                 
- -20.94           47.67            "170"                 
+ 51.75            86.91            "65"
+ -3.93            48.23            "165"
+ -9.91            77.94            "265"
+ 34.56            112.88           "50"
+ 53.99            58.32            "90"
+ -20.94           47.67            "170"
 
 [BACKDROP]
- DIMENSIONS     	-23.44          	3.57            	125.44          	115.68          
+ DIMENSIONS     	-23.44          	3.57            	125.44          	115.68
  UNITS          	None
- FILE           	
- OFFSET         	0.00            	0.00            
+ FILE
+ OFFSET         	0.00            	0.00
 
 [END]

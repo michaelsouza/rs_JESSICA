@@ -11,8 +11,9 @@
 #ifndef PUMPCURVE_H_
 #define PUMPCURVE_H_
 
+#include "Elements/curve.h"
+
 class Network;
-class Curve;
 
 //! \class PumpCurve
 //! \brief Describes how head varies with flow for a Pump link.
@@ -46,6 +47,44 @@ class PumpCurve
     double qInit;          //!< initial flow (cfs)
     double qMax;           //!< maximum flow (cfs)
     double hMax;           //!< maximum head (ft)
+
+    //! Serialize to JSON for PumpCurve
+nlohmann::json to_json() const {
+    return {
+        {"curveType", curveType},
+        {"curve", curve ? curve->to_json() : nullptr},
+        {"horsepower", horsepower},
+        {"qInit", qInit},
+        {"qMax", qMax},
+        {"hMax", hMax},
+        {"h0", h0},
+        {"r", r},
+        {"n", n},
+        {"qUcf", qUcf},
+        {"hUcf", hUcf}
+    };
+}
+
+//! Deserialize from JSON for PumpCurve
+void from_json(const nlohmann::json& j) {
+    curveType = j.at("curveType").get<int>();
+    if (!j.at("curve").is_null()) {
+        if (!curve) {
+            curve = new Curve("");
+        }
+        curve->from_json(j.at("curve"));
+    }
+    horsepower = j.at("horsepower").get<double>();
+    qInit = j.at("qInit").get<double>();
+    qMax = j.at("qMax").get<double>();
+    hMax = j.at("hMax").get<double>();
+    h0 = j.at("h0").get<double>();
+    r = j.at("r").get<double>();
+    n = j.at("n").get<double>();
+    qUcf = j.at("qUcf").get<double>();
+    hUcf = j.at("hUcf").get<double>();
+}
+
 
   private:
 

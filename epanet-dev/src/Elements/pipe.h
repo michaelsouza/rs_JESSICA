@@ -65,6 +65,40 @@ class Pipe: public Link
     double bulkCoeff;        //!< bulk reaction coefficient (mass^n/sec)
     double wallCoeff;        //!< wall reaction coefficient (mass^n/sec)
     double massTransCoeff;   //!< mass transfer coefficient (mass^n/sec)
+
+    //! Serialize to JSON for Pipe
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = Link::to_json();
+    jsonObj.merge_patch({
+        {"hasCheckValve", hasCheckValve},
+        {"length", length},
+        {"roughness", roughness},
+        {"resistance", resistance},
+        {"lossFactor", lossFactor},
+        {"leakCoeff1", leakCoeff1},
+        {"leakCoeff2", leakCoeff2},
+        {"bulkCoeff", bulkCoeff},
+        {"wallCoeff", wallCoeff},
+        {"massTransCoeff", massTransCoeff}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON for Pipe
+void from_json(const nlohmann::json& j) override {
+    Link::from_json(j);
+    hasCheckValve = j.at("hasCheckValve").get<bool>();
+    length = j.at("length").get<double>();
+    roughness = j.at("roughness").get<double>();
+    resistance = j.at("resistance").get<double>();
+    lossFactor = j.at("lossFactor").get<double>();
+    leakCoeff1 = j.at("leakCoeff1").get<double>();
+    leakCoeff2 = j.at("leakCoeff2").get<double>();
+    bulkCoeff = j.at("bulkCoeff").get<double>();
+    wallCoeff = j.at("wallCoeff").get<double>();
+    massTransCoeff = j.at("massTransCoeff").get<double>();
+}
+
  };
 
 #endif

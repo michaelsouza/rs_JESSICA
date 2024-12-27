@@ -70,22 +70,33 @@ namespace Epanet
         void  writeMsgLog();
         Network* getNetwork() { return &network; }
 
-        void snapshot(std::string& fn_json) const {
-          std::vector<std::string> lines;          
-          lines.push_back("{" );
-          lines.push_back("\"network\": " );
-          network.snapshot(lines);
-          lines.push_back(",");
-          lines.push_back("\"hydEngine\": " );
-          hydEngine.snapshot(lines);          
-          lines.push_back("}" );
+        //! Serialize to JSON
+nlohmann::json to_json() const {
+    return {
+        {"network", network.to_json()},
+        {"hydEngine", hydEngine.to_json()},
+        {"qualEngine", qualEngine.to_json()},
+        {"networkEmpty", networkEmpty},
+        {"hydEngineOpened", hydEngineOpened},
+        {"qualEngineOpened", qualEngineOpened},
+        {"outputFileOpened", outputFileOpened},
+        {"solverInitialized", solverInitialized},
+        {"runQuality", runQuality}
+    };
+}
 
-          // Write the snapshot to a file
-          std::ofstream file(fn_json);
-          for (const auto& line : lines) {
-            file << line << std::endl;
-          }
-        }
+//! Deserialize from JSON
+void from_json(const nlohmann::json& j) {
+    network.from_json(j.at("network"));
+    hydEngine.from_json(j.at("hydEngine"));
+    qualEngine.from_json(j.at("qualEngine"));
+    networkEmpty = j.at("networkEmpty").get<bool>();
+    hydEngineOpened = j.at("hydEngineOpened").get<bool>();
+    qualEngineOpened = j.at("qualEngineOpened").get<bool>();
+    outputFileOpened = j.at("outputFileOpened").get<bool>();
+    solverInitialized = j.at("solverInitialized").get<bool>();
+    runQuality = j.at("runQuality").get<bool>();
+}
 
       private:
 

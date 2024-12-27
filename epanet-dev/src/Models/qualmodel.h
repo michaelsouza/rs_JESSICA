@@ -59,11 +59,18 @@ class QualModel
     virtual double findTracerAdded(Node* node, double qIn)
     { return 0.0; }
 
-    virtual void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("type: " + std::to_string(type));
-      lines.push_back("}");
-    }
+
+//! Serialize to JSON for QualModel
+virtual nlohmann::json to_json() const {
+    return {
+        {"type", type}
+    };
+}
+
+//! Deserialize from JSON for QualModel
+virtual void from_json(const nlohmann::json& j) {
+    type = j.at("type").get<int>();
+}
 
     int type;
 };
@@ -84,23 +91,42 @@ class ChemModel : public QualModel
     double pipeReact(Pipe* pipe, double c, double tstep);
     double tankReact(Tank* tank, double c, double tstep);
 
-    virtual void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("type: " + std::to_string(type));
-      lines.push_back("reactive: " + std::to_string(reactive));
-      lines.push_back("diffus: " + std::to_string(diffus));
-      lines.push_back("viscos: " + std::to_string(viscos));
-      lines.push_back("Sc: " + std::to_string(Sc));
-      lines.push_back("pipeOrder: " + std::to_string(pipeOrder));
-      lines.push_back("tankOrder: " + std::to_string(tankOrder));
-      lines.push_back("wallOrder: " + std::to_string(wallOrder));
-      lines.push_back("massTransCoeff: " + std::to_string(massTransCoeff));
-      lines.push_back("pipeUcf: " + std::to_string(pipeUcf));
-      lines.push_back("tankUcf: " + std::to_string(tankUcf));
-      lines.push_back("wallUcf: " + std::to_string(wallUcf));
-      lines.push_back("cLimit: " + std::to_string(cLimit));
-      lines.push_back("}");
-    }
+    //! Serialize to JSON for ChemModel
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = QualModel::to_json();
+    jsonObj.merge_patch({
+        {"reactive", reactive},
+        {"diffus", diffus},
+        {"viscos", viscos},
+        {"Sc", Sc},
+        {"pipeOrder", pipeOrder},
+        {"tankOrder", tankOrder},
+        {"wallOrder", wallOrder},
+        {"massTransCoeff", massTransCoeff},
+        {"pipeUcf", pipeUcf},
+        {"tankUcf", tankUcf},
+        {"wallUcf", wallUcf},
+        {"cLimit", cLimit}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON for ChemModel
+void from_json(const nlohmann::json& j) override {
+    QualModel::from_json(j);
+    reactive = j.at("reactive").get<bool>();
+    diffus = j.at("diffus").get<double>();
+    viscos = j.at("viscos").get<double>();
+    Sc = j.at("Sc").get<double>();
+    pipeOrder = j.at("pipeOrder").get<double>();
+    tankOrder = j.at("tankOrder").get<double>();
+    wallOrder = j.at("wallOrder").get<double>();
+    massTransCoeff = j.at("massTransCoeff").get<double>();
+    pipeUcf = j.at("pipeUcf").get<double>();
+    tankUcf = j.at("tankUcf").get<double>();
+    wallUcf = j.at("wallUcf").get<double>();
+    cLimit = j.at("cLimit").get<double>();
+}
 
   private:
     bool    reactive;         // true if chemical is reactive
@@ -134,13 +160,22 @@ class TraceModel : public QualModel
     void   init(Network* nw);
     double findTracerAdded(Node* node, double qIn);
 
-    virtual void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("type: " + std::to_string(type));
-      lines.push_back("traceNode: ");
-      traceNode->snapshot(lines);
-      lines.push_back("}");
+    //! Serialize to JSON for TraceModel
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = QualModel::to_json();
+    jsonObj.merge_patch({
+        {"traceNode", traceNode ? traceNode->to_json() : nullptr}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON for TraceModel
+void from_json(const nlohmann::json& j) override {
+    QualModel::from_json(j);
+    if (!j.at("traceNode").is_null()) {
+        traceNode->from_json(j.at("traceNode"));
     }
+}
 
   private:
     Node* traceNode;
@@ -159,6 +194,16 @@ class AgeModel : public QualModel
     bool   isReactive() { return true; }
     double pipeReact(Pipe* pipe, double age, double tstep);
     double tankReact(Tank* tank, double age, double tstep);
+
+    //! Serialize to JSON for AgeModel
+nlohmann::json to_json() const override {
+    return QualModel::to_json();
+}
+
+//! Deserialize from JSON for AgeModel
+void from_json(const nlohmann::json& j) override {
+    QualModel::from_json(j);
+}
 };
 
 #endif

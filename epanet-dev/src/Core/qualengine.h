@@ -12,6 +12,7 @@
 #define QUALENGINE_H_
 
 #include <vector>
+#include <nlohmann/json.hpp> // Include the JSON library
 
 class Network;
 class QualSolver;
@@ -40,6 +41,30 @@ class QualEngine
     void   init();
     void   solve(int tstep);
     void   close();
+
+    //! Serialize to JSON for QualEngine
+nlohmann::json to_json() const {
+    return {
+        {"engineState", static_cast<int>(engineState)},
+        {"nodeCount", nodeCount},
+        {"linkCount", linkCount},
+        {"qualTime", qualTime},
+        {"qualStep", qualStep},
+        {"sortedLinks", sortedLinks},
+        {"flowDirection", std::vector<char>(flowDirection.begin(), flowDirection.end())}
+    };
+}
+
+//! Deserialize from JSON for QualEngine
+void from_json(const nlohmann::json& j) {
+    engineState = static_cast<EngineState>(j.at("engineState").get<int>());
+    nodeCount = j.at("nodeCount").get<int>();
+    linkCount = j.at("linkCount").get<int>();
+    qualTime = j.at("qualTime").get<int>();
+    qualStep = j.at("qualStep").get<int>();
+    sortedLinks = j.at("sortedLinks").get<std::vector<int>>();
+    flowDirection = j.at("flowDirection").get<std::vector<char>>();
+}
 
 private:
 

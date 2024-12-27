@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp> // Include the JSON library
 
 class Pipe;
 
@@ -47,11 +48,17 @@ class HeadLossModel
     virtual void findHeadLoss(
                      Pipe* pipe, double flow, double& headLoss, double& gradient) = 0;
 
-    virtual void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("\"viscosity\": " + std::to_string(viscosity));
-      lines.push_back("}");
+//! Serialize to JSON for HeadLossModel
+nlohmann::json to_json() const {
+    return {
+        {"viscosity", viscosity}
     };
+}
+
+//! Deserialize from JSON for HeadLossModel
+void from_json(const nlohmann::json& j) {
+    viscosity = j.at("viscosity").get<double>();
+}
 
   protected:
     double  viscosity;         //!< water viscosity (ft2/sec)

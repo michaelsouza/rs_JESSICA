@@ -30,32 +30,54 @@ class GGASolver : public HydSolver
     ~GGASolver();
     int solve(double tstep, int& trials);
 
-    void snapshot(std::vector<std::string>& lines) const{
-      lines.push_back("{" );
-      lines.push_back("\"nodeCount\": " + std::to_string(nodeCount) + ","); 
-      lines.push_back("\"linkCount\": " + std::to_string(linkCount) + ",");
-      lines.push_back("\"hLossEvalCount\": " + std::to_string(hLossEvalCount) + ",");
-      lines.push_back("\"stepSizing\": " + std::to_string(stepSizing) + ",");
-      lines.push_back("\"trialsLimit\": " + std::to_string(trialsLimit) + ",");
-      lines.push_back("\"reportTrials\": " + std::to_string(reportTrials) + ",");
-      lines.push_back("\"headErrLimit\": " + std::to_string(headErrLimit) + ",");
-      lines.push_back("\"flowErrLimit\": " + std::to_string(flowErrLimit) + ",");
-      lines.push_back("\"flowChangeLimit\": " + std::to_string(flowChangeLimit) + ",");
-      lines.push_back("\"flowRatioLimit\": " + std::to_string(flowRatioLimit) + ",");
-      lines.push_back("\"tstep\": " + std::to_string(tstep) + ","); 
-      lines.push_back("\"theta\": " + std::to_string(theta) + ",");
-      lines.push_back("\"errorNorm\": " + std::to_string(errorNorm) + ",");
-      lines.push_back("\"oldErrorNorm\": " + std::to_string(oldErrorNorm) + ",");
-      snapshot_vector_double(lines, "\"dH\"", &dH[0], dH.size());
-      lines.push_back(",");
-      snapshot_vector_double(lines, "\"dQ\"", &dQ[0], dQ.size());
-      lines.push_back(",");
-      snapshot_vector_double(lines, "\"xQ\"", &xQ[0], xQ.size());
-      lines.push_back(",");
-      lines.push_back("\"hydBalance\":");
-      hydBalance.snapshot(lines);      
-      lines.push_back("}" );
-    }
+//! Serialize to JSON for GGASolver
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = HydSolver::to_json();
+    jsonObj.merge_patch({
+        {"nodeCount", nodeCount},
+        {"linkCount", linkCount},
+        {"hLossEvalCount", hLossEvalCount},
+        {"stepSizing", stepSizing},
+        {"trialsLimit", trialsLimit},
+        {"reportTrials", reportTrials},
+        {"headErrLimit", headErrLimit},
+        {"flowErrLimit", flowErrLimit},
+        {"flowChangeLimit", flowChangeLimit},
+        {"flowRatioLimit", flowRatioLimit},
+        {"tstep", tstep},
+        {"theta", theta},
+        {"errorNorm", errorNorm},
+        {"oldErrorNorm", oldErrorNorm},
+        {"hydBalance", hydBalance.to_json()},
+        {"dH", dH},
+        {"dQ", dQ},
+        {"xQ", xQ}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON for GGASolver
+void from_json(const nlohmann::json& j) override {
+    HydSolver::from_json(j);
+    nodeCount = j.at("nodeCount").get<int>();
+    linkCount = j.at("linkCount").get<int>();
+    hLossEvalCount = j.at("hLossEvalCount").get<int>();
+    stepSizing = j.at("stepSizing").get<int>();
+    trialsLimit = j.at("trialsLimit").get<int>();
+    reportTrials = j.at("reportTrials").get<bool>();
+    headErrLimit = j.at("headErrLimit").get<double>();
+    flowErrLimit = j.at("flowErrLimit").get<double>();
+    flowChangeLimit = j.at("flowChangeLimit").get<double>();
+    flowRatioLimit = j.at("flowRatioLimit").get<double>();
+    tstep = j.at("tstep").get<double>();
+    theta = j.at("theta").get<double>();
+    errorNorm = j.at("errorNorm").get<double>();
+    oldErrorNorm = j.at("oldErrorNorm").get<double>();
+    hydBalance.from_json(j.at("hydBalance"));
+    dH = j.at("dH").get<std::vector<double>>();
+    dQ = j.at("dQ").get<std::vector<double>>();
+    xQ = j.at("xQ").get<std::vector<double>>();
+}
 
   private:
 

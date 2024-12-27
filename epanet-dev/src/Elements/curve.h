@@ -55,16 +55,24 @@ class Curve: public Element
     double getYofX(double x);
     double getXofY(double y);
 
+    //! Serialize to JSON
+    nlohmann::json to_json() const override {
+        return {
+            {"name", name},
+            {"index", index},
+            {"type", static_cast<int>(type)},
+            {"xData", xData},
+            {"yData", yData}
+        };
+    }
 
-    void snapshot(std::vector<std::string>& lines) const{
-      lines.push_back("{");
-      lines.push_back("\"name\": " + name + ",");
-      lines.push_back("\"index\": " + std::to_string(index) + ",");
-      lines.push_back("\"type\": " + std::to_string(type) + ",");
-      snapshot_vector_double(lines, "\"xData\"", xData.data(), xData.size());
-      lines.push_back(",");
-      snapshot_vector_double(lines, "\"yData\"", yData.data(), yData.size());
-      lines.push_back("}"); 
+    //! Deserialize from JSON
+    void from_json(const nlohmann::json& j) override {
+        name = j.at("name").get<std::string>();
+        index = j.at("index").get<int>();
+        type = static_cast<CurveType>(j.at("type").get<int>());
+        xData = j.at("xData").get<std::vector<double>>();
+        yData = j.at("yData").get<std::vector<double>>();
     }
 
   private:

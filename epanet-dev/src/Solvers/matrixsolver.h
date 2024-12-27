@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <ostream>
+#include <nlohmann/json.hpp> // Include nlohmann/json header
 
 #include "Utilities/utilities.h"
 
@@ -51,7 +52,8 @@ class MatrixSolver
 
     virtual void  debug(std::ostream& out) {}
 
-    virtual void snapshot(std::vector<std::string>& lines) const = 0;
+    virtual nlohmann::json to_json() const = 0;
+    virtual void from_json(const nlohmann::json& j) = 0;
 };
 
 #endif

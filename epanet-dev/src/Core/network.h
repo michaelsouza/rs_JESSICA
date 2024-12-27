@@ -16,6 +16,9 @@
 #include "Core/qualbalance.h"
 #include "Elements/element.h"
 #include "Elements/node.h"
+#include "Elements/curve.h"
+#include "Elements/control.h"
+#include "Elements/pattern.h"
 #include "Models/headlossmodel.h"
 #include "Models/demandmodel.h"
 #include "Models/leakagemodel.h"
@@ -27,10 +30,6 @@
 #include <ostream>
 #include <unordered_map>
 
-class Link;
-class Pattern;
-class Curve;
-class Control;
 class MemPool;
 
 //! \class Network
@@ -112,45 +111,105 @@ class Network
     LeakageModel*            leakageModel;  //!< pipe leakage model
     QualModel*               qualModel;     //!< water quality model
 
-    void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      snapshot_vector_element(lines, "\"nodes\"", reinterpret_cast<const Element* const*>(&nodes[0]), nodes.size());      
-      lines.push_back(",");
-      snapshot_vector_element(lines, "\"links\"", reinterpret_cast<const Element* const*>(&links[0]), links.size());
-      lines.push_back(",");
-      snapshot_vector_element(lines, "\"curves\"", reinterpret_cast<const Element* const*>(&curves[0]), curves.size());
-      lines.push_back(",");
-      snapshot_vector_element(lines, "\"patterns\"", reinterpret_cast<const Element* const*>(&patterns[0]), patterns.size());
-      lines.push_back(",");
-      snapshot_vector_element(lines, "\"controls\"", reinterpret_cast<const Element* const*>(&controls[0]), controls.size());
-      lines.push_back(",");
-      lines.push_back("\"options\":");
-      options.snapshot(lines);
-      lines.push_back(",");
-      lines.push_back("\"qualBalance\":");
-      qualBalance.snapshot(lines);
-      if(headLossModel) {
-        lines.push_back(",");
-        lines.push_back("\"headLossModel\":");
-        headLossModel->snapshot(lines);
-      }
-      if(demandModel) {
-        lines.push_back(",");
-        lines.push_back("\"demandModel\":");
-        demandModel->snapshot(lines);
-      }
-      if(leakageModel) {
-        lines.push_back(",");
-        lines.push_back("\"leakageModel\":");
-        leakageModel->snapshot(lines);
-      }
-      if(qualModel) {
-        lines.push_back(",");
-        lines.push_back("\"qualModel\":");
-        qualModel->snapshot(lines);
-      }
-      lines.push_back("}");
+//! Serialize to JSON for Network
+nlohmann::json to_json() const {
+    nlohmann::json nodesJson = nlohmann::json::array();
+    for (const auto* n : nodes) {
+        nodesJson.push_back(n ? n->to_json() : nullptr);
     }
+
+    nlohmann::json linksJson = nlohmann::json::array();
+    for (const auto* l : links) {
+        linksJson.push_back(l ? l->to_json() : nullptr);
+    }
+
+    nlohmann::json curvesJson = nlohmann::json::array();
+    for (const auto* c : curves) {
+        curvesJson.push_back(c ? c->to_json() : nullptr);
+    }
+
+    nlohmann::json patternsJson = nlohmann::json::array();
+    for (const auto* p : patterns) {
+        patternsJson.push_back(p ? p->to_json() : nullptr);
+    }
+
+    nlohmann::json controlsJson = nlohmann::json::array();
+    for (const auto* ctrl : controls) {
+        controlsJson.push_back(ctrl ? ctrl->to_json() : nullptr);
+    }
+
+    return {
+        {"title", title},
+        {"nodes", nodesJson},
+        {"links", linksJson},
+        {"curves", curvesJson},
+        {"patterns", patternsJson},
+        {"controls", controlsJson},
+        {"options", options.to_json()},
+        {"qualBalance", qualBalance.to_json()},
+        {"headLossModel", headLossModel ? headLossModel->to_json() : nullptr},
+        {"demandModel", demandModel ? demandModel->to_json() : nullptr},
+        {"leakageModel", leakageModel ? leakageModel->to_json() : nullptr},
+        {"qualModel", qualModel ? qualModel->to_json() : nullptr}
+    };
+}
+
+
+//! Deserialize from JSON for Network
+void from_json(const nlohmann::json& j) {
+    title = j.at("title").get<std::vector<std::string>>();
+
+    if (!j.at("nodes").is_null()) {
+        const auto& nodesJson = j.at("nodes");
+        for (size_t i = 0; i < nodesJson.size(); ++i) {
+            nodes[i]->from_json(nodesJson[i]);
+        }
+    }
+
+    if (!j.at("links").is_null()) {
+        const auto& linksJson = j.at("links");
+        for (size_t i = 0; i < linksJson.size(); ++i) {
+            links[i]->from_json(linksJson[i]);
+        }
+    }
+
+    if (!j.at("curves").is_null()) {
+        const auto& curvesJson = j.at("curves");
+        for (size_t i = 0; i < curvesJson.size(); ++i) {
+            curves[i]->from_json(curvesJson[i]);
+        }
+    }
+
+    if (!j.at("patterns").is_null()) {
+        const auto& patternsJson = j.at("patterns");
+        for (size_t i = 0; i < patternsJson.size(); ++i) {
+            patterns[i]->from_json(patternsJson[i]);
+        }
+    }
+
+    if (!j.at("controls").is_null()) {
+        const auto& controlsJson = j.at("controls");
+        for (size_t i = 0; i < controlsJson.size(); ++i) {
+            controls[i]->from_json(controlsJson[i]);
+        }
+    }
+
+    options.from_json(j.at("options"));
+    qualBalance.from_json(j.at("qualBalance"));
+
+    if (!j.at("headLossModel").is_null()) {
+        headLossModel->from_json(j.at("headLossModel"));
+    }
+    if (!j.at("demandModel").is_null()) {
+        demandModel->from_json(j.at("demandModel"));
+    }
+    if (!j.at("leakageModel").is_null()) {
+        leakageModel->from_json(j.at("leakageModel"));
+    }
+    if (!j.at("qualModel").is_null()) {
+        qualModel->from_json(j.at("qualModel"));
+    }
+}
 
   private:
 

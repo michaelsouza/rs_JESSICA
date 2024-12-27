@@ -5,7 +5,7 @@ CXX = mpicxx
 BUILD_TYPE ?= debug
 
 # Base compiler flags
-CXXFLAGS_BASE = -std=c++17 -Isrc -MMD -MP -fPIC
+CXXFLAGS_BASE = -std=c++17 -Isrc -MMD -MP -fPIC -I/usr/include/nlohmann # Add JSON library path here
 
 # Compiler flags for different build types
 ifeq ($(BUILD_TYPE), valgrind)
@@ -89,14 +89,9 @@ clean:
 # Generate call tree using Valgrind's Callgrind tool and visualize it
 call_tree: BUILD_TYPE = valgrind
 call_tree: $(TARGET_EXE)
-	@echo "Generating call tree..."
-	valgrind --tool=callgrind ./$(TARGET_EXE) --test test_cost_1
-	@echo "Extracting call edges to edges.txt..."
-	callgrind_annotate --tree=both callgrind.out.* > edges.txt
-	@echo "Processing callgrind output with gprof2dot..."
+	@mkdir -p valgrind
+	cd valgrind
+	valgrind --tool=callgrind ../$(TARGET_EXE) --test test_cost_1
 	gprof2dot -f callgrind callgrind.out.* > call_tree.dot
-	dot -Tpng -o call_tree.png call_tree.dot
-	@echo "Call tree generated: call_tree.png"
-	@echo "Call edges exported to: edges.txt"
 
 .PHONY: all clean run_debug run_release call_tree

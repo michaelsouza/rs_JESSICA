@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp> // Include nlohmann/json header
 
 class Network;
 
@@ -40,17 +41,30 @@ struct HydBalance
                   double lamda, double dH[], double dQ[], double xQ[], Network* nw);
     double    findFlowErrorNorm(double xQ[], Network* nw);
 
-    void snapshot(std::vector<std::string>& lines) const {
-        lines.push_back("{");
-        lines.push_back("\"maxFlowErr\": " + std::to_string(maxFlowErr) + ",");
-        lines.push_back("\"maxHeadErr\": " + std::to_string(maxHeadErr) + ",");
-        lines.push_back("\"maxFlowChange\": " + std::to_string(maxFlowChange) + ",");
-        lines.push_back("\"totalFlowChange\": " + std::to_string(totalFlowChange) + ",");
-        lines.push_back("\"maxHeadErrLink\": " + std::to_string(maxHeadErrLink) + ",");
-        lines.push_back("\"maxFlowErrNode\": " + std::to_string(maxFlowErrNode) + ",");
-        lines.push_back("\"maxFlowChangeLink\": " + std::to_string(maxFlowChangeLink));
-        lines.push_back("}");
-    }
+//! Serialize to JSON for HydBalance
+nlohmann::json to_json() const {
+    return {
+        {"maxFlowErr", maxFlowErr},
+        {"maxHeadErr", maxHeadErr},
+        {"maxFlowChange", maxFlowChange},
+        {"totalFlowChange", totalFlowChange},
+        {"maxHeadErrLink", maxHeadErrLink},
+        {"maxFlowErrNode", maxFlowErrNode},
+        {"maxFlowChangeLink", maxFlowChangeLink}
+    };
+}
+
+//! Deserialize from JSON for HydBalance
+void from_json(const nlohmann::json& j) {
+    maxFlowErr = j.at("maxFlowErr").get<double>();
+    maxHeadErr = j.at("maxHeadErr").get<double>();
+    maxFlowChange = j.at("maxFlowChange").get<double>();
+    totalFlowChange = j.at("totalFlowChange").get<double>();
+    maxHeadErrLink = j.at("maxHeadErrLink").get<int>();
+    maxFlowErrNode = j.at("maxFlowErrNode").get<int>();
+    maxFlowChangeLink = j.at("maxFlowChangeLink").get<int>();
+}
+
 };
 
 #endif

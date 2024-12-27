@@ -65,7 +65,26 @@ class Pattern: public Element
     // Properties
     int            type;                //!< type of time pattern
 
-    virtual void snapshot(std::vector<std::string>& lines) const = 0;
+//! Serialize to JSON for Pattern
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = Element::to_json();
+    jsonObj.merge_patch({
+        {"type", type},
+        {"factors", factors},
+        {"currentIndex", currentIndex},
+        {"interval", interval}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON for Pattern
+void from_json(const nlohmann::json& j) override {
+    Element::from_json(j);
+    type = j.at("type").get<int>();
+    factors = j.at("factors").get<std::vector<double>>();
+    currentIndex = j.at("currentIndex").get<int>();
+    interval = j.at("interval").get<int>();
+}
 
   protected:
     std::vector<double> factors;        //!< sequence of multiplier factors
@@ -94,17 +113,6 @@ class FixedPattern : public Pattern
     void   advance(int t);
     void   setFactor(int idx, double f) { factors[idx] = f; }
 
-    void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("\"type\": " + std::to_string(type) + ",");
-      snapshot_vector_double(lines, "\"factors\"", factors.data(), factors.size());
-      lines.push_back(",");
-      lines.push_back("\"currentIndex\": " + std::to_string(currentIndex) + ",");
-      lines.push_back("\"interval\": " + std::to_string(interval) + ",");
-      lines.push_back("\"startTime\": " + std::to_string(startTime));
-      lines.push_back("}");
-    }
-
   private:
     int    startTime;   //!< offset from time 0 when the pattern begins (sec)
 };
@@ -131,16 +139,18 @@ class VariablePattern : public Pattern
     int    nextTime(int t);
     void   advance(int t);
 
-    void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("\"type\": " + std::to_string(type) + ",");
-      snapshot_vector_double(lines, "\"factors\"", factors.data(), factors.size());
-      lines.push_back(",");
-      lines.push_back("\"currentIndex\": " + std::to_string(currentIndex) + ",");
-      lines.push_back("\"interval\": " + std::to_string(interval) + ",");
-      snapshot_vector_int(lines, "\"times\"", times.data(), times.size());
-      lines.push_back("}");
-    }
+  //! Serialize to JSON for VariablePattern
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = Pattern::to_json();
+    jsonObj["times"] = times;
+    return jsonObj;
+}
+
+//! Deserialize from JSON for VariablePattern
+void from_json(const nlohmann::json& j) override {
+    Pattern::from_json(j);
+    times = j.at("times").get<std::vector<int>>();
+}
 
   private:
     std::vector<int>   times;  //!< times (sec) at which factors change

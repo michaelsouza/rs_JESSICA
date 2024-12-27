@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp> // Include the JSON library
 
 class Junction;
 
@@ -37,11 +38,17 @@ class DemandModel
     /// Changes fixed grade status depending on pressure deficit.
     virtual bool isPressureDeficient(Junction* junc) { return false; }
 
-    virtual void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("\"expon\": " + std::to_string(expon));
-      lines.push_back("}");
-    }
+//! Serialize to JSON for DemandModel
+virtual nlohmann::json to_json() const {
+    return {
+        {"expon", expon}
+    };
+}
+
+//! Deserialize from JSON for DemandModel
+virtual void from_json(const nlohmann::json& j) {
+    expon = j.at("expon").get<double>();
+}
 
   protected:
     double expon;
@@ -98,13 +105,22 @@ class LogisticDemandModel : public DemandModel
     LogisticDemandModel(double expon_);
     double findDemand(Junction* junc, double p, double& dqdh);
 
-    virtual void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("\"expon\": " + std::to_string(expon) + ",");
-      lines.push_back("\"a\": " + std::to_string(a) + ",");
-      lines.push_back("\"b\": " + std::to_string(b));
-      lines.push_back("}");
-    }
+//! Serialize to JSON for LogisticDemandModel
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = DemandModel::to_json();
+    jsonObj.merge_patch({
+        {"a", a},
+        {"b", b}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON for LogisticDemandModel
+void from_json(const nlohmann::json& j) override {
+    DemandModel::from_json(j);
+    a = j.at("a").get<double>();
+    b = j.at("b").get<double>();
+}
 
   private:
     double a, b;  // logistic function coefficients

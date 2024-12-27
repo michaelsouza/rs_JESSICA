@@ -68,6 +68,40 @@ class Pump: public Link
     Curve*     efficCurve;     //!< efficiency. v. flow curve
     Pattern*   costPattern;    //!< energy cost pattern
     double     costPerKwh;     //!< unit energy cost (cost/kwh)
+ 
+ //! Serialize to JSON for Pump
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = Link::to_json();
+    jsonObj.merge_patch({
+        {"pumpCurve", pumpCurve.to_json()},
+        {"speed", speed},
+        {"speedPattern", speedPattern ? speedPattern->to_json() : nullptr},
+        {"pumpEnergy", pumpEnergy.to_json()},
+        {"efficCurve", efficCurve ? efficCurve->to_json() : nullptr},
+        {"costPattern", costPattern ? costPattern->to_json() : nullptr},
+        {"costPerKwh", costPerKwh}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON for Pump
+void from_json(const nlohmann::json& j) override {
+    Link::from_json(j);
+    pumpCurve.from_json(j.at("pumpCurve"));
+    speed = j.at("speed").get<double>();
+    if (!j.at("speedPattern").is_null()) {
+        speedPattern->from_json(j.at("speedPattern"));
+    }
+    pumpEnergy.from_json(j.at("pumpEnergy"));
+    if (!j.at("efficCurve").is_null()) {
+        efficCurve->from_json(j.at("efficCurve"));
+    }
+    if (!j.at("costPattern").is_null()) {
+        costPattern->from_json(j.at("costPattern"));
+    }
+    costPerKwh = j.at("costPerKwh").get<double>();
+}
+
  };
 
 #endif

@@ -185,17 +185,30 @@ class Options
     std::string energyOptionsToStr(Network* network);
     std::string reportOptionsToStr();
 
-    void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      snapshot_vector_string(lines, "\"stringOptions\"", stringOptions, MAX_STRING_OPTIONS);
-      lines.push_back(",");
-      snapshot_vector_int(lines, "\"indexOptions\"", indexOptions, MAX_INDEX_OPTIONS);
-      lines.push_back(",");
-      snapshot_vector_double(lines, "\"valueOptions\"", valueOptions, MAX_VALUE_OPTIONS);
-      lines.push_back(",");
-      snapshot_vector_int(lines, "\"timeOptions\"", timeOptions, MAX_TIME_OPTIONS);
-      lines.push_back("}");
-    }
+//! Serialize to JSON for Options
+nlohmann::json to_json() const {
+    return {
+        {"stringOptions", std::vector<std::string>(stringOptions, stringOptions + MAX_STRING_OPTIONS)},
+        {"indexOptions", std::vector<int>(indexOptions, indexOptions + MAX_INDEX_OPTIONS)},
+        {"valueOptions", std::vector<double>(valueOptions, valueOptions + MAX_VALUE_OPTIONS)},
+        {"timeOptions", std::vector<int>(timeOptions, timeOptions + MAX_TIME_OPTIONS)}
+    };
+}
+
+//! Deserialize from JSON for Options
+void from_json(const nlohmann::json& j) {
+    auto stringOptionsJson = j.at("stringOptions").get<std::vector<std::string>>();
+    std::copy(stringOptionsJson.begin(), stringOptionsJson.end(), stringOptions);
+
+    auto indexOptionsJson = j.at("indexOptions").get<std::vector<int>>();
+    std::copy(indexOptionsJson.begin(), indexOptionsJson.end(), indexOptions);
+
+    auto valueOptionsJson = j.at("valueOptions").get<std::vector<double>>();
+    std::copy(valueOptionsJson.begin(), valueOptionsJson.end(), valueOptions);
+
+    auto timeOptionsJson = j.at("timeOptions").get<std::vector<int>>();
+    std::copy(timeOptionsJson.begin(), timeOptionsJson.end(), timeOptions);
+}
 
   private:
 

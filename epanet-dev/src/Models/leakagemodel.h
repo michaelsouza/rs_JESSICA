@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp> // Include the JSON library
 
 //! \class LeakageModel
 //! \brief The interface for a pipe leakage model.
@@ -36,14 +37,22 @@ class LeakageModel
                             double length,
                             double h,
                             double& dqdh) = 0;
+  
+  //! Serialize to JSON for LeakageModel
+nlohmann::json to_json() const {
+    return {
+        {"lengthUcf", lengthUcf},
+        {"flowUcf", flowUcf},
+        {"pressureUcf", pressureUcf}
+    };
+}
 
-    virtual void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("lengthUcf: " + std::to_string(lengthUcf));
-      lines.push_back("flowUcf: " + std::to_string(flowUcf));
-      lines.push_back("pressureUcf: " + std::to_string(pressureUcf));
-      lines.push_back("}");
-    }
+//! Deserialize from JSON for LeakageModel
+void from_json(const nlohmann::json& j) {
+    lengthUcf = j.at("lengthUcf").get<double>();
+    flowUcf = j.at("flowUcf").get<double>();
+    pressureUcf = j.at("pressureUcf").get<double>();
+}
 
   protected:
     double lengthUcf;

@@ -1,0 +1,127 @@
+====================
+Edges:
+====================
+BBSolver::epanet_solve Epanet::Project::advanceSolver
+BBSolver::epanet_solve Epanet::Project::runSolver
+Epanet::Project::advanceSolver HydEngine::advance
+Epanet::Project::runSolver HydEngine::solve
+GGASolver::findErrorNorm HydBalance::evaluate
+GGASolver::findFlowChanges Network::link
+GGASolver::findFlowChanges std::vector<double, std::allocator<double> >::operator[]
+GGASolver::findHeadChanges GGASolver::setMatrixCoeffs
+GGASolver::findHeadChanges Network::node
+GGASolver::findHeadChanges SparspakSolver::solve
+GGASolver::findHeadChanges std::vector<double, std::allocator<double> >::operator[]
+GGASolver::findStepSize GGASolver::findErrorNorm
+GGASolver::linksChangedStatus bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std::allocator<Link*> > >
+GGASolver::setFixedGradeNodes __gnu_cxx::__normal_iterator<Link**, std::vector<Link*, std::allocator<Link*> > >::operator++
+GGASolver::setFixedGradeNodes bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std::allocator<Link*> > >
+GGASolver::setLinkCoeffs Network::link
+GGASolver::setLinkCoeffs SparspakSolver::addToDiag
+GGASolver::setLinkCoeffs SparspakSolver::addToOffDiag
+GGASolver::setLinkCoeffs SparspakSolver::addToRhs
+GGASolver::setLinkCoeffs std::vector<double, std::allocator<double> >::operator[]
+GGASolver::setMatrixCoeffs GGASolver::setLinkCoeffs
+GGASolver::setMatrixCoeffs GGASolver::setNodeCoeffs
+GGASolver::setMatrixCoeffs GGASolver::setValveCoeffs
+GGASolver::setNodeCoeffs Network::node
+GGASolver::setNodeCoeffs SparspakSolver::addToDiag
+GGASolver::setNodeCoeffs SparspakSolver::addToRhs
+GGASolver::setNodeCoeffs std::vector<double, std::allocator<double> >::operator[]
+GGASolver::setValveCoeffs __gnu_cxx::__normal_iterator<Link**, std::vector<Link*, std::allocator<Link*> > >::operator++
+GGASolver::setValveCoeffs bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std::allocator<Link*> > >
+GGASolver::solve GGASolver::findErrorNorm
+GGASolver::solve GGASolver::findFlowChanges
+GGASolver::solve GGASolver::findHeadChanges
+GGASolver::solve GGASolver::findStepSize
+GGASolver::solve GGASolver::linksChangedStatus
+GGASolver::solve GGASolver::setFixedGradeNodes
+GGASolver::solve GGASolver::updateSolution
+GGASolver::updateSolution Network::link
+GGASolver::updateSolution Network::node
+GGASolver::updateSolution std::vector<double, std::allocator<double> >::operator[]
+HW_HeadLossModel::findHeadLoss pow@@GLIBC_2.29
+HW_HeadLossModel::findHeadLoss std::abs
+HydBalance::evaluate HydBalance::findFlowErrorNorm
+HydBalance::evaluate HydBalance::findHeadErrorNorm
+HydBalance::evaluate findNodeOutflows
+HydBalance::evaluate findTotalFlowChange
+HydBalance::findFlowErrorNorm std::abs
+HydBalance::findHeadErrorNorm Network::link
+HydBalance::findHeadErrorNorm Pipe::findHeadLoss
+HydBalance::findHeadErrorNorm std::abs
+HydEngine::solve GGASolver::solve
+HydEngine::solve HydEngine::updateCurrentConditions
+HydEngine::updateCurrentConditions bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std::allocator<Link*> > >
+Network::link std::vector<Link*, std::allocator<Link*> >::operator[]
+Pipe::findHeadLoss HW_HeadLossModel::findHeadLoss
+SparspakSolver::solve sp_numfct
+SparspakSolver::solve sp_solve
+bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std::allocator<Link*> > > __gnu_cxx::__normal_iterator<Link**, std::vector<Link*, std::allocator<Link*> > >::base
+findNodeOutflows Network::node
+findNodeOutflows bool __gnu_cxx::operator!=<Node**, std::vector<Node*, std::allocator<Node*> > >
+findTotalFlowChange Network::count
+findTotalFlowChange Network::link
+findTotalFlowChange std::abs
+pow@@GLIBC_2.29 __ieee754_pow_sse2
+====================
+Classes:
+====================
+BBSolver
+    BBSolver::epanet_solve
+Epanet::Project
+    Epanet::Project::runSolver
+    Epanet::Project::advanceSolver
+GGASolver
+    GGASolver::setValveCoeffs
+    GGASolver::linksChangedStatus
+    GGASolver::findHeadChanges
+    GGASolver::setMatrixCoeffs
+    GGASolver::findStepSize
+    GGASolver::findErrorNorm
+    GGASolver::solve
+    GGASolver::setFixedGradeNodes
+    GGASolver::setNodeCoeffs
+    GGASolver::findFlowChanges
+    GGASolver::updateSolution
+    GGASolver::setLinkCoeffs
+HW_HeadLossModel
+    HW_HeadLossModel::findHeadLoss
+HydBalance
+    HydBalance::findFlowErrorNorm
+    HydBalance::evaluate
+    HydBalance::findHeadErrorNorm
+HydEngine
+    HydEngine::solve
+    HydEngine::advance
+    HydEngine::updateCurrentConditions
+Network
+    Network::node
+    Network::link
+    Network::count
+Pipe
+    Pipe::findHeadLoss
+SparspakSolver
+    SparspakSolver::solve
+    SparspakSolver::addToDiag
+    SparspakSolver::addToRhs
+    SparspakSolver::addToOffDiag
+__gnu_cxx::__normal_iterator<Link**, std::vector<Link*, std::allocator<Link*> > >
+    __gnu_cxx::__normal_iterator<Link**, std::vector<Link*, std::allocator<Link*> > >::operator++
+    __gnu_cxx::__normal_iterator<Link**, std::vector<Link*, std::allocator<Link*> > >::base
+__ieee754_pow_sse2
+bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std
+    bool __gnu_cxx::operator!=<Link**, std::vector<Link*, std::allocator<Link*> > >
+bool __gnu_cxx::operator!=<Node**, std::vector<Node*, std
+    bool __gnu_cxx::operator!=<Node**, std::vector<Node*, std::allocator<Node*> > >
+findNodeOutflows
+findTotalFlowChange
+pow@@GLIBC_2.29
+sp_numfct
+sp_solve
+std
+    std::abs
+std::vector<Link*, std::allocator<Link*> >
+    std::vector<Link*, std::allocator<Link*> >::operator[]
+std::vector<double, std::allocator<double> >
+    std::vector<double, std::allocator<double> >::operator[]

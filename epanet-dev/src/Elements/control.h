@@ -65,24 +65,42 @@ class Control: public Element
 
     // Checks if the control's conditions are met
     void    apply(Network* network, int t, int tod);
-    
-    void snapshot(std::vector<std::string>& lines) const {
-      lines.push_back("{");
-      lines.push_back("type: " + std::to_string(type) + ";");
-      lines.push_back("name: " + name + ";");
-      lines.push_back("index: " + std::to_string(index) + ";");
-      lines.push_back("link: " );
-      link->snapshot(lines);
-      lines.push_back("status: " + std::to_string(status) + ";");
-      lines.push_back("setting: " + std::to_string(setting) + ";");
-      lines.push_back("node: " + node->name + ";");
-      lines.push_back("head: " + std::to_string(head) + ";");
-      lines.push_back("volume: " + std::to_string(volume) + ";");
-      lines.push_back("levelType: " + std::to_string(levelType) + ";");
-      lines.push_back("time: " + std::to_string(time) + ";");
-      lines.push_back("}" );
-    }
 
+//! Serialize to JSON
+nlohmann::json to_json() const override {
+    nlohmann::json jsonObj = Element::to_json(); // Call base class serialization
+    jsonObj.merge_patch({
+        {"type", type},
+        {"link", link ? link->to_json() : nullptr},
+        {"status", status},
+        {"setting", setting},
+        {"node", node ? node->to_json() : nullptr},
+        {"head", head},
+        {"volume", volume},
+        {"levelType", levelType},
+        {"time", time}
+    });
+    return jsonObj;
+}
+
+//! Deserialize from JSON
+void from_json(const nlohmann::json& j) override {
+    Element::from_json(j); // Call base class deserialization
+    type = j.at("type").get<int>();
+    if (!j.at("link").is_null()) {
+        link->from_json(j.at("link"));
+    }
+    status = j.at("status").get<int>();
+    setting = j.at("setting").get<double>();
+    if (!j.at("node").is_null()) {
+        node->from_json(j.at("node"));
+    }
+    head = j.at("head").get<double>();
+    volume = j.at("volume").get<double>();
+    levelType = static_cast<LevelType>(j.at("levelType").get<int>());
+    time = j.at("time").get<int>();
+}
+    
   private:
     int         type;                  //!< type of control
     Link*       link;                  //!< link being controlled

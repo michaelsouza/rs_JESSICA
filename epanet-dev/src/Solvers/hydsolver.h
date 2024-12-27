@@ -11,6 +11,7 @@
 #ifndef HYDSOLVER_H_
 #define HYDSOLVER_H_
 
+#include "Solvers/matrixsolver.h"
 #include <string>
 #include <vector>
 
@@ -39,7 +40,20 @@ class HydSolver
     static  HydSolver* factory(const std::string name, Network* nw, MatrixSolver* ms);
     virtual int solve(double tstep, int& trials) = 0;
     
-    virtual void snapshot(std::vector<std::string>& lines) const = 0;
+//! Serialize to JSON for HydSolver
+virtual nlohmann::json to_json() const {
+    return {
+        {"matrixSolver", matrixSolver ? matrixSolver->to_json() : nullptr}
+    };
+}
+
+//! Deserialize from JSON for HydSolver
+virtual void from_json(const nlohmann::json& j) {
+    if (!j.at("matrixSolver").is_null()) {
+        matrixSolver->from_json(j.at("matrixSolver"));
+    }
+}
+
 
   protected:
 

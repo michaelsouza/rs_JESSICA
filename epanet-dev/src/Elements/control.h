@@ -66,8 +66,7 @@ public:
 
   //! Serialize to JSON
   nlohmann::json to_json() const override {
-    return {{"type", type},
-            {"link", link ? link->to_json() : nullptr},
+    return {{"link", link ? link->to_json() : nullptr},
             {"status", status},
             {"setting", setting},
             {"node", node ? node->to_json() : nullptr},
@@ -79,7 +78,6 @@ public:
 
   //! Deserialize from JSON
   void from_json(const nlohmann::json &j) override {
-    type = j.at("type").get<int>();
     if (!j.at("link").is_null()) {
       link->from_json(j.at("link"));
     }

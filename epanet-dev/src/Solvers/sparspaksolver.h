@@ -49,9 +49,6 @@ public:
   //! Serialize to JSON for SparspakSolver
   nlohmann::json to_json() const override {
     return {
-        {"nrows", nrows},
-        {"nnz", nnz},
-        {"nnzl", nnzl},
         {"lnz", lnz ? nlohmann::json(std::vector<double>(lnz, lnz + nnzl))
                     : nlohmann::json(nullptr)},
         {"diag", diag ? nlohmann::json(std::vector<double>(diag, diag + nrows))
@@ -62,10 +59,6 @@ public:
 
   //! Deserialize from JSON for SparspakSolver
   void from_json(const nlohmann::json &j) override {
-    nrows = j.at("nrows").get<int>();
-    nnz = j.at("nnz").get<int>();
-    nnzl = j.at("nnzl").get<int>();
-
     if (lnz) {
       std::vector<double> lnz_vec = j.at("lnz").get<std::vector<double>>();
       std::copy(lnz_vec.begin(), lnz_vec.end(), lnz);

@@ -77,7 +77,6 @@ public:
                          {"minVolume", minVolume},
                          {"bulkCoeff", bulkCoeff},
                          {"volCurve", volCurve ? volCurve->to_json() : nullptr},
-                         {"mixingModel", mixingModel.to_json()},
                          {"maxVolume", maxVolume},
                          {"volume", volume},
                          {"area", area},
@@ -99,7 +98,6 @@ public:
     bulkCoeff = j.at("bulkCoeff").get<double>();
     if (volCurve)
       volCurve->from_json(j.at("volCurve"));
-    mixingModel.from_json(j.at("mixingModel"));
     maxVolume = j.at("maxVolume").get<double>();
     volume = j.at("volume").get<double>();
     area = j.at("area").get<double>();

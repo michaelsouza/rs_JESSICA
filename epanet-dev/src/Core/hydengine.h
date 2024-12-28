@@ -48,9 +48,7 @@ public:
     return {{"engineState", static_cast<int>(engineState)},
             {"hydSolver", hydSolver ? hydSolver->to_json() : nullptr},
             {"matrixSolver", matrixSolver ? matrixSolver->to_json() : nullptr},
-            {"saveToFile", saveToFile},
             {"halted", halted},
-            {"startTime", startTime},
             {"rptTime", rptTime},
             {"hydStep", hydStep},
             {"currentTime", currentTime},
@@ -66,9 +64,7 @@ public:
       hydSolver->from_json(j.at("hydSolver"));
     if (!j.at("matrixSolver").is_null())
       matrixSolver->from_json(j.at("matrixSolver"));
-    saveToFile = j.at("saveToFile").get<bool>();
     halted = j.at("halted").get<bool>();
-    startTime = j.at("startTime").get<int>();
     rptTime = j.at("rptTime").get<int>();
     hydStep = j.at("hydStep").get<int>();
     currentTime = j.at("currentTime").get<int>();

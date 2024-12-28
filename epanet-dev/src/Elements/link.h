@@ -94,30 +94,21 @@ public:
 
   //! Serialize to JSON
   virtual nlohmann::json to_json() const {
-    return {{"initStatus", initStatus},
-            {"lossCoeff", lossCoeff},
-            {"initSetting", initSetting},
-            {"status", status},
-            {"flow", flow},
-            {"leakage", leakage},
-            {"hLoss", hLoss},
-            {"hGrad", hGrad},
-            {"setting", setting},
-            {"quality", quality}};
+    return {{"initStatus", initStatus}, {"initSetting", initSetting},
+            {"status", status},         {"flow", flow},
+            {"hLoss", hLoss},           {"hGrad", hGrad},
+            {"setting", setting}};
   }
 
   //! Deserialize from JSON
   virtual void from_json(const nlohmann::json &j) {
     initStatus = j.at("initStatus").get<int>();
-    lossCoeff = j.at("lossCoeff").get<double>();
     initSetting = j.at("initSetting").get<double>();
     status = j.at("status").get<int>();
     flow = j.at("flow").get<double>();
-    leakage = j.at("leakage").get<double>();
     hLoss = j.at("hLoss").get<double>();
     hGrad = j.at("hGrad").get<double>();
     setting = j.at("setting").get<double>();
-    quality = j.at("quality").get<double>();
   }
 };
 

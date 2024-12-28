@@ -50,8 +50,7 @@ public:
 
   //! Serialize to JSON for TankMixModel
   nlohmann::json to_json() const {
-    return {{"type", type},
-            {"cTol", cTol},
+    return {{"cTol", cTol},
             {"fracMixed", fracMixed},
             {"cTank", cTank},
             {"vMixed", vMixed},
@@ -61,7 +60,6 @@ public:
 
   //! Deserialize from JSON for TankMixModel
   void from_json(const nlohmann::json &j) {
-    type = j.at("type").get<int>();
     cTol = j.at("cTol").get<double>();
     fracMixed = j.at("fracMixed").get<double>();
     cTank = j.at("cTank").get<double>();

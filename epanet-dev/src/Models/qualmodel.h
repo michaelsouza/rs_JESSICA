@@ -54,12 +54,10 @@ public:
   virtual double findTracerAdded(Node *node, double qIn) { return 0.0; }
 
   //! Serialize to JSON for QualModel
-  virtual nlohmann::json to_json() const { return {{"type", type}}; }
+  virtual nlohmann::json to_json() const { return {}; }
 
   //! Deserialize from JSON for QualModel
-  virtual void from_json(const nlohmann::json &j) {
-    type = j.at("type").get<int>();
-  }
+  virtual void from_json(const nlohmann::json &j) {}
 
   int type;
 };

@@ -115,7 +115,7 @@
         {
             "label": "build-debug",
             "type": "shell",
-            "command": "make BUILD_TYPE=debug -j4",
+            "command": "make BUILD_TYPE=debug -j8",
             "group": {
                 "kind": "build",
                 "isDefault": false

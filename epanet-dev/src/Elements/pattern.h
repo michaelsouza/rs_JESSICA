@@ -66,18 +66,12 @@ public:
 
   //! Serialize to JSON for Pattern
   nlohmann::json to_json() const override {
-    return {{"type", type},
-            {"factors", factors},
-            {"currentIndex", currentIndex},
-            {"interval", interval}};
+    return {{"currentIndex", currentIndex}};
   }
 
   //! Deserialize from JSON for Pattern
   void from_json(const nlohmann::json &j) override {
-    type = j.at("type").get<int>();
-    factors = j.at("factors").get<std::vector<double>>();
     currentIndex = j.at("currentIndex").get<int>();
-    interval = j.at("interval").get<int>();
   }
 
 protected:

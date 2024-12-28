@@ -38,8 +38,7 @@ public:
 
   //! Serialize to JSON
   nlohmann::json to_json() const {
-    nlohmann::json jsonObj = {{"type", type},
-                              {"base", base},
+    nlohmann::json jsonObj = {{"base", base},
                               {"strength", strength},
                               {"outflow", outflow},
                               {"quality", quality}};
@@ -52,7 +51,6 @@ public:
 
   //! Deserialize from JSON
   void from_json(const nlohmann::json &j) {
-    type = j.at("type").get<int>();
     base = j.at("base").get<double>();
     strength = j.at("strength").get<double>();
     outflow = j.at("outflow").get<double>();

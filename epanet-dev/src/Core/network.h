@@ -138,23 +138,18 @@ public:
     }
 
     return {
-        {"title", title},
         {"nodes", nodesJson},
         {"links", linksJson},
         {"patterns", patternsJson},
         {"controls", controlsJson},
         {"options", options.to_json()},
-        {"qualBalance", qualBalance.to_json()},
         {"headLossModel", headLossModel ? headLossModel->to_json() : nullptr},
         {"demandModel", demandModel ? demandModel->to_json() : nullptr},
-        {"leakageModel", leakageModel ? leakageModel->to_json() : nullptr},
-        {"qualModel", qualModel ? qualModel->to_json() : nullptr}};
+        {"leakageModel", leakageModel ? leakageModel->to_json() : nullptr}};
   }
 
   //! Deserialize from JSON for Network
   void from_json(const nlohmann::json &j) {
-    title = j.at("title").get<std::vector<std::string>>();
-
     if (!j.at("nodes").is_null()) {
       const auto &nodesJson = j.at("nodes");
       for (size_t i = 0; i < nodesJson.size(); ++i) {
@@ -184,7 +179,6 @@ public:
     }
 
     options.from_json(j.at("options"));
-    qualBalance.from_json(j.at("qualBalance"));
 
     if (!j.at("headLossModel").is_null()) {
       headLossModel->from_json(j.at("headLossModel"));
@@ -194,9 +188,6 @@ public:
     }
     if (!j.at("leakageModel").is_null()) {
       leakageModel->from_json(j.at("leakageModel"));
-    }
-    if (!j.at("qualModel").is_null()) {
-      qualModel->from_json(j.at("qualModel"));
     }
   }
 

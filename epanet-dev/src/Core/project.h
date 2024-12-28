@@ -71,26 +71,14 @@ public:
   nlohmann::json to_json() const {
     return {{"network", network.to_json()},
             {"hydEngine", hydEngine.to_json()},
-            {"qualEngine", qualEngine.to_json()},
-            {"networkEmpty", networkEmpty},
-            {"hydEngineOpened", hydEngineOpened},
-            {"qualEngineOpened", qualEngineOpened},
-            {"outputFileOpened", outputFileOpened},
-            {"solverInitialized", solverInitialized},
-            {"runQuality", runQuality}};
+            {"hydEngineOpened", hydEngineOpened}};
   }
 
   //! Deserialize from JSON
   void from_json(const nlohmann::json &j) {
     network.from_json(j.at("network"));
     hydEngine.from_json(j.at("hydEngine"));
-    qualEngine.from_json(j.at("qualEngine"));
-    networkEmpty = j.at("networkEmpty").get<bool>();
     hydEngineOpened = j.at("hydEngineOpened").get<bool>();
-    qualEngineOpened = j.at("qualEngineOpened").get<bool>();
-    outputFileOpened = j.at("outputFileOpened").get<bool>();
-    solverInitialized = j.at("solverInitialized").get<bool>();
-    runQuality = j.at("runQuality").get<bool>();
   }
 
 private:

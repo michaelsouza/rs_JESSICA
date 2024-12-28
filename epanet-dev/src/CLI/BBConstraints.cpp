@@ -132,11 +132,11 @@ bool BBConstraints::check_pressures(Project *p, bool verbose)
   for (const auto &node : nodes)
   {
     const std::string &node_name = node.first;
-    const int &node_id = node.second;
+    const int &node_index = node.second;
     double pressure;
 
     // Retrieve node pressure
-    CHK(EN_getNodeValue(node_id, EN_PRESSURE, &pressure, p), "Get node pressure");
+    CHK(EN_getNodeValue(node_index, EN_PRESSURE, &pressure, p), "Get node pressure");
 
     // Check if pressure meets the threshold
     bool is_feasible = pressure >= thresholds[node_name];
@@ -170,11 +170,11 @@ bool BBConstraints::check_levels(Project *p, bool verbose)
   for (const auto &tank : tanks)
   {
     const std::string &tank_name = tank.first;
-    const int &tank_id = tank.second;
+    const int &tank_index = tank.second;
     double level;
 
     // Retrieve tank level
-    CHK(EN_getNodeValue(tank_id, EN_HEAD, &level, p), "Get tank level");
+    CHK(EN_getNodeValue(tank_index, EN_HEAD, &level, p), "Get tank level");
 
     // Check if level is within acceptable range
     bool is_feasible = (level >= level_min) && (level <= level_max);
@@ -207,11 +207,11 @@ bool BBConstraints::check_stability(Project *p, bool verbose)
   for (const auto &tank : tanks)
   {
     const std::string &tank_name = tank.first;
-    const int &tank_id = tank.second;
+    const int &tank_index = tank.second;
     double level;
 
     // Retrieve tank level
-    CHK(EN_getNodeValue(tank_id, EN_HEAD, &level, p), "Get tank level");
+    CHK(EN_getNodeValue(tank_index, EN_HEAD, &level, p), "Get tank level");
 
     // Check if level meets the initial stability condition
     bool is_feasible = level >= initial_level;

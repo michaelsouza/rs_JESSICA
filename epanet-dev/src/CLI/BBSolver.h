@@ -112,8 +112,8 @@ public:
   bool try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose);
   void update_cost_ub(double cost, bool update_xy);
   void to_json(double eta_secs);
-  void send_work(int recv_rank, const std::vector<int> &h_free, bool verbose);
-  void recv_work(int send_rank, const std::vector<int> &h_free, bool verbose);
+  void send_work(int recv_rank, const std::vector<int> &h_free);
+  void recv_work(int send_rank, const std::vector<int> &h_free);
 
   /**
    * @brief Core function to update the x vector.

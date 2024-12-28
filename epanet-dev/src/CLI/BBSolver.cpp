@@ -135,9 +135,6 @@ void BBSolver::epanet_solve(Project &p, double &cost)
     // Update cost_ub
     if (is_feasible) update_cost_ub(cost, true);
   }
-
-  // Take a snapshot if the solution is feasible
-  if (is_feasible) snapshots[h] = p.to_json();
 }
 
 bool BBSolver::process_node(double &cost)
@@ -145,7 +142,10 @@ bool BBSolver::process_node(double &cost)
   ProfileScope scope("process_node");
 
   // Load the previous snapshot
-  p.from_json(snapshots[h - 1]);
+  {
+    ProfileScope scope("process_node: from_json");
+    p.from_json(snapshots[h - 1]);
+  }
 
   // Initialize variables
   is_feasible = true;
@@ -158,6 +158,13 @@ bool BBSolver::process_node(double &cost)
 
   // Run simulation
   epanet_solve(p, cost);
+
+  // Take a snapshot if the solution is feasible
+  if (is_feasible)
+  {
+    ProfileScope scope("process_node: take_snapshot");
+    snapshots[h] = p.to_json();
+  }
 
   return is_feasible;
 }
@@ -523,9 +530,9 @@ void BBSolver::read_buffer()
   std::copy(mpi_buffer.begin() + num_scalars + y.size(), mpi_buffer.begin() + num_scalars + y.size() + x.size(), x.begin());
 }
 
-void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free, bool verbose)
+void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free)
 {
-  if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Sending to rank %d\n", mpi_rank, recv_rank);
+  if (config.verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Sending to rank %d\n", mpi_rank, recv_rank);
 
   // Write the buffer
   write_buffer();
@@ -534,7 +541,7 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free, bool ver
   auto mpi_error = MPI_Send(mpi_buffer.data(), mpi_buffer.size(), MPI_INT, recv_rank, 0, MPI_COMM_WORLD);
   if (mpi_error != MPI_SUCCESS)
   {
-    if (verbose) Console::printf(Console::Color::RED, "Rank[%d]: MPI_Send failed with error code %d.\n", mpi_rank, mpi_error);
+    if (config.verbose) Console::printf(Console::Color::RED, "Rank[%d]: MPI_Send failed with error code %d.\n", mpi_rank, mpi_error);
     MPI_Abort(MPI_COMM_WORLD, mpi_error);
   }
 
@@ -542,28 +549,34 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free, bool ver
   h = h_min;
   is_feasible = false;
   add_prune(PruneReason::SPLIT);
-
-  // Show the current state
-  // if (verbose) show();
 }
 
-void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free, bool verbose)
+void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free)
 {
-  if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Receiving from rank %d\n", mpi_rank, send_rank);
+  if (config.verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "Rank[%d]: Receiving from rank %d\n", mpi_rank, send_rank);
 
   // Receive the buffer
   auto mpi_error = MPI_Recv(mpi_buffer.data(), mpi_buffer.size(), MPI_INT, send_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   if (mpi_error != MPI_SUCCESS)
   {
-    if (verbose) Console::printf(Console::Color::RED, "Rank[%d]: MPI_Recv failed with error code %d.\n", mpi_rank, mpi_error);
+    if (config.verbose) Console::printf(Console::Color::RED, "Rank[%d]: MPI_Recv failed with error code %d.\n", mpi_rank, mpi_error);
     MPI_Abort(MPI_COMM_WORLD, mpi_error);
   }
 
   // Read the buffer
   read_buffer();
 
-  // Show the current state
-  // if (verbose) show();
+  // Reset snapshots
+  p.from_json(snapshots[0]); // all ranks have the first snapshot
+  update_pumps(p, true);     // update the pumps with the received y
+  double cost = 0.0;
+  for (int i = 1; i <= h; ++i)
+  {
+    // Run the solver
+    epanet_solve(p, cost);
+    // Take a snapshot if the solution is feasible
+    snapshots[i] = p.to_json();
+  }
 }
 
 bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose)
@@ -597,14 +610,14 @@ bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &h
       // This rank is a sender
       if (send_rank == mpi_rank)
       {
-        send_work(recv_rank, h_free, verbose);
+        send_work(recv_rank, h_free);
         return true;
       }
 
       // This rank is a receiver
       if (recv_rank == mpi_rank)
       {
-        recv_work(send_rank, h_free, verbose);
+        recv_work(send_rank, h_free);
         return true;
       }
     }

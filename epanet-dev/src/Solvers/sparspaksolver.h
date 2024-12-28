@@ -52,27 +52,12 @@ public:
         {"nrows", nrows},
         {"nnz", nnz},
         {"nnzl", nnzl},
-        {"perm", perm ? nlohmann::json(std::vector<int>(perm, perm + nrows))
-                      : nlohmann::json(nullptr)},
-        {"invp", invp ? nlohmann::json(std::vector<int>(invp, invp + nrows))
-                      : nlohmann::json(nullptr)},
-        {"xlnz", xlnz ? nlohmann::json(std::vector<int>(xlnz, xlnz + nrows + 1))
-                      : nlohmann::json(nullptr)},
-        {"xnzsub",
-         xnzsub ? nlohmann::json(std::vector<int>(xnzsub, xnzsub + nrows + 1))
-                : nlohmann::json(nullptr)},
-        {"nzsub", nzsub ? nlohmann::json(std::vector<int>(nzsub, nzsub + nnzl))
-                        : nlohmann::json(nullptr)},
-        {"xaij", xaij ? nlohmann::json(std::vector<int>(xaij, xaij + nnz))
-                      : nlohmann::json(nullptr)},
         {"lnz", lnz ? nlohmann::json(std::vector<double>(lnz, lnz + nnzl))
                     : nlohmann::json(nullptr)},
         {"diag", diag ? nlohmann::json(std::vector<double>(diag, diag + nrows))
                       : nlohmann::json(nullptr)},
         {"rhs", rhs ? nlohmann::json(std::vector<double>(rhs, rhs + nrows))
-                    : nlohmann::json(nullptr)},
-        {"temp", temp ? nlohmann::json(std::vector<double>(temp, temp + nrows))
-                      : nlohmann::json(nullptr)}};
+                    : nlohmann::json(nullptr)}};
   }
 
   //! Deserialize from JSON for SparspakSolver
@@ -81,54 +66,19 @@ public:
     nnz = j.at("nnz").get<int>();
     nnzl = j.at("nnzl").get<int>();
 
-    if (!j.at("perm").is_null()) {
-      std::vector<int> perm_vec = j.at("perm").get<std::vector<int>>();
-      std::copy(perm_vec.begin(), perm_vec.end(), perm);
-    }
-
-    if (!j.at("invp").is_null()) {
-      std::vector<int> invp_vec = j.at("invp").get<std::vector<int>>();
-      std::copy(invp_vec.begin(), invp_vec.end(), invp);
-    }
-
-    if (!j.at("xlnz").is_null()) {
-      std::vector<int> xlnz_vec = j.at("xlnz").get<std::vector<int>>();
-      std::copy(xlnz_vec.begin(), xlnz_vec.end(), xlnz);
-    }
-
-    if (!j.at("xnzsub").is_null()) {
-      std::vector<int> xnzsub_vec = j.at("xnzsub").get<std::vector<int>>();
-      std::copy(xnzsub_vec.begin(), xnzsub_vec.end(), xnzsub);
-    }
-
-    if (!j.at("nzsub").is_null()) {
-      std::vector<int> nzsub_vec = j.at("nzsub").get<std::vector<int>>();
-      std::copy(nzsub_vec.begin(), nzsub_vec.end(), nzsub);
-    }
-
-    if (!j.at("xaij").is_null()) {
-      std::vector<int> xaij_vec = j.at("xaij").get<std::vector<int>>();
-      std::copy(xaij_vec.begin(), xaij_vec.end(), xaij);
-    }
-
-    if (!j.at("lnz").is_null()) {
+    if (lnz) {
       std::vector<double> lnz_vec = j.at("lnz").get<std::vector<double>>();
       std::copy(lnz_vec.begin(), lnz_vec.end(), lnz);
     }
 
-    if (!j.at("diag").is_null()) {
+    if (diag) {
       std::vector<double> diag_vec = j.at("diag").get<std::vector<double>>();
       std::copy(diag_vec.begin(), diag_vec.end(), diag);
     }
 
-    if (!j.at("rhs").is_null()) {
+    if (rhs) {
       std::vector<double> rhs_vec = j.at("rhs").get<std::vector<double>>();
       std::copy(rhs_vec.begin(), rhs_vec.end(), rhs);
-    }
-
-    if (!j.at("temp").is_null()) {
-      std::vector<double> temp_vec = j.at("temp").get<std::vector<double>>();
-      std::copy(temp_vec.begin(), temp_vec.end(), temp);
     }
   }
 

@@ -32,9 +32,7 @@ public:
   //! Serialize to JSON for GGASolver
   nlohmann::json to_json() const override {
     nlohmann::json jsonObj = HydSolver::to_json();
-    jsonObj.merge_patch({{"nodeCount", nodeCount},
-                         {"linkCount", linkCount},
-                         {"hLossEvalCount", hLossEvalCount},
+    jsonObj.merge_patch({{"hLossEvalCount", hLossEvalCount},
                          {"stepSizing", stepSizing},
                          {"trialsLimit", trialsLimit},
                          {"reportTrials", reportTrials},
@@ -56,8 +54,6 @@ public:
   //! Deserialize from JSON for GGASolver
   void from_json(const nlohmann::json &j) override {
     HydSolver::from_json(j);
-    nodeCount = j.at("nodeCount").get<int>();
-    linkCount = j.at("linkCount").get<int>();
     hLossEvalCount = j.at("hLossEvalCount").get<int>();
     stepSizing = j.at("stepSizing").get<int>();
     trialsLimit = j.at("trialsLimit").get<int>();

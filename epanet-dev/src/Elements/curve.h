@@ -56,20 +56,11 @@ public:
 
   //! Serialize to JSON
   nlohmann::json to_json() const override {
-    return {{"name", name},
-            {"index", index},
-            {"type", static_cast<int>(type)},
-            {"xData", xData},
-            {"yData", yData}};
+    return {};
   }
 
   //! Deserialize from JSON
   void from_json(const nlohmann::json &j) override {
-    name = j.at("name").get<std::string>();
-    index = j.at("index").get<int>();
-    type = static_cast<CurveType>(j.at("type").get<int>());
-    xData = j.at("xData").get<std::vector<double>>();
-    yData = j.at("yData").get<std::vector<double>>();
   }
 
 private:

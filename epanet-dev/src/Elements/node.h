@@ -61,35 +61,22 @@ public:
   //! Serialize to JSON
   nlohmann::json to_json() const override {
     return {{"name", name},
-            {"rptFlag", rptFlag},
-            {"elev", elev},
-            {"initQual", initQual},
-            {"qualSource", qualSource ? qualSource->to_json() : nullptr},
             {"fixedGrade", fixedGrade},
             {"head", head},
             {"qGrad", qGrad},
             {"fullDemand", fullDemand},
             {"actualDemand", actualDemand},
-            {"outflow", outflow},
-            {"quality", quality}};
+            {"outflow", outflow}};
   }
 
   //! Deserialize from JSON
   void from_json(const nlohmann::json &j) {
-    rptFlag = j.at("rptFlag").get<bool>();
-    elev = j.at("elev").get<double>();
-    initQual = j.at("initQual").get<double>();
     fixedGrade = j.at("fixedGrade").get<bool>();
     head = j.at("head").get<double>();
     qGrad = j.at("qGrad").get<double>();
     fullDemand = j.at("fullDemand").get<double>();
     actualDemand = j.at("actualDemand").get<double>();
     outflow = j.at("outflow").get<double>();
-    quality = j.at("quality").get<double>();
-
-    if (!j.at("qualSource").is_null()) {
-      qualSource->from_json(j.at("qualSource"));
-    }
   }
 };
 

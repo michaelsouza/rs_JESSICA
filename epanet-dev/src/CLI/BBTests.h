@@ -732,8 +732,11 @@ public:
 
       t_next = t + dt;
 
-      cost = cntrs.calc_cost(&p);
-      Console::printf(Console::Color::CYAN, "   t=%d, dt=%d, cost=%f\n", t, dt, cost);
+      if (verbose)
+      {
+        double cost = cntrs.calc_cost(&p);
+        Console::printf(Console::Color::CYAN, "   t=%d, dt=%d, cost=%f\n", t, dt, cost);
+      }
 
       if (t_next % 3600 == 0)
       {
@@ -774,8 +777,11 @@ public:
       // Advance the solver
       CHK(p.advanceSolver(&dt), "Advance solver");
 
-      double cost = cntrs.calc_cost(&p);
-      Console::printf(Console::Color::CYAN, "   t=%d, dt=%d, cost=%f\n", t, dt, cost);
+      if (verbose)
+      {
+        double cost = cntrs.calc_cost(&p);
+        Console::printf(Console::Color::CYAN, "   t=%d, dt=%d, cost=%f\n", t, dt, cost);
+      }
 
     } while (dt > 0);
 
@@ -823,7 +829,6 @@ public:
   bool execute_test()
   {
     print_test_name();
-    verbose = true;
 
     // Initialize branch-and-bound solver and statistics
     BBConfig config(0, nullptr);

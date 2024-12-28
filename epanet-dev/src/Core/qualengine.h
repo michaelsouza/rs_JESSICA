@@ -44,8 +44,6 @@ public:
   //! Serialize to JSON for QualEngine
   nlohmann::json to_json() const {
     return {{"engineState", static_cast<int>(engineState)},
-            {"nodeCount", nodeCount},
-            {"linkCount", linkCount},
             {"qualTime", qualTime},
             {"qualStep", qualStep},
             {"sortedLinks", sortedLinks},
@@ -56,8 +54,6 @@ public:
   //! Deserialize from JSON for QualEngine
   void from_json(const nlohmann::json &j) {
     engineState = static_cast<EngineState>(j.at("engineState").get<int>());
-    nodeCount = j.at("nodeCount").get<int>();
-    linkCount = j.at("linkCount").get<int>();
     qualTime = j.at("qualTime").get<int>();
     qualStep = j.at("qualStep").get<int>();
     sortedLinks = j.at("sortedLinks").get<std::vector<int>>();

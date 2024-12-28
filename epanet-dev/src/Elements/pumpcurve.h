@@ -49,9 +49,7 @@ public:
 
   //! Serialize to JSON for PumpCurve
   nlohmann::json to_json() const {
-    return {{"curveType", curveType},
-            {"curve", curve ? curve->to_json() : nullptr},
-            {"horsepower", horsepower},
+    return {{"horsepower", horsepower},
             {"qInit", qInit},
             {"qMax", qMax},
             {"hMax", hMax},
@@ -64,13 +62,6 @@ public:
 
   //! Deserialize from JSON for PumpCurve
   void from_json(const nlohmann::json &j) {
-    curveType = j.at("curveType").get<int>();
-    if (!j.at("curve").is_null()) {
-      if (!curve) {
-        curve = new Curve("");
-      }
-      curve->from_json(j.at("curve"));
-    }
     horsepower = j.at("horsepower").get<double>();
     qInit = j.at("qInit").get<double>();
     qMax = j.at("qMax").get<double>();

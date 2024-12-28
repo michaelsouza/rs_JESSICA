@@ -94,11 +94,7 @@ public:
 
   //! Serialize to JSON
   virtual nlohmann::json to_json() const {
-    return {{"rptFlag", rptFlag},
-            {"fromNode", fromNode ? fromNode->to_json() : nullptr},
-            {"toNode", toNode ? toNode->to_json() : nullptr},
-            {"initStatus", initStatus},
-            {"diameter", diameter},
+    return {{"initStatus", initStatus},
             {"lossCoeff", lossCoeff},
             {"initSetting", initSetting},
             {"status", status},
@@ -112,9 +108,7 @@ public:
 
   //! Deserialize from JSON
   virtual void from_json(const nlohmann::json &j) {
-    rptFlag = j.at("rptFlag").get<bool>();
     initStatus = j.at("initStatus").get<int>();
-    diameter = j.at("diameter").get<double>();
     lossCoeff = j.at("lossCoeff").get<double>();
     initSetting = j.at("initSetting").get<double>();
     status = j.at("status").get<int>();
@@ -124,14 +118,6 @@ public:
     hGrad = j.at("hGrad").get<double>();
     setting = j.at("setting").get<double>();
     quality = j.at("quality").get<double>();
-
-    if (!j.at("fromNode").is_null()) {
-      fromNode->from_json(j.at("fromNode"));
-    }
-
-    if (!j.at("toNode").is_null()) {
-      toNode->from_json(j.at("toNode"));
-    }
   }
 };
 

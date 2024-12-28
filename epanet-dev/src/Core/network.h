@@ -141,7 +141,6 @@ public:
         {"title", title},
         {"nodes", nodesJson},
         {"links", linksJson},
-        {"curves", curvesJson},
         {"patterns", patternsJson},
         {"controls", controlsJson},
         {"options", options.to_json()},
@@ -167,13 +166,6 @@ public:
       const auto &linksJson = j.at("links");
       for (size_t i = 0; i < linksJson.size(); ++i) {
         links[i]->from_json(linksJson[i]);
-      }
-    }
-
-    if (!j.at("curves").is_null()) {
-      const auto &curvesJson = j.at("curves");
-      for (size_t i = 0; i < curvesJson.size(); ++i) {
-        curves[i]->from_json(curvesJson[i]);
       }
     }
 

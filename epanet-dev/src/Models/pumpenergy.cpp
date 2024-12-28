@@ -83,12 +83,14 @@ double PumpEnergy::updateEnergyUsage(Pump *pump, Network *network, int dt) {
   // cents)
   adjustedTotalCost += kw * hrs * findCostFactor(pump, network) / 100.0;
 
-  printf("       pump: %s\n", pump->name.c_str());
-  printf("            head ....... %f\n", head);
-  printf("            flow ....... %f\n", pump->flow);
-  printf("            kw ......... %f\n", kw);
-  printf("            hrs ........ %f\n", hrs);
-  printf("            adjustedCost %f\n", adjustedTotalCost);
+  // Debugging
+  // printf("       pump: %s\n", pump->name.c_str());
+  // printf("            head ....... %f\n", head);
+  // printf("            flow ....... %f\n", pump->flow);
+  // printf("            kw ......... %f\n", kw);
+  // printf("            hrs ........ %f\n", hrs);
+  // printf("            adjustedCost %f\n", adjustedTotalCost);
+  
   return kw;
 }
 

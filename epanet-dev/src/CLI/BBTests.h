@@ -14,6 +14,7 @@
 #include "epanet3.h"
 
 #include <algorithm>
+#include <random>
 #include <cassert>
 #include <chrono>
 #include <cmath>
@@ -783,12 +784,24 @@ public:
 
   bool check_from_json(Project &p, BBConstraints &cntrs, const std::vector<nlohmann::json> &snapshots, double expected_cost)
   {
-    for (int h = 0; h < snapshots.size(); ++h)
+    // Create vector of indices and shuffle them
+    std::vector<int> indices(snapshots.size());
+    for (int i = 0; i < snapshots.size(); i++) {
+      indices[i] = i;
+    }
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::shuffle(indices.begin(), indices.end(), gen);
+
+    // Process snapshots in shuffled order
+    for (int i = 0; i < indices.size(); i++)
     {
+      int h = indices[i];
+      
       // Load the snapshot
       p.from_json(snapshots[h]);
 
-      // Save the new snapshot
+      // Save the new snapshot  
       char filename[32];
       sprintf(filename, "snapshots_%02d_new.json", h);
       std::ofstream file(filename);

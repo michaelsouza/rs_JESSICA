@@ -55,13 +55,10 @@ public:
   double getXofY(double y);
 
   //! Serialize to JSON
-  nlohmann::json to_json() const override {
-    return {};
-  }
+  nlohmann::json to_json() const override { return {}; }
 
   //! Deserialize from JSON
-  void from_json(const nlohmann::json &j) override {
-  }
+  void from_json(const nlohmann::json &j) override {}
 
 private:
   CurveType type;            //!< curve type

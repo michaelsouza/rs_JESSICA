@@ -69,10 +69,9 @@ public:
   //! Serialize to JSON for Pump
   nlohmann::json to_json() const override {
     nlohmann::json jsonObj = Link::to_json();
-    jsonObj.merge_patch(
-        {{"speed", speed},
-         {"pumpEnergy", pumpEnergy.to_json()},
-         {"costPerKwh", costPerKwh}});
+    jsonObj.merge_patch({{"speed", speed},
+                         {"pumpEnergy", pumpEnergy.to_json()},
+                         {"costPerKwh", costPerKwh}});
     return jsonObj;
   }
 

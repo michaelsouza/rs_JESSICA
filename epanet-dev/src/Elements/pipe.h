@@ -71,9 +71,7 @@ public:
   }
 
   //! Deserialize from JSON for Pipe
-  void from_json(const nlohmann::json &j) override {
-    Link::from_json(j);
-  }
+  void from_json(const nlohmann::json &j) override { Link::from_json(j); }
 };
 
 #endif

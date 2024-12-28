@@ -14,7 +14,6 @@
 #include "epanet3.h"
 
 #include <algorithm>
-#include <random>
 #include <cassert>
 #include <chrono>
 #include <cmath>
@@ -27,6 +26,7 @@
 #include <mpi.h>
 #include <nlohmann/json.hpp> // Include nlohmann/json header
 #include <numeric>
+#include <random>
 #include <string>
 #include <thread>
 #include <vector>
@@ -121,7 +121,7 @@ public:
     }
 
     double cost = 0.0;
-    bool is_feasible = solver.process_node(cost, verbose, config.dump_project);
+    bool is_feasible = solver.process_node(cost);
     if (!is_feasible)
     {
       Console::printf(Console::Color::RED, "Error: Process node returned infeasible solution.\n");
@@ -295,7 +295,7 @@ public:
     {
       double cost = 0.0;                 // reset the cost
       solver.cntrs.cost_ub = 1000000000; // reset the cost upper bound
-      bool is_feasible = solver.process_node(cost, verbose, config.dump_project);
+      bool is_feasible = solver.process_node(cost);
       if (!is_feasible)
       {
         Console::printf(Console::Color::RED, "TestMPI[rank=%d]: Process node returned infeasible solution.\n", rank);
@@ -430,7 +430,7 @@ private:
     if (!solver.is_feasible)
     {
       if (verbose) Console::printf(Console::Color::RED, "Rank[%d]: update_x is infeasible.\n", rank);
-      solver.add_prune(PruneReason::ACTUATIONS, verbose);
+      solver.add_prune(PruneReason::ACTUATIONS);
       return;
     }
     solver.show_xy(verbose);
@@ -443,7 +443,7 @@ private:
     if (!solver.is_feasible)
     {
       // Just for testing, we prune on pressures
-      solver.add_prune(PruneReason::PRESSURES, verbose);
+      solver.add_prune(PruneReason::PRESSURES);
       return;
     }
 
@@ -792,7 +792,8 @@ public:
   {
     // Create vector of indices and shuffle them
     std::vector<int> indices(snapshots.size());
-    for (int i = 0; i < snapshots.size(); i++) {
+    for (int i = 0; i < snapshots.size(); i++)
+    {
       indices[i] = i;
     }
     std::random_device rd;
@@ -803,11 +804,11 @@ public:
     for (int i = 0; i < indices.size(); i++)
     {
       int h = indices[i];
-      
+
       // Load the snapshot
       p.from_json(snapshots[h]);
 
-      // Save the new snapshot  
+      // Save the new snapshot
       char filename[32];
       sprintf(filename, "snapshots_%02d_new.json", h);
       std::ofstream file(filename);

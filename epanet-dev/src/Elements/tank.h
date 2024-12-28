@@ -12,12 +12,11 @@
 #ifndef TANK_H_
 #define TANK_H_
 
-#include "Elements/node.h"
 #include "Elements/curve.h"
+#include "Elements/node.h"
 #include "Models/tankmixmodel.h"
 
 #include <string>
-
 
 //! \class Tank
 //! \brief A fixed head Node with storage volume.
@@ -98,7 +97,8 @@ public:
     diameter = j.at("diameter").get<double>();
     minVolume = j.at("minVolume").get<double>();
     bulkCoeff = j.at("bulkCoeff").get<double>();
-    if (volCurve) volCurve->from_json(j.at("volCurve"));
+    if (volCurve)
+      volCurve->from_json(j.at("volCurve"));
     mixingModel.from_json(j.at("mixingModel"));
     maxVolume = j.at("maxVolume").get<double>();
     volume = j.at("volume").get<double>();

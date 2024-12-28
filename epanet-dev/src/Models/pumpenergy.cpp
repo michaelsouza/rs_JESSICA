@@ -90,7 +90,7 @@ double PumpEnergy::updateEnergyUsage(Pump *pump, Network *network, int dt) {
   // printf("            kw ......... %f\n", kw);
   // printf("            hrs ........ %f\n", hrs);
   // printf("            adjustedCost %f\n", adjustedTotalCost);
-  
+
   return kw;
 }
 

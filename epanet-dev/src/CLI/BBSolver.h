@@ -6,6 +6,7 @@
 #include "BBPruneReason.h"
 #include "BBStats.h"
 
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
@@ -42,11 +43,9 @@ public:
    * @brief Processes a node in the branch and bound tree by simulating hydraulics and checking constraints
    *
    * @param cost Reference to store the total operating cost
-   * @param verbose If true, prints detailed simulation information
-   * @param save_project If true, saves project state to timestamped file
    * @return true if node solution is feasible, false if any constraints violated
    */
-  bool process_node(double &cost, bool verbose, bool save_project);
+  bool process_node(double &cost);
 
   /**
    * @brief Updates the y vector based on feasibility.
@@ -100,17 +99,15 @@ public:
    * @param recv_buffer The vector containing the current state.
    */
   void read_buffer();
-  void add_prune(PruneReason reason, bool verbose);
+  void add_prune(PruneReason reason);
 
   /**
    * @brief Updates the pump states in the EPANET project based on the current solution
    *
    * @param p The EPANET project to update
    * @param full_update If true, updates pumps for all time periods. If false, only updates current period
-   * @param verbose If true, prints detailed information about the pump updates
    */
-  void update_pumps(Project &p, bool full_update, bool verbose);
-  void update_tanks_initHead(Project &p);
+  void update_pumps(Project &p, bool full_update);
   void add_feasible();
   bool try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose);
   void update_cost_ub(double cost, bool update_xy);
@@ -142,6 +139,9 @@ public:
   BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
   BBConfig config; ///< Configuration object for solver parameters.
 
+  std::vector<nlohmann::json> snapshots;
+  Project p;
+
   // MPI variables
   std::vector<int> mpi_buffer; ///< Buffer for receiving data from other ranks.
   int mpi_rank;                ///< Rank of the current process.
@@ -149,7 +149,7 @@ public:
   std::vector<int> y_best;     ///< Best y vector found.
   std::vector<int> x_best;     ///< Best x vector found.
 
-  void epanet_load(Project &p, int t_max, bool verbose);
-  void epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost);
-  void save_project(Project &p, bool dump);
+  void epanet_load();
+  void epanet_solve(Project &p, double &cost);
+  void take_snapshot(Project &p, bool dump);
 };

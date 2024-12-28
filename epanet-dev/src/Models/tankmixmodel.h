@@ -67,9 +67,11 @@ public:
     cTank = j.at("cTank").get<double>();
     vMixed = j.at("vMixed").get<double>();
 
-    if (firstSeg) firstSeg->from_json(j.at("firstSeg"));
+    if (firstSeg)
+      firstSeg->from_json(j.at("firstSeg"));
 
-    if (lastSeg) lastSeg->from_json(j.at("lastSeg"));
+    if (lastSeg)
+      lastSeg->from_json(j.at("lastSeg"));
   }
 
 private:

@@ -82,7 +82,7 @@
         {
             "label": "clang-format CLI",
             "type": "shell",
-            "command": "find epanet-dev/src/ -iname '*.cpp' -o -iname '*.h' -o -iname '*.c' | xargs clang-format -i -style=file",
+            "command": "find epanet-dev/ -iname '*.cpp' -o -iname '*.h' -o -iname '*.c' | xargs clang-format -i -style=file",
             "group": {
                 "kind": "build",
                 "isDefault": false

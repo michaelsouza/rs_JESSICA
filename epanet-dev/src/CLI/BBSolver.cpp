@@ -32,13 +32,19 @@ BBSolver::BBSolver(BBConfig &config)
   y_best = std::vector<int>(h_max + 1, 0);
   x_best = std::vector<int>(num_pumps * (h_max + 1), 0);
 
+  // Allocate snapshots
+  snapshots.resize(h_max + 1);
+
+  // Load project
+  epanet_load();
+
   // Allocate the recv buffer
   mpi_buffer.resize(4 + y.size() + x.size());
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 }
 
-void BBSolver::epanet_load(Project &p, int t_max, bool verbose)
+void BBSolver::epanet_load()
 {
   ProfileScope scope("epanet_load");
 
@@ -47,28 +53,27 @@ void BBSolver::epanet_load(Project &p, int t_max, bool verbose)
   Network *nw = p.getNetwork();
 
   // Set the total duration of the simulation
+  int t_max = 3600 * h_max;
   nw->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
 
   // Initialize the solver
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+
+  // Take an initial snapshot
+  snapshots[0] = p.to_json();
 }
 
-void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost)
+void BBSolver::epanet_solve(Project &p, double &cost)
 {
   ProfileScope scope("epanet_solve");
 
   const int t_min = 3600 * (h - 1);
+  const int t_max = 3600 * h;
 
   // Run the solver
+  int t = 0, dt = 0;
   do
   {
-    if (t % 3600 == 0)
-    {
-      int label = t / 3600; // Hour label
-      std::string filename = "snapshot_" + std::to_string(h) + "_" + std::to_string(label) + ".json";
-      // p.snapshot(filename);
-    }
-
     // Run the solver
     CHK(p.runSolver(&t), "Run solver");
 
@@ -77,11 +82,14 @@ void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
 
     const int t_new = t + dt;
 
-    // Skip feasibility check for previous time periods, they are already feasible
-    if (t < t_min) continue;
+    if (t_new < t_min || t_new > t_max)
+    {
+      printf("ERR[rank=%d]: BBSolver::epanet_solve: t_new is out of bounds (t_new=%d, t_min=%d, t_max=%d)\n", mpi_rank, t_new, t_min, t_max);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
     // Show the current state
-    if (verbose)
+    if (config.verbose)
     {
       Console::printf(Console::Color::CYAN, "===========================================");
       Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d\n", t_new, 3600 * h, t, dt);
@@ -89,83 +97,72 @@ void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
 
     // Check cost
     cost = cntrs.calc_cost(&p);
-    is_feasible = cntrs.check_cost(&p, cost, verbose);
+    is_feasible = cntrs.check_cost(&p, cost, config.verbose);
     if (!is_feasible)
     {
-      add_prune(PruneReason::COST, verbose);
+      add_prune(PruneReason::COST);
       jump_to_end();
       return;
     }
 
     // Check node pressures
-    is_feasible = cntrs.check_pressures(&p, verbose);
+    is_feasible = cntrs.check_pressures(&p, config.verbose);
     if (!is_feasible)
     {
-      add_prune(PruneReason::PRESSURES, verbose);
+      add_prune(PruneReason::PRESSURES);
       return;
     }
 
     // Check tank levels
-    is_feasible = cntrs.check_levels(&p, verbose);
+    is_feasible = cntrs.check_levels(&p, config.verbose);
     if (!is_feasible)
     {
-      add_prune(PruneReason::LEVELS, verbose);
+      add_prune(PruneReason::LEVELS);
       return;
     }
+
+    // When the simulation reaches t_max and it is not the last hour, break.
+    // When it is the last hour, just stop if "dt == 0".
+    if (t_new == t_max && h != h_max) break;
 
   } while (dt > 0);
 
   // Check stability if the the solution is feasible and the current hour is the last hour
   if (is_feasible && h == h_max)
   {
-    is_feasible = cntrs.check_stability(&p, verbose);
+    is_feasible = cntrs.check_stability(&p, config.verbose);
 
     // Update cost_ub
     if (is_feasible) update_cost_ub(cost, true);
   }
+
+  // Take a snapshot if the solution is feasible
+  if (is_feasible) snapshots[h] = p.to_json();
 }
 
-void BBSolver::save_project(Project &p, bool dump)
-{
-  if (dump)
-  {
-    // Create a file with timestamp based name
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << "output_" << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S") << ".inp";
-    p.save(ss.str().c_str());
-    Console::printf(Console::Color::BRIGHT_GREEN, "Project saved to: %s\n", ss.str().c_str());
-  }
-}
-
-bool BBSolver::process_node(double &cost, bool verbose, bool dump_project)
+bool BBSolver::process_node(double &cost)
 {
   ProfileScope scope("process_node");
 
+  // Load the previous snapshot
+  p.from_json(snapshots[h - 1]);
+
+  // Initialize variables
   is_feasible = true;
-  int t = 0, dt = 0, t_max = 3600 * h;
   bool pumps_update_full = true;
 
-  // Load project
-  Project p;
-  epanet_load(p, t_max, verbose);
-
   // Set the project and constraints
-  update_pumps(p, pumps_update_full, verbose);
+  update_pumps(p, pumps_update_full);
 
-  if (verbose) show(true);
+  if (config.verbose) show(true);
 
   // Run simulation
-  epanet_solve(p, t, dt, verbose, cost);
-
-  // Save project if required
-  save_project(p, dump_project);
+  epanet_solve(p, cost);
 
   return is_feasible;
 }
 
-void BBSolver::update_pumps(Project &p, bool full_update, bool verbose)
+void BBSolver::update_pumps(Project &p, bool full_update)
 {
   ProfileScope scope("update_pumps");
 
@@ -174,13 +171,13 @@ void BBSolver::update_pumps(Project &p, bool full_update, bool verbose)
     // Update pumps for all time periods
     for (int i = 0; i <= h_max; ++i)
     {
-      cntrs.update_pumps(&p, i, x, verbose);
+      cntrs.update_pumps(&p, i, x, config.verbose);
     }
   }
   else
   {
     // Update pumps only for current time period
-    cntrs.update_pumps(&p, h, x, verbose);
+    cntrs.update_pumps(&p, h, x, config.verbose);
   }
 }
 
@@ -470,10 +467,10 @@ int BBSolver::get_free_level()
 }
 
 /** Update Reason functions */
-void BBSolver::add_prune(PruneReason reason, bool verbose)
+void BBSolver::add_prune(PruneReason reason)
 {
   stats.add_pruning(reason, h);
-  if (verbose) Console::printf(Console::Color::BRIGHT_RED, "Rank[%d]: Pruned at h=%d, reason=%s\n", mpi_rank, h, to_string(reason).c_str());
+  if (config.verbose) Console::printf(Console::Color::BRIGHT_RED, "Rank[%d]: Pruned at h=%d, reason=%s\n", mpi_rank, h, to_string(reason).c_str());
 }
 
 void BBSolver::add_feasible()
@@ -544,7 +541,7 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free, bool ver
   // Update status
   h = h_min;
   is_feasible = false;
-  add_prune(PruneReason::SPLIT, verbose);
+  add_prune(PruneReason::SPLIT);
 
   // Show the current state
   // if (verbose) show();
@@ -767,12 +764,12 @@ void BBSolver::solve_iteration(int &done_loc, bool verbose, bool dump_project)
   update_x(verbose);
   if (!is_feasible)
   {
-    add_prune(PruneReason::ACTUATIONS, verbose);
+    add_prune(PruneReason::ACTUATIONS);
     return;
   }
 
   // Process node
-  process_node(cost, verbose, dump_project);
+  process_node(cost);
 }
 
 // Function to synchronize the ranks

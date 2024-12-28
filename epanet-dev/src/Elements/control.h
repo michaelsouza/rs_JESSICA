@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -15,106 +16,97 @@
 #include "Elements/link.h"
 #include "Elements/node.h"
 
-#include <string>
 #include <ostream>
+#include <string>
 
 class Network;
 
 //! \class Control
 //! \brief A class that controls pumps and valves based on a single condition.
 
-class Control: public Element
-{
-  public:
-    enum ControlType {TANK_LEVEL, PRESSURE_LEVEL, ELAPSED_TIME, TIME_OF_DAY,
-                      RULE_BASED};
-    enum StatusType  {CLOSED_STATUS, OPEN_STATUS, NO_STATUS};
-    enum LevelType   {LOW_LEVEL, HI_LEVEL, NO_LEVEL};
+class Control : public Element {
+public:
+  enum ControlType {
+    TANK_LEVEL,
+    PRESSURE_LEVEL,
+    ELAPSED_TIME,
+    TIME_OF_DAY,
+    RULE_BASED
+  };
+  enum StatusType { CLOSED_STATUS, OPEN_STATUS, NO_STATUS };
+  enum LevelType { LOW_LEVEL, HI_LEVEL, NO_LEVEL };
 
-    // Constructor/Destructor
-    Control(int type_, std::string name_);
-    ~Control();
+  // Constructor/Destructor
+  Control(int type_, std::string name_);
+  ~Control();
 
-    // Applies all pressure controls to the pipe network,
-    // return true if status of any link changes
-    static  bool     applyPressureControls(Network* network);
+  // Applies all pressure controls to the pipe network,
+  // return true if status of any link changes
+  static bool applyPressureControls(Network *network);
 
-    // Sets the properties of a control
-    void    setProperties(
-                int    controlType,
-                Link*  controlLink,
-                int    linkStatus,
-                double linkSetting,
-                Node*  controlNode,
-                double nodeSetting,
-                int    controlLevelType,
-                int    timeSetting);
+  // Sets the properties of a control
+  void setProperties(int controlType, Link *controlLink, int linkStatus,
+                     double linkSetting, Node *controlNode, double nodeSetting,
+                     int controlLevelType, int timeSetting);
 
-    // Produces a string representation of the control
-    std::string toStr(Network* network);
+  // Produces a string representation of the control
+  std::string toStr(Network *network);
 
-    // Converts the control's properties to internal units
-    void    convertUnits(Network* network);
+  // Converts the control's properties to internal units
+  void convertUnits(Network *network);
 
-    // Returns the control's type (see ControlType enum)
-    int     getType()
-            { return type; }
+  // Returns the control's type (see ControlType enum)
+  int getType() { return type; }
 
-    // Finds the time until the control is next activated
-    int    timeToActivate(Network* network, int t, int tod);
+  // Finds the time until the control is next activated
+  int timeToActivate(Network *network, int t, int tod);
 
-    // Checks if the control's conditions are met
-    void    apply(Network* network, int t, int tod);
+  // Checks if the control's conditions are met
+  void apply(Network *network, int t, int tod);
 
-//! Serialize to JSON
-nlohmann::json to_json() const override {
-    nlohmann::json jsonObj = Element::to_json(); // Call base class serialization
-    jsonObj.merge_patch({
-        {"type", type},
-        {"link", link ? link->to_json() : nullptr},
-        {"status", status},
-        {"setting", setting},
-        {"node", node ? node->to_json() : nullptr},
-        {"head", head},
-        {"volume", volume},
-        {"levelType", levelType},
-        {"time", time}
-    });
-    return jsonObj;
-}
+  //! Serialize to JSON
+  nlohmann::json to_json() const override {
+    return {{"type", type},
+            {"link", link ? link->to_json() : nullptr},
+            {"status", status},
+            {"setting", setting},
+            {"node", node ? node->to_json() : nullptr},
+            {"head", head},
+            {"volume", volume},
+            {"levelType", levelType},
+            {"time", time}};
+  }
 
-//! Deserialize from JSON
-void from_json(const nlohmann::json& j) override {
-    Element::from_json(j); // Call base class deserialization
+  //! Deserialize from JSON
+  void from_json(const nlohmann::json &j) override {
     type = j.at("type").get<int>();
     if (!j.at("link").is_null()) {
-        link->from_json(j.at("link"));
+      link->from_json(j.at("link"));
     }
     status = j.at("status").get<int>();
     setting = j.at("setting").get<double>();
     if (!j.at("node").is_null()) {
-        node->from_json(j.at("node"));
+      node->from_json(j.at("node"));
     }
     head = j.at("head").get<double>();
     volume = j.at("volume").get<double>();
     levelType = static_cast<LevelType>(j.at("levelType").get<int>());
     time = j.at("time").get<int>();
-}
-    
-  private:
-    int         type;                  //!< type of control
-    Link*       link;                  //!< link being controlled
-    int         status;                //!< open/closed setting for link
-    double      setting;               //!< speed or valve setting for link
-    Node*       node;                  //!< node that triggers control action
-    double      head;                  //!< head that triggers control action
-    double      volume;                //!< volume corresponding to head trigger
-    LevelType   levelType;             //!< type of node head trigger
-    int         time;                  //!< time (sec) that triggers control
+  }
 
-    // Activates the control's action
-    bool        activate(bool makeChange, std::ostream& msgLog);
+private:
+  int type;            //!< type of control
+  Link *link;          //!< link being controlled
+  int status;          //!< open/closed setting for link
+  double setting;      //!< speed or valve setting for link
+  Node *node;          //!< node that triggers control action
+  double head;         //!< head that triggers control action
+  double volume;       //!< volume corresponding to head trigger
+  LevelType levelType; //!< type of node head trigger
+  int time;            //!< time (sec) that triggers control
 
+  // Activates the control's action
+  bool activate(bool makeChange, std::ostream &msgLog);
 };
 
 #endif

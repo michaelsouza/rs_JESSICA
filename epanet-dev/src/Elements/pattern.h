@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -11,12 +12,12 @@
 #ifndef PATTERN_H_
 #define PATTERN_H_
 
-#include "Utilities/utilities.h"
 #include "Elements/element.h"
+#include "Utilities/utilities.h"
 
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 class MemPool;
 
@@ -28,68 +29,61 @@ class MemPool;
 //! Pattern is an abstract class from which the FixedPattern and
 //! VariablePattern classes are derived.
 
-class Pattern: public Element
-{
-  public:
+class Pattern : public Element {
+public:
+  enum PatternType { FIXED_PATTERN, VARIABLE_PATTERN };
 
-    enum PatternType {FIXED_PATTERN, VARIABLE_PATTERN};
+  // Constructor/Destructor
+  Pattern(std::string name_, int type_);
+  virtual ~Pattern();
 
-    // Constructor/Destructor
-    Pattern(std::string name_, int type_);
-    virtual ~Pattern();
+  // Pattern factory
+  static Pattern *factory(int type_, std::string name_, MemPool *memPool);
 
-    // Pattern factory
-    static  Pattern* factory(int type_, std::string name_, MemPool* memPool);
+  // Methods
+  void setTimeInterval(int t) { interval = t; }
+  void addFactor(double f) { factors.push_back(f); }
+  int timeInterval() { return interval; }
+  int size() { return factors.size(); }
+  double factor(int i) { return factors[i]; }
+  double currentFactor();
+  int currentIdx() { return currentIndex; }
+  virtual void init(int intrvl, int tstart) = 0;
+  virtual int nextTime(int t) = 0;
+  virtual void advance(int t) = 0;
+  void show() {
+    std::cout << "Pattern: " << name << std::endl;
+    std::cout << "  type: " << type << std::endl;
+    std::cout << "  factors(" << size() << "): [";
+    for (int i = 0; i < size(); i++) {
+      std::cout << " " << factor(i);
+    }
+    std::cout << " ]" << std::endl;
+  };
 
-    // Methods
-    void           setTimeInterval(int t) { interval = t; }
-    void           addFactor(double f) { factors.push_back(f); }
-    int            timeInterval() { return interval; }
-    int            size() { return factors.size(); }
-    double         factor(int i) { return factors[i]; }
-    double         currentFactor();
-    int            currentIdx() { return currentIndex; }
-    virtual void   init(int intrvl, int tstart) = 0;
-    virtual int    nextTime(int t) = 0;
-    virtual void   advance(int t) = 0;
-    void           show() {
-      std::cout << "Pattern: " << name << std::endl;
-      std::cout << "  type: " << type << std::endl;
-      std::cout << "  factors(" << size() << "): [";
-      for (int i = 0; i < size(); i++) {
-        std::cout << " " << factor(i);
-      }
-      std::cout << " ]" << std::endl;
-    };
+  // Properties
+  int type; //!< type of time pattern
 
-    // Properties
-    int            type;                //!< type of time pattern
+  //! Serialize to JSON for Pattern
+  nlohmann::json to_json() const override {
+    return {{"type", type},
+            {"factors", factors},
+            {"currentIndex", currentIndex},
+            {"interval", interval}};
+  }
 
-//! Serialize to JSON for Pattern
-nlohmann::json to_json() const override {
-    nlohmann::json jsonObj = Element::to_json();
-    jsonObj.merge_patch({
-        {"type", type},
-        {"factors", factors},
-        {"currentIndex", currentIndex},
-        {"interval", interval}
-    });
-    return jsonObj;
-}
-
-//! Deserialize from JSON for Pattern
-void from_json(const nlohmann::json& j) override {
-    Element::from_json(j);
+  //! Deserialize from JSON for Pattern
+  void from_json(const nlohmann::json &j) override {
     type = j.at("type").get<int>();
     factors = j.at("factors").get<std::vector<double>>();
     currentIndex = j.at("currentIndex").get<int>();
     interval = j.at("interval").get<int>();
-}
+  }
 
-  protected:
-    std::vector<double> factors;        //!< sequence of multiplier factors
-    int                 currentIndex;   //!< index of current pattern interval
-    int                 interval;       //!< fixed time interval (sec)
+protected:
+  std::vector<double> factors; //!< sequence of multiplier factors
+  int currentIndex;            //!< index of current pattern interval
+  int interval;                //!< fixed time interval (sec)
 };
 
 //------------------------------------------------------------------------------
@@ -99,22 +93,20 @@ void from_json(const nlohmann::json& j) override {
 //! \note A fixed pattern wraps around once time exceeds the period
 //!       associated with the last multiplier factor supplied.
 
-class FixedPattern : public Pattern
-{
-  public:
+class FixedPattern : public Pattern {
+public:
+  // Constructor/Destructor
+  FixedPattern(std::string name_);
+  ~FixedPattern();
 
-    // Constructor/Destructor
-    FixedPattern(std::string name_);
-    ~FixedPattern();
+  // Methods
+  void init(int intrvl, int tstart);
+  int nextTime(int t);
+  void advance(int t);
+  void setFactor(int idx, double f) { factors[idx] = f; }
 
-    // Methods
-    void   init(int intrvl, int tstart);
-    int    nextTime(int t);
-    void   advance(int t);
-    void   setFactor(int idx, double f) { factors[idx] = f; }
-
-  private:
-    int    startTime;   //!< offset from time 0 when the pattern begins (sec)
+private:
+  int startTime; //!< offset from time 0 when the pattern begins (sec)
 };
 
 //------------------------------------------------------------------------------
@@ -124,36 +116,34 @@ class FixedPattern : public Pattern
 //! \note When time exceeds the last time interval of a variable pattern
 //!       the multiplier factor remains constant at its last value.
 
-class VariablePattern : public Pattern
-{
-  public:
+class VariablePattern : public Pattern {
+public:
+  // Constructor/Destructor
+  VariablePattern(std::string name_);
+  ~VariablePattern();
 
-    // Constructor/Destructor
-    VariablePattern(std::string name_);
-    ~VariablePattern();
-
-    // Methods
-    void   addTime(int t) { times.push_back(t); }
-    int    time(int i) { return times[i]; }
-    void   init(int intrvl, int tstart);
-    int    nextTime(int t);
-    void   advance(int t);
+  // Methods
+  void addTime(int t) { times.push_back(t); }
+  int time(int i) { return times[i]; }
+  void init(int intrvl, int tstart);
+  int nextTime(int t);
+  void advance(int t);
 
   //! Serialize to JSON for VariablePattern
-nlohmann::json to_json() const override {
+  nlohmann::json to_json() const override {
     nlohmann::json jsonObj = Pattern::to_json();
     jsonObj["times"] = times;
     return jsonObj;
-}
+  }
 
-//! Deserialize from JSON for VariablePattern
-void from_json(const nlohmann::json& j) override {
+  //! Deserialize from JSON for VariablePattern
+  void from_json(const nlohmann::json &j) override {
     Pattern::from_json(j);
     times = j.at("times").get<std::vector<int>>();
-}
+  }
 
-  private:
-    std::vector<int>   times;  //!< times (sec) at which factors change
+private:
+  std::vector<int> times; //!< times (sec) at which factors change
 };
 
 #endif

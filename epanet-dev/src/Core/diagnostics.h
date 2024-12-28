@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -13,9 +14,8 @@
 
 class Network;
 
-struct Diagnostics
-{
-    void  validateNetwork(Network* nw);
+struct Diagnostics {
+  void validateNetwork(Network *nw);
 };
 
 #endif // DIAGNOSTICS_H_

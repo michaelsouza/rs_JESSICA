@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -25,41 +26,31 @@ class MatrixSolver;
 //! specific algorithm used for solving pipe network hydraulics at a
 //! given instance in time.
 
-class HydSolver
-{
-  public:
+class HydSolver {
+public:
+  enum StatusCode { SUCCESSFUL, FAILED_NO_CONVERGENCE, FAILED_ILL_CONDITIONED };
 
-    enum StatusCode {
-        SUCCESSFUL,
-        FAILED_NO_CONVERGENCE,
-        FAILED_ILL_CONDITIONED
-    };
+  HydSolver(Network *nw, MatrixSolver *ms);
+  virtual ~HydSolver();
+  static HydSolver *factory(const std::string name, Network *nw,
+                            MatrixSolver *ms);
+  virtual int solve(double tstep, int &trials) = 0;
 
-    HydSolver(Network* nw, MatrixSolver* ms);
-    virtual ~HydSolver();
-    static  HydSolver* factory(const std::string name, Network* nw, MatrixSolver* ms);
-    virtual int solve(double tstep, int& trials) = 0;
-    
-//! Serialize to JSON for HydSolver
-virtual nlohmann::json to_json() const {
-    return {
-        {"matrixSolver", matrixSolver ? matrixSolver->to_json() : nullptr}
-    };
-}
+  //! Serialize to JSON for HydSolver
+  virtual nlohmann::json to_json() const {
+    return {{"matrixSolver", matrixSolver ? matrixSolver->to_json() : nullptr}};
+  }
 
-//! Deserialize from JSON for HydSolver
-virtual void from_json(const nlohmann::json& j) {
+  //! Deserialize from JSON for HydSolver
+  virtual void from_json(const nlohmann::json &j) {
     if (!j.at("matrixSolver").is_null()) {
-        matrixSolver->from_json(j.at("matrixSolver"));
+      matrixSolver->from_json(j.at("matrixSolver"));
     }
-}
+  }
 
-
-  protected:
-
-    Network*       network;
-    MatrixSolver*  matrixSolver;
-
+protected:
+  Network *network;
+  MatrixSolver *matrixSolver;
 };
 
 #endif

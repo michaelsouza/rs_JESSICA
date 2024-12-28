@@ -11,9 +11,9 @@
 #ifndef LEAKAGEMODEL_H_
 #define LEAKAGEMODEL_H_
 
+#include <nlohmann/json.hpp> // Include the JSON library
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp> // Include the JSON library
 
 //! \class LeakageModel
 //! \brief The interface for a pipe leakage model.
@@ -23,41 +23,33 @@
 //! a power function model and a fixed-and-variable-areas discharge
 //! (FAVAD) model.
 
-class LeakageModel
-{
-  public:
-    LeakageModel();
-    virtual ~LeakageModel();
-    static  LeakageModel* factory(
-                                  const std::string model,
-                                  const double ucfLength_,
-                                  const double ucfFlow_);
-    virtual double findFlow(double c1,
-                            double c2,
-                            double length,
-                            double h,
-                            double& dqdh) = 0;
-  
-  //! Serialize to JSON for LeakageModel
-nlohmann::json to_json() const {
-    return {
-        {"lengthUcf", lengthUcf},
-        {"flowUcf", flowUcf},
-        {"pressureUcf", pressureUcf}
-    };
-}
+class LeakageModel {
+public:
+  LeakageModel();
+  virtual ~LeakageModel();
+  static LeakageModel *factory(const std::string model, const double ucfLength_,
+                               const double ucfFlow_);
+  virtual double findFlow(double c1, double c2, double length, double h,
+                          double &dqdh) = 0;
 
-//! Deserialize from JSON for LeakageModel
-void from_json(const nlohmann::json& j) {
+  //! Serialize to JSON for LeakageModel
+  nlohmann::json to_json() const {
+    return {{"lengthUcf", lengthUcf},
+            {"flowUcf", flowUcf},
+            {"pressureUcf", pressureUcf}};
+  }
+
+  //! Deserialize from JSON for LeakageModel
+  void from_json(const nlohmann::json &j) {
     lengthUcf = j.at("lengthUcf").get<double>();
     flowUcf = j.at("flowUcf").get<double>();
     pressureUcf = j.at("pressureUcf").get<double>();
-}
+  }
 
-  protected:
-    double lengthUcf;
-    double flowUcf;
-    double pressureUcf;
+protected:
+  double lengthUcf;
+  double flowUcf;
+  double pressureUcf;
 };
 
 //-----------------------------------------------------------------------------
@@ -65,12 +57,11 @@ void from_json(const nlohmann::json& j) {
 //! \brief Pipe leakage rate varies as a power function of pipe pressure.
 //-----------------------------------------------------------------------------
 
-class PowerLeakageModel : public LeakageModel
-{
-  public:
-    PowerLeakageModel(const double ucfLength_, const double ucfFlow_);
-    double findFlow(double flowCoeff, double expon, double length, double h,
-                    double& dqdh);
+class PowerLeakageModel : public LeakageModel {
+public:
+  PowerLeakageModel(const double ucfLength_, const double ucfFlow_);
+  double findFlow(double flowCoeff, double expon, double length, double h,
+                  double &dqdh);
 };
 
 //-----------------------------------------------------------------------------
@@ -79,11 +70,11 @@ class PowerLeakageModel : public LeakageModel
 //!        leak area is a function of pipe pressure.
 //-----------------------------------------------------------------------------
 
-class FavadLeakageModel : public LeakageModel
-{
-  public:
-    FavadLeakageModel(const double ucfLength_);
-    double findFlow(double area, double slope, double length, double h, double& dqdh);
+class FavadLeakageModel : public LeakageModel {
+public:
+  FavadLeakageModel(const double ucfLength_);
+  double findFlow(double area, double slope, double length, double h,
+                  double &dqdh);
 };
 
 #endif /* LEAKAGEMODEL_H_ */

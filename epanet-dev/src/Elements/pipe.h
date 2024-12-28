@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -18,74 +19,69 @@ class Network;
 //! \class Pipe
 //! \brief A circular conduit Link through which water flows.
 
-class Pipe: public Link
-{
-  public:
+class Pipe : public Link {
+public:
+  // Constructor/Destructor
 
-    // Constructor/Destructor
+  Pipe(std::string name);
+  ~Pipe();
 
-    Pipe(std::string name);
-    ~Pipe();
+  // Methods
 
-    // Methods
+  int type() { return Link::PIPE; }
+  std::string typeStr() { return "Pipe"; }
+  void convertUnits(Network *nw);
+  bool isReactive();
+  void setInitFlow();
+  void setInitStatus(int s);
+  void setInitSetting(double s);
+  void setResistance(Network *nw);
 
-    int         type() { return Link::PIPE; }
-    std::string typeStr() { return "Pipe"; }
-    void        convertUnits(Network* nw);
-    bool        isReactive();
-    void        setInitFlow();
-    void        setInitStatus(int s);
-    void        setInitSetting(double s);
-    void        setResistance(Network* nw);
+  double getRe(const double q, const double viscos);
+  double getResistance() { return resistance; }
+  double getVelocity();
+  double getUnitHeadLoss();
+  double getSetting(Network *nw) { return roughness; }
+  double getVolume() { return 0.785398 * length * diameter * diameter; }
 
-    double      getRe(const double q, const double viscos);
-    double      getResistance() {return resistance;}
-    double      getVelocity();
-    double      getUnitHeadLoss();
-    double      getSetting(Network* nw) { return roughness; }
-    double      getVolume() { return 0.785398 * length * diameter * diameter; }
+  void findHeadLoss(Network *nw, double q);
+  bool canLeak() { return leakCoeff1 > 0.0; }
+  double findLeakage(Network *nw, double h, double &dqdh);
+  bool changeStatus(int s, bool makeChange, const std::string reason,
+                    std::ostream &msgLog);
+  void validateStatus(Network *nw, double qTol);
 
-    void        findHeadLoss(Network* nw, double q);
-    bool        canLeak() { return leakCoeff1 > 0.0; }
-    double      findLeakage(Network* nw, double h, double& dqdh);
-    bool        changeStatus(int s, bool makeChange,
-                            const std::string reason,
-                            std::ostream& msgLog);
-    void        validateStatus(Network* nw, double qTol);
+  // Properties
 
-    // Properties
+  bool hasCheckValve; //!< true if pipe has a check valve
+  double length;      //!< pipe length (ft)
+  double roughness;   //!< roughness parameter (units depend on head loss model)
+  double resistance;  //!< resistance factor (units depend head loss model)
+  double lossFactor;  //!< minor loss factor (ft/cfs^2)
+  double leakCoeff1;  //!< leakage coefficient (user units)
+  double leakCoeff2;  //!< leakage coefficient (user units)
+  double bulkCoeff;   //!< bulk reaction coefficient (mass^n/sec)
+  double wallCoeff;   //!< wall reaction coefficient (mass^n/sec)
+  double massTransCoeff; //!< mass transfer coefficient (mass^n/sec)
 
-    bool   hasCheckValve;    //!< true if pipe has a check valve
-    double length;           //!< pipe length (ft)
-    double roughness;        //!< roughness parameter (units depend on head loss model)
-    double resistance;       //!< resistance factor (units depend head loss model)
-    double lossFactor;       //!< minor loss factor (ft/cfs^2)
-    double leakCoeff1;       //!< leakage coefficient (user units)
-    double leakCoeff2;       //!< leakage coefficient (user units)
-    double bulkCoeff;        //!< bulk reaction coefficient (mass^n/sec)
-    double wallCoeff;        //!< wall reaction coefficient (mass^n/sec)
-    double massTransCoeff;   //!< mass transfer coefficient (mass^n/sec)
-
-    //! Serialize to JSON for Pipe
-nlohmann::json to_json() const override {
+  //! Serialize to JSON for Pipe
+  nlohmann::json to_json() const override {
     nlohmann::json jsonObj = Link::to_json();
-    jsonObj.merge_patch({
-        {"hasCheckValve", hasCheckValve},
-        {"length", length},
-        {"roughness", roughness},
-        {"resistance", resistance},
-        {"lossFactor", lossFactor},
-        {"leakCoeff1", leakCoeff1},
-        {"leakCoeff2", leakCoeff2},
-        {"bulkCoeff", bulkCoeff},
-        {"wallCoeff", wallCoeff},
-        {"massTransCoeff", massTransCoeff}
-    });
+    jsonObj.merge_patch({{"hasCheckValve", hasCheckValve},
+                         {"length", length},
+                         {"roughness", roughness},
+                         {"resistance", resistance},
+                         {"lossFactor", lossFactor},
+                         {"leakCoeff1", leakCoeff1},
+                         {"leakCoeff2", leakCoeff2},
+                         {"bulkCoeff", bulkCoeff},
+                         {"wallCoeff", wallCoeff},
+                         {"massTransCoeff", massTransCoeff}});
     return jsonObj;
-}
+  }
 
-//! Deserialize from JSON for Pipe
-void from_json(const nlohmann::json& j) override {
+  //! Deserialize from JSON for Pipe
+  void from_json(const nlohmann::json &j) override {
     Link::from_json(j);
     hasCheckValve = j.at("hasCheckValve").get<bool>();
     length = j.at("length").get<double>();
@@ -97,8 +93,7 @@ void from_json(const nlohmann::json& j) override {
     bulkCoeff = j.at("bulkCoeff").get<double>();
     wallCoeff = j.at("wallCoeff").get<double>();
     massTransCoeff = j.at("massTransCoeff").get<double>();
-}
-
- };
+  }
+};
 
 #endif

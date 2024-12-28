@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -19,42 +20,38 @@ class Network;
 //! \class PumpEnergy
 //! \brief Accumulates energy usage metrics for a pump.
 
-class PumpEnergy
-{
-  public:
+class PumpEnergy {
+public:
+  // Constructor
+  PumpEnergy();
 
-    // Constructor
-    PumpEnergy();
+  // Methods
+  void init();
+  double updateEnergyUsage(Pump *pump, Network *network, int dt);
+  double getCost() { return adjustedTotalCost; }
 
-    // Methods
-    void   init();
-    double updateEnergyUsage(Pump* pump, Network* network, int dt);
-    double getCost(){ return adjustedTotalCost; }
+  // Computed Properties
+  double hrsOnLine;         //!< hours pump is online
+  double efficiency;        //!< total time wtd. efficiency
+  double kwHrsPerCFS;       //!< total kw-hrs per cfs of flow
+  double kwHrs;             //!< total kw-hrs consumed
+  double maxKwatts;         //!< max. kw consumed
+  double totalCost;         //!< total pumping cost
+  double adjustedTotalCost; //!< total pumping cost adjusted for efficiency
 
-    // Computed Properties
-    double hrsOnLine;        //!< hours pump is online
-    double efficiency;       //!< total time wtd. efficiency
-    double kwHrsPerCFS;      //!< total kw-hrs per cfs of flow
-    double kwHrs;            //!< total kw-hrs consumed
-    double maxKwatts;        //!< max. kw consumed
-    double totalCost;        //!< total pumping cost
-    double adjustedTotalCost; //!< total pumping cost adjusted for efficiency
+  //! Serialize to JSON for PumpEnergy
+  nlohmann::json to_json() const {
+    return {{"hrsOnLine", hrsOnLine},
+            {"efficiency", efficiency},
+            {"kwHrsPerCFS", kwHrsPerCFS},
+            {"kwHrs", kwHrs},
+            {"maxKwatts", maxKwatts},
+            {"totalCost", totalCost},
+            {"adjustedTotalCost", adjustedTotalCost}};
+  }
 
-//! Serialize to JSON for PumpEnergy
-nlohmann::json to_json() const {
-    return {
-        {"hrsOnLine", hrsOnLine},
-        {"efficiency", efficiency},
-        {"kwHrsPerCFS", kwHrsPerCFS},
-        {"kwHrs", kwHrs},
-        {"maxKwatts", maxKwatts},
-        {"totalCost", totalCost},
-        {"adjustedTotalCost", adjustedTotalCost}
-    };
-}
-
-//! Deserialize from JSON for PumpEnergy
-void from_json(const nlohmann::json& j) {
+  //! Deserialize from JSON for PumpEnergy
+  void from_json(const nlohmann::json &j) {
     hrsOnLine = j.at("hrsOnLine").get<double>();
     efficiency = j.at("efficiency").get<double>();
     kwHrsPerCFS = j.at("kwHrsPerCFS").get<double>();
@@ -62,12 +59,11 @@ void from_json(const nlohmann::json& j) {
     maxKwatts = j.at("maxKwatts").get<double>();
     totalCost = j.at("totalCost").get<double>();
     adjustedTotalCost = j.at("adjustedTotalCost").get<double>();
-}
+  }
 
-  private:
-
-    double findCostFactor(Pump* pump, Network* network);
-    double findEfficiency(Pump* pump, Network* network);
+private:
+  double findCostFactor(Pump *pump, Network *network);
+  double findEfficiency(Pump *pump, Network *network);
 };
 
 #endif

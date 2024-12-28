@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -11,10 +12,10 @@
 #ifndef MATRIXSOLVER_H_
 #define MATRIXSOLVER_H_
 
+#include <nlohmann/json.hpp> // Include nlohmann/json header
+#include <ostream>
 #include <string>
 #include <vector>
-#include <ostream>
-#include <nlohmann/json.hpp> // Include nlohmann/json header
 
 #include "Utilities/utilities.h"
 
@@ -28,32 +29,31 @@
 //! symmetric coefficient matrix, b is a right hand side vector, and
 //! x is a vector of unknowns.
 
-class MatrixSolver
-{
-  public:
+class MatrixSolver {
+public:
+  MatrixSolver();
+  virtual ~MatrixSolver();
+  static MatrixSolver *factory(const std::string solver, std::ostream &logger);
 
-    MatrixSolver();
-    virtual ~MatrixSolver();
-    static  MatrixSolver* factory(const std::string solver, std::ostream& logger);
+  virtual int init(int nRows, int nOffDiags, int offDiagRow[],
+                   int offDiagCol[]) = 0;
+  virtual void reset() = 0;
 
-    virtual int    init(int nRows, int nOffDiags, int offDiagRow[], int offDiagCol[])= 0;
-    virtual void   reset() = 0;
+  virtual double getDiag(int i) { return 0.0; }
+  virtual double getOffDiag(int i) { return 0.0; }
+  virtual double getRhs(int i) { return 0.0; }
 
-    virtual double getDiag(int i)    {return 0.0;}
-    virtual double getOffDiag(int i) {return 0.0;}
-    virtual double getRhs(int i)     {return 0.0;}
+  virtual void setDiag(int row, double a) = 0;
+  virtual void setRhs(int row, double b) = 0;
+  virtual void addToDiag(int row, double a) = 0;
+  virtual void addToOffDiag(int offDiag, double a) = 0;
+  virtual void addToRhs(int row, double b) = 0;
+  virtual int solve(int nRows, double x[]) = 0;
 
-    virtual void   setDiag(int row, double a) = 0;
-    virtual void   setRhs(int row, double b) = 0;
-    virtual void   addToDiag(int row, double a) = 0;
-    virtual void   addToOffDiag(int offDiag, double a) = 0;
-    virtual void   addToRhs(int row, double b) = 0;
-    virtual int    solve(int nRows, double x[]) = 0;
+  virtual void debug(std::ostream &out) {}
 
-    virtual void  debug(std::ostream& out) {}
-
-    virtual nlohmann::json to_json() const = 0;
-    virtual void from_json(const nlohmann::json& j) = 0;
+  virtual nlohmann::json to_json() const = 0;
+  virtual void from_json(const nlohmann::json &j) = 0;
 };
 
 #endif

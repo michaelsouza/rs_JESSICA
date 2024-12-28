@@ -24,6 +24,7 @@
 #include <limits>
 #include <map>
 #include <mpi.h>
+#include <nlohmann/json.hpp> // Include nlohmann/json header
 #include <numeric>
 #include <string>
 #include <thread>
@@ -569,162 +570,6 @@ public:
   }
 };
 
-class TestEpanetReuseBase : public BBTest
-{
-protected:
-  std::vector<int> y;
-  double expected_cost;
-
-public:
-  TestEpanetReuseBase(const std::vector<int> &y, double expected_cost, const std::string &test_name) : y(y), expected_cost(expected_cost)
-  {
-    this->test_name = test_name;
-  }
-
-  bool run(bool verbose) override
-  {
-    this->verbose = verbose;
-    set_up();
-    return execute_test();
-  }
-
-  void advance_solver(Project &p, BBSolver &solver, int h, int &t, int &dt, double &cost)
-  {
-    const int t_max = 3600 * h;
-    do
-    {
-      // Run the solver
-      CHK(p.runSolver(&t), "Run solver");
-
-      // Advance the solver
-      CHK(p.advanceSolver(&dt), "Advance solver");
-
-      // Check cost
-      cost = solver.cntrs.calc_cost(&p);
-      solver.is_feasible = solver.cntrs.check_cost(&p, cost, verbose);
-      if (!solver.is_feasible)
-      {
-        solver.add_prune(PruneReason::COST, verbose);
-        solver.jump_to_end();
-        break;
-      }
-
-      const int t_new = t + dt;
-
-      if (verbose) Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d, cost=%.2f\n", t_new, t_max, t, dt, cost);
-
-      // The last hour is different, because we can have "t_new" > "t_max", but only the "cost" will be updated not the "t".
-      if (t_new > t_max && h != solver.h_max) break;
-
-      // Check node pressures
-      solver.is_feasible = solver.cntrs.check_pressures(&p, verbose);
-      if (!solver.is_feasible)
-      {
-        solver.add_prune(PruneReason::PRESSURES, verbose);
-        break;
-      }
-
-      // Check tank levels
-      solver.is_feasible = solver.cntrs.check_levels(&p, verbose);
-      if (!solver.is_feasible)
-      {
-        solver.add_prune(PruneReason::LEVELS, verbose);
-        break;
-      }
-
-    } while (dt > 0);
-  }
-
-  bool execute_test()
-  {
-    print_test_name();
-
-    // Set config
-    BBConfig config(0, nullptr);
-    config.max_actuations = 3;
-    config.verbose = verbose;
-    config.h_max = 24;
-
-    BBSolver solver(config);
-    solver.is_feasible = true;
-
-    Project p;
-    CHK(p.load(config.inpFile.c_str()), "Load project");
-    CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
-
-    int t = 0, dt = 0;
-    std::vector<int> h_vec = {6, 12, 18, 24};
-    std::vector<double> cost_vec(h_vec.size(), 0.0);
-    if (!solver.set_y(y))
-    {
-      Console::printf(Console::Color::RED, "Failed to set y vector for full.\n");
-      return false;
-    }
-    solver.update_pumps(p, true, false);
-
-    for (size_t i = 0; i < h_vec.size(); ++i)
-    {
-      // Set h_max, cost and t_max
-      int h = h_vec[i];
-      double &cost = cost_vec[i];
-
-      advance_solver(p, solver, h, t, dt, cost);
-
-      // print i, h_max, t, dt, cost
-      // Console::printf(Console::Color::BRIGHT_GREEN, "i=%d, h=%2d, t=%d, dt=%d, cost=%.2f\n", i, h, t, dt, cost);
-    }
-
-    // Assert fabs(cost - expected_cost) < 0.01
-    if (std::fabs(cost_vec.back() - expected_cost) < 0.01)
-    {
-      Console::printf(Console::Color::GREEN, "Rank[%d]: cost=%.2f is within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(),
-                      expected_cost);
-    }
-    else
-    {
-      Console::printf(Console::Color::RED, "Rank[%d]: cost=%.2f is not within 0.01 of expected=%.2f.\n", solver.mpi_rank, cost_vec.back(),
-                      expected_cost);
-      return false;
-    }
-
-    // Check stability for the last hour
-    if (solver.is_feasible && solver.h == solver.h_max)
-    {
-      solver.is_feasible = solver.cntrs.check_stability(&p, verbose);
-      if (!solver.is_feasible) solver.add_prune(PruneReason::STABILITY, verbose);
-    }
-
-    // Assert solver.is_feasible
-    if (!solver.is_feasible)
-    {
-      Console::printf(Console::Color::RED, "Solver is not feasible.\n");
-      return false;
-    }
-
-    return true;
-  }
-};
-
-class TestEpanetReuse1 : public TestEpanetReuseBase
-{
-public:
-  // y.size == 25, expected_cost = 3578.66
-  TestEpanetReuse1()
-      : TestEpanetReuseBase({0, 1, 2, 1, 2, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 1, 2, 1, 0, 0, 0, 2, 1, 0}, 3578.66, "test_epanet_reuse_1")
-  {
-  }
-};
-
-class TestEpanetReuse2 : public TestEpanetReuseBase
-{
-public:
-  // y.size == 25, expected_cost = 3916.98
-  TestEpanetReuse2()
-      : TestEpanetReuseBase({0, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1}, 3916.98, "test_epanet_reuse_2")
-  {
-  }
-};
-
 class TestUpdateXBase : public BBTest
 {
 protected:
@@ -840,6 +685,162 @@ public:
   }
 };
 
+class TestReuse : public BBTest
+{
+protected:
+public:
+  TestReuse(const std::string &test_name)
+  {
+    this->test_name = test_name;
+  }
+
+  bool run(bool verbose) override
+  {
+    this->verbose = verbose;
+    set_up();
+    return execute_test();
+  }
+
+  void populate_snapshots(Project &p, BBConstraints &cntrs, std::vector<nlohmann::json> &snapshots)
+  {
+    int t = 0, dt = 0, t_next = 0;
+
+    // Clear the snapshots
+    snapshots.clear();
+
+    // Save the initial state
+    snapshots.push_back(p.to_json());
+
+    double cost = cntrs.calc_cost(&p);
+    if (verbose)
+    {
+      Console::printf(Console::Color::CYAN, "==========================\n");
+      Console::printf(Console::Color::CYAN, "   Populate snapshots\n");
+      Console::printf(Console::Color::CYAN, "==========================\n");
+      Console::printf(Console::Color::CYAN, "   t=%d, cost=%f\n", t, cost);
+    }
+
+    // Core loop
+    do
+    {
+      // Run the solver
+      CHK(p.runSolver(&t), "Run solver");
+
+      // Advance the solver
+      CHK(p.advanceSolver(&dt), "Advance solver");
+
+      t_next = t + dt;
+
+      cost = cntrs.calc_cost(&p);
+      Console::printf(Console::Color::CYAN, "   t=%d, dt=%d, cost=%f\n", t, dt, cost);
+
+      if (t_next % 3600 == 0)
+      {
+        // Save the current state
+        snapshots.push_back(p.to_json());
+      }
+    } while (dt > 0);
+  }
+
+  void save_snapshots(const std::vector<nlohmann::json> &snapshots)
+  {
+    for (int i = 0; i < snapshots.size(); ++i)
+    {
+      char filename[32];
+      sprintf(filename, "snapshots_%02d.json", i);
+      std::ofstream file(filename);
+      file << snapshots[i].dump(2);
+      file.close();
+    }
+  }
+
+  double call_solver(Project &p, const BBConstraints &cntrs)
+  {
+    int t = 0, dt = 0, t_next = 0;
+
+    if (verbose)
+    {
+      Console::printf(Console::Color::CYAN, "==========================\n");
+      Console::printf(Console::Color::CYAN, "   Call solver\n");
+      Console::printf(Console::Color::CYAN, "==========================\n");
+    }
+
+    do
+    {
+      // Run the solver
+      CHK(p.runSolver(&t), "Run solver");
+
+      // Advance the solver
+      CHK(p.advanceSolver(&dt), "Advance solver");
+
+      double cost = cntrs.calc_cost(&p);
+      Console::printf(Console::Color::CYAN, "   t=%d, dt=%d, cost=%f\n", t, dt, cost);
+
+    } while (dt > 0);
+
+    return cntrs.calc_cost(&p);
+  }
+
+  bool check_from_json(Project &p, BBConstraints &cntrs, const std::vector<nlohmann::json> &snapshots, double expected_cost)
+  {
+    for (int h = 0; h < snapshots.size(); ++h)
+    {
+      // Load the snapshot
+      p.from_json(snapshots[h]);
+
+      // Save the new snapshot
+      char filename[32];
+      sprintf(filename, "snapshots_%02d_new.json", h);
+      std::ofstream file(filename);
+      file << p.to_json().dump(2);
+      file.close();
+
+      // Call the solver
+      double cost = call_solver(p, cntrs);
+      if (fabs(cost - expected_cost) > 1e-6)
+      {
+        Console::printf(Console::Color::RED, "Failed: h = %d, cost=%f is different from expected_cost=%f\n", h, cost, expected_cost);
+        return false;
+      }
+    }
+    Console::printf(Console::Color::GREEN, "Passed: all costs are equal to expected_cost=%f\n", expected_cost);
+    return true;
+  }
+
+  bool execute_test()
+  {
+    print_test_name();
+    verbose = true;
+
+    // Initialize branch-and-bound solver and statistics
+    BBConfig config(0, nullptr);
+    BBConstraints cntrs(config.inpFile);
+
+    Project p;
+    CHK(p.load(config.inpFile.c_str()), "Load project");
+
+    // Set the total duration of the simulation
+    int t_max = 24 * 3600;
+    p.getNetwork()->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+
+    // Initialize the solver
+    CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
+
+    // Create snapshots
+    std::vector<nlohmann::json> snapshots;
+    populate_snapshots(p, cntrs, snapshots);
+
+    // Save the snapshots to a file
+    save_snapshots(snapshots);
+
+    // Check the results after loading the snapshots
+    double expected_cost = cntrs.calc_cost(&p);
+    check_from_json(p, cntrs, snapshots, expected_cost);
+
+    return true;
+  }
+};
+
 void test_all(const std::vector<std::string> &test_names)
 {
   int rank = 0;
@@ -857,22 +858,14 @@ void test_all(const std::vector<std::string> &test_names)
   TestMPI testMPI;
   TestSplit testSplit;
   TestSetY testSetY;
-  TestEpanetReuse1 testEpanetReuse1;
-  TestEpanetReuse2 testEpanetReuse2;
   TestUpdateX1 testUpdateX1;
   TestUpdateX2 testUpdateX2;
+  TestReuse testReuse("test_reuse");
 
   // Serial tests
-  std::vector<std::pair<BBTest *, std::string>> tests_serial = {{&testCost1, "test_cost_1"},
-                                                                {&testCost2, "test_cost_2"},
-                                                                {&testCost3, "test_cost_3"},
-                                                                {&testTopLevel, "test_top_level"},
-                                                                {&testSetY, "test_set_y"},
-                                                                {&testEpanetReuse1, "test_epanet_reuse_1"},
-                                                                {&testEpanetReuse2, "test_epanet_reuse_2"},
-                                                                {&testUpdateX1, "test_update_x_1"},
-                                                                {&testUpdateX2, "test_update_x_2"}};
-
+  std::vector<std::pair<BBTest *, std::string>> tests_serial = {
+      {&testCost1, "test_cost_1"}, {&testCost2, "test_cost_2"},        {&testCost3, "test_cost_3"},        {&testTopLevel, "test_top_level"},
+      {&testSetY, "test_set_y"},   {&testUpdateX1, "test_update_x_1"}, {&testUpdateX2, "test_update_x_2"}, {&testReuse, "test_reuse"}};
 
   // Parallel tests
   std::vector<std::pair<BBTest *, std::string>> tests_parallel = {{&testMPI, "test_mpi"}, {&testSplit, "test_split"}};

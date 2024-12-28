@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -11,12 +12,12 @@
 #ifndef INPUTPARSER_H_
 #define INPUTPARSER_H_
 
-#include "Input/nodeparser.h"
-#include "Input/linkparser.h"
-#include "Input/patternparser.h"
-#include "Input/curveparser.h"
-#include "Input/optionparser.h"
 #include "Input/controlparser.h"
+#include "Input/curveparser.h"
+#include "Input/linkparser.h"
+#include "Input/nodeparser.h"
+#include "Input/optionparser.h"
+#include "Input/patternparser.h"
 
 #include <string>
 #include <vector>
@@ -32,13 +33,12 @@ class Network;
 //! - PropertyParser reads the properties of these elements as the
 //!   InputReader makes a second pass through the input file.
 
-class InputParser
-{
-  public:
-    InputParser(Network* nw);
-    virtual ~InputParser();
-    virtual void parseLine(std::string& line, int section) = 0;
-    Network* network;
+class InputParser {
+public:
+  InputParser(Network *nw);
+  virtual ~InputParser();
+  virtual void parseLine(std::string &line, int section) = 0;
+  Network *network;
 };
 
 //! \class ObjectParser
@@ -48,34 +48,32 @@ class InputParser
 //! detected in a line of input, a new object is created with the ID name
 //! parsed from the input line.
 
-class ObjectParser : public InputParser
-{
-  public:
-    ObjectParser(Network* nw);
-    void parseLine(std::string& line, int section);
+class ObjectParser : public InputParser {
+public:
+  ObjectParser(Network *nw);
+  void parseLine(std::string &line, int section);
 };
 
 //! \class PropertyParser
 //! \brief Parses a network element's properties from a line of input.
 
-class PropertyParser : public InputParser
-{
-  public:
-    PropertyParser(Network* nw);
-    void parseLine(std::string& line, int section);
+class PropertyParser : public InputParser {
+public:
+  PropertyParser(Network *nw);
+  void parseLine(std::string &line, int section);
 
-  private:
-    NodeParser     nodeParser;
-    LinkParser     linkParser;
-    PatternParser  patternParser;
-    CurveParser    curveParser;
-    OptionParser   optionParser;
-    ControlParser  controlParser;
-    std::vector<std::string> tokens;
+private:
+  NodeParser nodeParser;
+  LinkParser linkParser;
+  PatternParser patternParser;
+  CurveParser curveParser;
+  OptionParser optionParser;
+  ControlParser controlParser;
+  std::vector<std::string> tokens;
 
-    void parseNodeProperty(int type, std::string& nodeName);
-    void parseLinkProperty(int type, std::string& linkName);
-    void parseReactProperty(std::string& reactType);
+  void parseNodeProperty(int type, std::string &nodeName);
+  void parseLinkProperty(int type, std::string &linkName);
+  void parseReactProperty(std::string &reactType);
 };
 
 #endif

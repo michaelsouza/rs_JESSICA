@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -22,18 +23,16 @@
 
 class Network;
 
-class Graph
-{
-  public:
+class Graph {
+public:
+  Graph();
+  ~Graph();
 
-    Graph();
-    ~Graph();
+  void createAdjLists(Network *nw);
 
-    void    createAdjLists(Network* nw);
-
-  private:
-    std::vector<int> adjLists;        // packed nodal adjacency lists
-    std::vector<int> adjListBeg;      // starting index of each node's list
+private:
+  std::vector<int> adjLists;   // packed nodal adjacency lists
+  std::vector<int> adjListBeg; // starting index of each node's list
 };
 
 #endif // GRAPH_H_

@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -11,11 +12,11 @@
 #ifndef CURVE_H_
 #define CURVE_H_
 
-#include "Utilities/utilities.h"
 #include "Elements/element.h"
+#include "Utilities/utilities.h"
 
-#include <string>
 #include <iostream>
+#include <string>
 #include <vector>
 
 //! \class Curve
@@ -28,74 +29,71 @@
 //  NOTE: Curve data are stored in the user's original units.
 //-----------------------------------------------------------------------------
 
-class Curve: public Element
-{
-  public:
+class Curve : public Element {
+public:
+  // Curve type enumeration
+  enum CurveType { UNKNOWN, PUMP, EFFICIENCY, VOLUME, HEADLOSS };
 
-    // Curve type enumeration
-    enum CurveType   {UNKNOWN, PUMP, EFFICIENCY, VOLUME, HEADLOSS};
+  // Names of curve types
+  static const char *CurveTypeWords[];
 
-    // Names of curve types
-    static const char* CurveTypeWords[];
+  // Constructor/Destructor
+  Curve(std::string name_);
+  ~Curve();
 
-    // Constructor/Destructor
-    Curve(std::string name_);
-    ~Curve();
+  // Data provider methods
+  void setType(int curveType);
+  void addData(double x, double y);
 
-    // Data provider methods
-    void   setType(int curveType);
-    void   addData(double x, double y);
+  // Data retrieval methods
+  int size();
+  int curveType();
+  double x(int index);
+  double y(int index);
+  void findSegment(double xseg, double &slope, double &intercept);
+  double getYofX(double x);
+  double getXofY(double y);
 
-    // Data retrieval methods
-    int    size();
-    int    curveType();
-    double x(int index);
-    double y(int index);
-    void   findSegment(double xseg, double& slope, double& intercept);
-    double getYofX(double x);
-    double getXofY(double y);
-
-    //! Serialize to JSON
-    nlohmann::json to_json() const override {
-        return {
-            {"name", name},
+  //! Serialize to JSON
+  nlohmann::json to_json() const override {
+    return {{"name", name},
             {"index", index},
             {"type", static_cast<int>(type)},
             {"xData", xData},
-            {"yData", yData}
-        };
-    }
+            {"yData", yData}};
+  }
 
-    //! Deserialize from JSON
-    void from_json(const nlohmann::json& j) override {
-        name = j.at("name").get<std::string>();
-        index = j.at("index").get<int>();
-        type = static_cast<CurveType>(j.at("type").get<int>());
-        xData = j.at("xData").get<std::vector<double>>();
-        yData = j.at("yData").get<std::vector<double>>();
-    }
+  //! Deserialize from JSON
+  void from_json(const nlohmann::json &j) override {
+    name = j.at("name").get<std::string>();
+    index = j.at("index").get<int>();
+    type = static_cast<CurveType>(j.at("type").get<int>());
+    xData = j.at("xData").get<std::vector<double>>();
+    yData = j.at("yData").get<std::vector<double>>();
+  }
 
-  private:
-    CurveType               type;           //!< curve type
-    std::vector<double>     xData;          //!< x-values
-    std::vector<double>     yData;          //!< y-values
+private:
+  CurveType type;            //!< curve type
+  std::vector<double> xData; //!< x-values
+  std::vector<double> yData; //!< y-values
 };
 
 //-----------------------------------------------------------------------------
 //    Inline Functions
 //-----------------------------------------------------------------------------
-inline  void   Curve::setType(int curveType)
-               { type = (CurveType)curveType; }
+inline void Curve::setType(int curveType) { type = (CurveType)curveType; }
 
-inline  void   Curve::addData(double x, double y)
-               { xData.push_back(x); yData.push_back(y);}
+inline void Curve::addData(double x, double y) {
+  xData.push_back(x);
+  yData.push_back(y);
+}
 
-inline  int    Curve::size() { return xData.size(); }
+inline int Curve::size() { return xData.size(); }
 
-inline  int    Curve::curveType() { return (int)type; }
+inline int Curve::curveType() { return (int)type; }
 
-inline  double Curve::x(int i) { return xData.at(i); }
+inline double Curve::x(int i) { return xData.at(i); }
 
-inline  double Curve::y(int i) { return yData.at(i); }
+inline double Curve::y(int i) { return yData.at(i); }
 
 #endif

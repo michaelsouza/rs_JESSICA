@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -18,18 +19,16 @@
 class Network;
 class Pattern;
 
-class Demand
-{
-  public:
+class Demand {
+public:
+  Demand();
+  ~Demand();
 
-    Demand();
-    ~Demand();
+  double getFullDemand(double multiplier, double patternFactor);
 
-    double   getFullDemand(double multiplier, double patternFactor);
-
-    double   baseDemand;          //!< baseline demand flow (cfs)
-    double   fullDemand;          //!< pattern adjusted demand flow (cfs)
-    Pattern* timePattern;         //!< time pattern used to adjust baseline demand
+  double baseDemand;    //!< baseline demand flow (cfs)
+  double fullDemand;    //!< pattern adjusted demand flow (cfs)
+  Pattern *timePattern; //!< time pattern used to adjust baseline demand
 };
 
 #endif

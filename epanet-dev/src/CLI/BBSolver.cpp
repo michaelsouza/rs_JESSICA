@@ -62,7 +62,8 @@ void BBSolver::epanet_solve(Project &p, int &t, int &dt, bool verbose, double &c
   // Run the solver
   do
   {
-    if(t % 3600 == 0) {
+    if (t % 3600 == 0)
+    {
       int label = t / 3600; // Hour label
       std::string filename = "snapshot_" + std::to_string(h) + "_" + std::to_string(label) + ".json";
       // p.snapshot(filename);

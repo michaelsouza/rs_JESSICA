@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -20,12 +21,11 @@ class Curve;
 //! \brief The CurveParser class is used to parse a line of input data for
 //!        curve data (pairs of x,y values).
 
-class CurveParser
-{
+class CurveParser {
 public:
-    CurveParser() {}
-    ~CurveParser() {}
-    void parseCurveData(Curve* curve, std::vector<std::string>& tokens);
+  CurveParser() {}
+  ~CurveParser() {}
+  void parseCurveData(Curve *curve, std::vector<std::string> &tokens);
 };
 
 #endif

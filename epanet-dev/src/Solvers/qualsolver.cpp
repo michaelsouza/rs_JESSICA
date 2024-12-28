@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -12,12 +13,12 @@
 
 using namespace std;
 
-QualSolver::QualSolver(Network* nw) : network(nw) {}
+QualSolver::QualSolver(Network *nw) : network(nw) {}
 
 QualSolver::~QualSolver() {}
 
-QualSolver* QualSolver::factory(const string name, Network* nw)
-{
-    if ( name == "LTD" ) return new LTDSolver(nw);
-    return nullptr;
+QualSolver *QualSolver::factory(const string name, Network *nw) {
+  if (name == "LTD")
+    return new LTDSolver(nw);
+  return nullptr;
 }

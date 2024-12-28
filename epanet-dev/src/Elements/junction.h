@@ -11,11 +11,11 @@
 #ifndef JUNCTION_H_
 #define JUNCTION_H_
 
-#include "Elements/node.h"
 #include "Elements/demand.h"
+#include "Elements/node.h"
 
-#include <string>
 #include <list>
+#include <string>
 
 class Network;
 class Emitter;
@@ -23,27 +23,25 @@ class Emitter;
 //! \class Junction
 //! \brief A variable head Node with no storage volume.
 
-class Junction: public Node
-{
-  public:
+class Junction : public Node {
+public:
+  Junction(std::string name_);
+  ~Junction();
 
-    Junction(std::string name_);
-    ~Junction();
+  int type() { return Node::JUNCTION; }
+  void convertUnits(Network *nw);
+  void initialize(Network *nw);
+  void findFullDemand(double multiplier, double patternFactor);
+  double findActualDemand(Network *nw, double h, double &dqdh);
+  double findEmitterFlow(double h, double &dqdh);
+  bool isPressureDeficient(Network *nw);
+  bool hasEmitter() { return emitter != nullptr; }
 
-    int    type() { return Node::JUNCTION; }
-    void   convertUnits(Network* nw);
-    void   initialize(Network* nw);
-    void   findFullDemand(double multiplier, double patternFactor);
-    double findActualDemand(Network* nw, double h, double& dqdh);
-    double findEmitterFlow(double h, double& dqdh);
-    bool   isPressureDeficient(Network* nw);
-    bool   hasEmitter() { return emitter != nullptr; }
-
-    Demand            primaryDemand;   //!< primary demand
-    std::list<Demand> demands;         //!< collection of additional demands
-    double            pMin;            //!< minimum pressure head to have demand (ft)
-    double            pFull;           //!< pressure head required for full demand (ft)
-    Emitter*          emitter;         //!< emitter object
+  Demand primaryDemand;      //!< primary demand
+  std::list<Demand> demands; //!< collection of additional demands
+  double pMin;               //!< minimum pressure head to have demand (ft)
+  double pFull;              //!< pressure head required for full demand (ft)
+  Emitter *emitter;          //!< emitter object
 };
 
 #endif

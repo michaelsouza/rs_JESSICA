@@ -25,45 +25,47 @@ class Network;
 //! a pipe network, calling on its HydSolver object to solve the conservation of
 //! mass and energy equations at each time step.
 
-class HydEngine
-{
-  public:
+class HydEngine {
+public:
+  // Constructor/Destructor
 
-    // Constructor/Destructor
+  HydEngine();
+  ~HydEngine();
 
-    HydEngine();
-    ~HydEngine();
+  // Public Methods
 
-    // Public Methods
+  void open(Network *nw);
+  void init(bool initFlows);
+  int solve(int *t);
+  void advance(int *tstep);
+  void close();
 
-    void   open(Network* nw);
-    void   init(bool initFlows);
-    int    solve(int* t);
-    void   advance(int* tstep);
-    void   close();
+  int getElapsedTime() { return currentTime; }
+  double getPeakKwatts() { return peakKwatts; }
 
-    int    getElapsedTime() { return currentTime; }
-    double getPeakKwatts()  { return peakKwatts;  }
+  //! Serialize to JSON for HydEngine
+  nlohmann::json to_json() const {
+    return {{"engineState", static_cast<int>(engineState)},
+            {"hydSolver", hydSolver ? hydSolver->to_json() : nullptr},
+            {"matrixSolver", matrixSolver ? matrixSolver->to_json() : nullptr},
+            {"saveToFile", saveToFile},
+            {"halted", halted},
+            {"startTime", startTime},
+            {"rptTime", rptTime},
+            {"hydStep", hydStep},
+            {"currentTime", currentTime},
+            {"timeOfDay", timeOfDay},
+            {"peakKwatts", peakKwatts},
+            {"timeStepReason", timeStepReason}};
+  }
 
-    //! Serialize to JSON for HydEngine
-nlohmann::json to_json() const {
-    return {
-        {"engineState", static_cast<int>(engineState)},
-        {"saveToFile", saveToFile},
-        {"halted", halted},
-        {"startTime", startTime},
-        {"rptTime", rptTime},
-        {"hydStep", hydStep},
-        {"currentTime", currentTime},
-        {"timeOfDay", timeOfDay},
-        {"peakKwatts", peakKwatts},
-        {"timeStepReason", timeStepReason}
-    };
-}
-
-//! Deserialize from JSON for HydEngine
-void from_json(const nlohmann::json& j) {
+  //! Deserialize from JSON for HydEngine
+  void from_json(const nlohmann::json &j) {
     engineState = static_cast<EngineState>(j.at("engineState").get<int>());
+    if (!j.at("hydSolver").is_null())
+      hydSolver->from_json(j.at("hydSolver"));
+    if (!j.at("matrixSolver").is_null())
+      matrixSolver->from_json(j.at("matrixSolver"));
     saveToFile = j.at("saveToFile").get<bool>();
     halted = j.at("halted").get<bool>();
     startTime = j.at("startTime").get<int>();
@@ -73,53 +75,50 @@ void from_json(const nlohmann::json& j) {
     timeOfDay = j.at("timeOfDay").get<int>();
     peakKwatts = j.at("peakKwatts").get<double>();
     timeStepReason = j.at("timeStepReason").get<std::string>();
-}
+  }
 
-  private:
+private:
+  // Engine state
 
-    // Engine state
+  enum EngineState { CLOSED, OPENED, INITIALIZED };
+  EngineState engineState;
 
-    enum EngineState {CLOSED, OPENED, INITIALIZED};
-    EngineState engineState;
+  // Engine components
 
-    // Engine components
+  Network *network;           //!< network being analyzed
+  HydSolver *hydSolver;       //!< steady state hydraulic solver
+  MatrixSolver *matrixSolver; //!< sparse matrix solver
+  //    HydFile*       hydFile;            //!< hydraulics file accessor
 
-    Network*       network;            //!< network being analyzed
-    HydSolver*     hydSolver;          //!< steady state hydraulic solver
-    MatrixSolver*  matrixSolver;       //!< sparse matrix solver
-//    HydFile*       hydFile;            //!< hydraulics file accessor
+  // Engine properties
 
-    // Engine properties
+  bool saveToFile;            //!< true if results saved to file
+  bool halted;                //!< true if simulation has been halted
+  int startTime;              //!< starting time of day (sec)
+  int rptTime;                //!< current reporting time (sec)
+  int hydStep;                //!< hydraulic time step (sec)
+  int currentTime;            //!< current simulation time (sec)
+  int timeOfDay;              //!< current time of day (sec)
+  double peakKwatts;          //!< peak energy usage (kwatts)
+  std::string timeStepReason; //!< reason for taking next time step
 
-    bool           saveToFile;         //!< true if results saved to file
-    bool           halted;             //!< true if simulation has been halted
-    int            startTime;          //!< starting time of day (sec)
-    int            rptTime;            //!< current reporting time (sec)
-    int            hydStep;            //!< hydraulic time step (sec)
-    int            currentTime;        //!< current simulation time (sec)
-    int            timeOfDay;          //!< current time of day (sec)
-    double         peakKwatts;         //!< peak energy usage (kwatts)
-    std::string    timeStepReason;     //!< reason for taking next time step
+  // Simulation sub-tasks
 
-    
+  void initMatrixSolver();
 
-    // Simulation sub-tasks
+  int getTimeStep();
+  int timeToPatternChange(int tstep);
+  int timeToActivateControl(int tstep);
+  int timeToCloseTank(int tstep);
 
-    void           initMatrixSolver();
+  void updateCurrentConditions();
+  void updateTanks();
+  void updatePatterns();
+  void updateEnergyUsage();
 
-    int            getTimeStep();
-    int            timeToPatternChange(int tstep);
-    int            timeToActivateControl(int tstep);
-    int            timeToCloseTank(int tstep);
-
-    void           updateCurrentConditions();
-    void           updateTanks();
-    void           updatePatterns();
-    void           updateEnergyUsage();
-
-    bool           isPressureDeficient();
-    int            resolvePressureDeficiency(int& trials);
-    void           reportDiagnostics(int statusCode, int trials);
+  bool isPressureDeficient();
+  int resolvePressureDeficiency(int &trials);
+  void reportDiagnostics(int statusCode, int trials);
 };
 
 #endif

@@ -149,7 +149,6 @@ public:
   std::vector<int> y_best;     ///< Best y vector found.
   std::vector<int> x_best;     ///< Best x vector found.
 
-private:
   void epanet_load(Project &p, int t_max, bool verbose);
   void epanet_solve(Project &p, int &t, int &dt, bool verbose, double &cost);
   void save_project(Project &p, bool dump);

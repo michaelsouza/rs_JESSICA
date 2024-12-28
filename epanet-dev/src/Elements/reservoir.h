@@ -1,7 +1,8 @@
 /* EPANET 3
  *
  * Copyright (c) 2016 Open Water Analytics
- * Licensed under the terms of the MIT License (see the LICENSE file for details).
+ * Licensed under the terms of the MIT License (see the LICENSE file for
+ * details).
  *
  */
 
@@ -24,21 +25,19 @@ class Pattern;
 //! \note The reservoir's fixed head can be made to vary over time by
 //!       specifying a time pattern.
 
-class Reservoir: public Node
-{
-  public:
+class Reservoir : public Node {
+public:
+  // Constructor/Destructor
+  Reservoir(std::string name_);
+  ~Reservoir();
 
-    // Constructor/Destructor
-    Reservoir(std::string name_);
-    ~Reservoir();
+  // Methods
+  int type() { return Node::RESERVOIR; }
+  void convertUnits(Network *nw);
+  void setFixedGrade();
 
-    // Methods
-    int      type() { return Node::RESERVOIR; }
-    void     convertUnits(Network* nw);
-    void     setFixedGrade();
-
-    // Properties
-    Pattern* headPattern;    //!< time pattern for reservoir's head
+  // Properties
+  Pattern *headPattern; //!< time pattern for reservoir's head
 };
 
 #endif

@@ -20,27 +20,25 @@ class Network;
 class Pattern;
 class Junction;
 
-class Emitter
-{
-  public:
+class Emitter {
+public:
+  // Constructor/Destructor
+  Emitter();
+  ~Emitter();
 
-    // Constructor/Destructor
-    Emitter();
-    ~Emitter();
+  // Static factory method to add or edit an emitter
+  static bool addEmitter(Junction *junc, double c, double e, Pattern *p);
 
-    // Static factory method to add or edit an emitter
-    static bool addEmitter(Junction* junc, double c, double e, Pattern* p);
+  // Converts emitter properties to internal units
+  void convertUnits(Network *network);
 
-    // Converts emitter properties to internal units
-    void        convertUnits(Network* network);
+  // Finds the emitter's outflow rate and its derivative given the pressure head
+  double findFlowRate(double h, double &dqdh);
 
-    // Finds the emitter's outflow rate and its derivative given the pressure head
-    double      findFlowRate(double h, double& dqdh);
-
-    // Properties
-    double      flowCoeff;     // flow = flowCoeff*(head^expon)
-    double      expon;
-    Pattern*    timePattern;   // pattern for time varying flowCoeff
+  // Properties
+  double flowCoeff; // flow = flowCoeff*(head^expon)
+  double expon;
+  Pattern *timePattern; // pattern for time varying flowCoeff
 };
 
 #endif

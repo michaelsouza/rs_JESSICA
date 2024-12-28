@@ -27,10 +27,10 @@
             "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
             "args": [
                 "--test",
-                "test_cost_1"                
+                "test_reuse"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/epanet-dev/debug",
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
@@ -59,7 +59,7 @@
                 "1",
                 "--h_max",
                 "3",
-                "--verbose"                
+                "--verbose"
             ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",

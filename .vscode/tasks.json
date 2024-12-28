@@ -82,7 +82,7 @@
         {
             "label": "clang-format CLI",
             "type": "shell",
-            "command": "find epanet-dev/src/CLI -iname '*.cpp' -o -iname '*.h' -o -iname '*.c' | xargs clang-format -i -style=file",
+            "command": "find epanet-dev/src/ -iname '*.cpp' -o -iname '*.h' -o -iname '*.c' | xargs clang-format -i -style=file",
             "group": {
                 "kind": "build",
                 "isDefault": false
@@ -115,7 +115,7 @@
         {
             "label": "build-debug",
             "type": "shell",
-            "command": "make BUILD_TYPE=debug",
+            "command": "make BUILD_TYPE=debug -j4",
             "group": {
                 "kind": "build",
                 "isDefault": false

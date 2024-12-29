@@ -690,6 +690,9 @@ class TestReuse : public BBTest
 {
 protected:
 public:
+  std::vector<ProjectData> project_snapshots;
+  std::vector<nlohmann::json> json_snapshots;
+
   TestReuse(const std::string &test_name)
   {
     this->test_name = test_name;
@@ -702,16 +705,18 @@ public:
     return execute_test();
   }
 
-  void populate_snapshots(Project &p, BBConstraints &cntrs, std::vector<nlohmann::json> &snapshots, std::vector<ProjectData> &project_snapshots)
+  void populate_snapshots(Project &p, BBConstraints &cntrs)
   {
     int t = 0, dt = 0, t_next = 0;
-
-    // Clear the snapshots
-    snapshots.clear();
+    
+    // Reset snapshots
+    project_snapshots.clear();
+    json_snapshots.clear();
 
     // Save the initial state
-    snapshots.push_back(p.to_json());
-    p.copy_to(project_snapshots[0]);
+    json_snapshots.push_back(p.to_json());
+    project_snapshots.emplace_back();
+    p.copy_to(project_snapshots.back());
 
     double cost = cntrs.calc_cost(&p);
     if (verbose)
@@ -741,20 +746,24 @@ public:
 
       if (t_next % 3600 == 0)
       {
+        int h = t_next / 3600;
+        printf("h = %d\n", h);
         // Save the current state
-        snapshots.push_back(p.to_json());
+        json_snapshots.push_back(p.to_json());
+        project_snapshots.emplace_back();
+        p.copy_to(project_snapshots.back());
       }
     } while (dt > 0);
   }
 
-  void save_snapshots(const std::vector<nlohmann::json> &snapshots)
+  void save_snapshots()
   {
-    for (int i = 0; i < snapshots.size(); ++i)
+    for (int i = 0; i < json_snapshots.size(); ++i)
     {
       char filename[32];
       sprintf(filename, "snapshots_%02d.json", i);
       std::ofstream file(filename);
-      file << snapshots[i].dump(2);
+      file << json_snapshots[i].dump(2);
       file.close();
     }
   }
@@ -789,11 +798,11 @@ public:
     return cntrs.calc_cost(&p);
   }
 
-  bool check_from_json(Project &p, BBConstraints &cntrs, const std::vector<nlohmann::json> &snapshots, double expected_cost)
+  bool check_snapshots(Project &p, BBConstraints &cntrs, double expected_cost)
   {
     // Create vector of indices and shuffle them
-    std::vector<int> indices(snapshots.size());
-    for (int i = 0; i < snapshots.size(); i++)
+    std::vector<int> indices(json_snapshots.size());
+    for (int i = 0; i < json_snapshots.size(); i++)
     {
       indices[i] = i;
     }
@@ -807,7 +816,8 @@ public:
       int h = indices[i];
 
       // Load the snapshot
-      p.from_json(snapshots[h]);
+      // p.from_json(snapshots[h]);
+      p.copy_from(project_snapshots[h]);
 
       // Save the new snapshot
       char filename[32];
@@ -847,16 +857,14 @@ public:
     CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
     // Create snapshots
-    std::vector<nlohmann::json> snapshots;
-    std::vector<ProjectData> project_snapshots(24);
-    populate_snapshots(p, cntrs, snapshots, project_snapshots);
+    populate_snapshots(p, cntrs);
 
     // Save the snapshots to a file
-    save_snapshots(snapshots);
+    save_snapshots();
 
     // Check the results after loading the snapshots
     double expected_cost = cntrs.calc_cost(&p);
-    check_from_json(p, cntrs, snapshots, expected_cost);
+    check_snapshots(p, cntrs, expected_cost);
 
     return true;
   }

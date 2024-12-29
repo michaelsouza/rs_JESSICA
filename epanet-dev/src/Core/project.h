@@ -90,6 +90,11 @@ public:
     hydEngine.copy_to(data.hydEngine);
   }
 
+  void copy_from(ProjectData &data) {
+    network.copy_from(data.network);
+    hydEngine.copy_from(data.hydEngine);
+  }
+
 private:
   Network network;         //!< pipe network to be analyzed.
   HydEngine hydEngine;     //!< hydraulic simulation engine.

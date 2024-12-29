@@ -708,7 +708,7 @@ public:
   void populate_snapshots(Project &p, BBConstraints &cntrs)
   {
     int t = 0, dt = 0, t_next = 0;
-    
+
     // Reset snapshots
     project_snapshots.clear();
     json_snapshots.clear();

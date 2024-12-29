@@ -9,7 +9,8 @@ enum class PruneReason
   PRESSURES,
   LEVELS,
   STABILITY,
-  SPLIT
+  SPLIT,
+  TIME
 };
 
 // Utility function to convert PruneReason to string for logging
@@ -29,6 +30,8 @@ inline std::string to_string(const PruneReason &reason)
     return "stability";
   case PruneReason::SPLIT:
     return "split";
+  case PruneReason::TIME:
+    return "time";
   default:
     return "unknown";
   }

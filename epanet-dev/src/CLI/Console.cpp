@@ -137,9 +137,9 @@ void show_timer(int mpi_rank, unsigned int niter, int h, int done_loc, int done_
 
     // Print stats
     Console::printf(Console::Color::BRIGHT_BLUE, "\nRank[%d] done_loc=%d, done_all=%d, is_feasible=%d\n", mpi_rank, done_loc, done_all, is_feasible);
-    Console::printf(Console::Color::BRIGHT_BLUE, "cost_best: %.2f\n", cost);
-    show_vector(y_best, "y_best");
-    show_vector(y, "     y");
+    Console::printf(Console::Color::BRIGHT_BLUE, "Rank[%d]: cost_best: %.2f\n", mpi_rank, cost);
+    show_vector(y_best, "Rank[" + std::to_string(mpi_rank) + "]: y_best");
+    show_vector(y, "Rank[" + std::to_string(mpi_rank) + "]:     y");
   }
 }
 

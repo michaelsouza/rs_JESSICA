@@ -85,8 +85,8 @@ void BBSolver::epanet_solve(Project &p, double &cost)
 
     if (t_new < t_min || t_new > t_max)
     {
-      printf("ERR[rank=%d]: BBSolver::epanet_solve: t_new is out of bounds (t_new=%d, t_min=%d, t_max=%d)\n", mpi_rank, t_new, t_min, t_max);
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      add_prune(PruneReason::TIME);
+      return;
     }
 
     // Show the current state
@@ -125,7 +125,6 @@ void BBSolver::epanet_solve(Project &p, double &cost)
     // When the simulation reaches t_max and it is not the last hour, break.
     // When it is the last hour, just stop if "dt == 0".
     if (t_new == t_max && h != h_max) break;
-
   } while (dt > 0);
 
   // Check stability if the the solution is feasible and the current hour is the last hour
@@ -552,6 +551,28 @@ void BBSolver::send_work(int recv_rank, const std::vector<int> &h_free)
   h = h_min;
   is_feasible = false;
   add_prune(PruneReason::SPLIT);
+
+  // Reset snapshots
+  reset_snapshots();
+}
+
+void BBSolver::reset_snapshots()
+{
+  // Reset snapshots
+  // p.from_json(snapshots[0]); // all ranks have the first snapshot
+  p.copy_from(snapshots[0]);
+  update_pumps(p, true); // update the pumps with the received y
+  double cost = 0.0;
+  int h_new = h; // to avoid violating h bounds
+  for (int i = 1; i <= h_new; ++i)
+  {
+    // Run the solver
+    epanet_solve(p, cost);
+    // Take a snapshot if the solution is feasible
+    // snapshots[i] = p.to_json();
+    p.copy_to(snapshots[i]);
+  }
+  h = h_new; // restore the current value of h
 }
 
 void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free)
@@ -570,18 +591,7 @@ void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free)
   read_buffer();
 
   // Reset snapshots
-  // p.from_json(snapshots[0]); // all ranks have the first snapshot
-  p.copy_from(snapshots[0]);
-  update_pumps(p, true);     // update the pumps with the received y
-  double cost = 0.0;
-  for (int i = 1; i <= h; ++i)
-  {
-    // Run the solver
-    epanet_solve(p, cost);
-    // Take a snapshot if the solution is feasible
-    // snapshots[i] = p.to_json();
-    p.copy_to(snapshots[i]);
-  }
+  reset_snapshots();
 }
 
 bool BBSolver::try_split(const std::vector<int> &done, const std::vector<int> &h_free, int h_threshold, bool verbose)

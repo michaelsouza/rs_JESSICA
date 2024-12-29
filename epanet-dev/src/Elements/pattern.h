@@ -47,7 +47,7 @@ public:
   int size() { return factors.size(); }
   double factor(int i) { return factors[i]; }
   double currentFactor();
-  int& currentIdx() { return currentIndex; }
+  int &currentIdx() { return currentIndex; }
   virtual void init(int intrvl, int tstart) = 0;
   virtual int nextTime(int t) = 0;
   virtual void advance(int t) = 0;

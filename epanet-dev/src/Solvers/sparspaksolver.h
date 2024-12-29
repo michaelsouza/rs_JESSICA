@@ -75,6 +75,29 @@ public:
     }
   }
 
+  void copy_to(MatrixSolverData &data) const override {
+    // resize if necessary
+    if (data.lnz.size() < nnzl) {
+      data.lnz.resize(nnzl);
+    }
+    if (data.diag.size() < nrows) {
+      data.diag.resize(nrows);
+    }
+    if (data.rhs.size() < nrows) {
+      data.rhs.resize(nrows);
+    }
+    // copy values
+    std::copy(lnz, lnz + nnzl, data.lnz.begin());
+    std::copy(diag, diag + nrows, data.diag.begin());
+    std::copy(rhs, rhs + nrows, data.rhs.begin());
+  }
+
+  void copy_from(const MatrixSolverData &data) override {
+    std::copy(data.lnz.begin(), data.lnz.end(), lnz);
+    std::copy(data.diag.begin(), data.diag.end(), diag);
+    std::copy(data.rhs.begin(), data.rhs.end(), rhs);
+  }
+
 private:
   int nrows;    // number of rows in system Ax = b
   int nnz;      // number of non-zero off-diag. coeffs. in A

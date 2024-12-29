@@ -70,7 +70,7 @@ run_debug: $(TARGET_EXE)
 
 run_release: BUILD_TYPE = release
 run_release: $(TARGET_EXE)
-	./$(TARGET_EXE)
+	./$(TARGET_EXE) --h_max 12 --max_actuations 1 --interval_sync 2048 
 
 # Pattern rule to compile .cpp to .o and generate dependencies
 $(BUILD_TYPE)/%.o: %.cpp

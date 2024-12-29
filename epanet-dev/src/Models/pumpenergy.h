@@ -17,6 +17,17 @@
 class Pump;
 class Network;
 
+class PumpEnergyData {
+public:
+  double hrsOnLine;
+  double efficiency;
+  double kwHrsPerCFS;
+  double kwHrs;
+  double maxKwatts;
+  double totalCost;
+  double adjustedTotalCost;
+};
+
 //! \class PumpEnergy
 //! \brief Accumulates energy usage metrics for a pump.
 
@@ -59,6 +70,26 @@ public:
     maxKwatts = j.at("maxKwatts").get<double>();
     totalCost = j.at("totalCost").get<double>();
     adjustedTotalCost = j.at("adjustedTotalCost").get<double>();
+  }
+
+  void copy_to(PumpEnergyData &data) const {
+    data.hrsOnLine = hrsOnLine;
+    data.efficiency = efficiency;
+    data.kwHrsPerCFS = kwHrsPerCFS;
+    data.kwHrs = kwHrs;
+    data.maxKwatts = maxKwatts;
+    data.totalCost = totalCost;
+    data.adjustedTotalCost = adjustedTotalCost;
+  }
+
+  void copy_from(const PumpEnergyData &data) {
+    hrsOnLine = data.hrsOnLine;
+    efficiency = data.efficiency;
+    kwHrsPerCFS = data.kwHrsPerCFS;
+    kwHrs = data.kwHrs;
+    maxKwatts = data.maxKwatts;
+    totalCost = data.totalCost;
+    adjustedTotalCost = data.adjustedTotalCost;
   }
 
 private:

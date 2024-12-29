@@ -151,5 +151,4 @@ public:
 
   void epanet_load();
   void epanet_solve(Project &p, double &cost);
-  void take_snapshot(Project &p, bool dump);
 };

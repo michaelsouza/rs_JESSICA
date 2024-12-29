@@ -82,6 +82,20 @@ public:
     pumpEnergy.from_json(j.at("pumpEnergy"));
     costPerKwh = j.at("costPerKwh").get<double>();
   }
+
+  void copy_to(LinkData &data) const override {
+    Link::copy_to(data);
+    data.speed = speed;
+    data.costPerKwh = costPerKwh;
+    pumpEnergy.copy_to(data.pumpEnergy);
+  }
+
+  void copy_from(const LinkData &data) override {
+    Link::copy_from(data);
+    speed = data.speed;
+    costPerKwh = data.costPerKwh;
+    pumpEnergy.copy_from(data.pumpEnergy);
+  }
 };
 
 #endif

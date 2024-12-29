@@ -18,6 +18,19 @@ class Network;
 #include "Solvers/hydsolver.h"
 #include "Solvers/matrixsolver.h"
 
+class HydEngineData {
+public:
+  int engineState;
+  bool halted;
+  int rptTime;
+  int hydStep;
+  int currentTime;
+  int timeOfDay;
+  double peakKwatts;
+  HydSolverData hydSolver;
+  MatrixSolverData matrixSolver;
+};
+
 //! \class HydEngine
 //! \brief Simulates extended period hydraulics.
 //!
@@ -53,8 +66,7 @@ public:
             {"hydStep", hydStep},
             {"currentTime", currentTime},
             {"timeOfDay", timeOfDay},
-            {"peakKwatts", peakKwatts},
-            {"timeStepReason", timeStepReason}};
+            {"peakKwatts", peakKwatts}};
   }
 
   //! Deserialize from JSON for HydEngine
@@ -70,7 +82,30 @@ public:
     currentTime = j.at("currentTime").get<int>();
     timeOfDay = j.at("timeOfDay").get<int>();
     peakKwatts = j.at("peakKwatts").get<double>();
-    timeStepReason = j.at("timeStepReason").get<std::string>();
+  }
+
+  void copy_to(HydEngineData &data) const {
+    data.engineState = engineState;
+    data.halted = halted;
+    data.rptTime = rptTime;
+    data.hydStep = hydStep;
+    data.currentTime = currentTime;
+    data.timeOfDay = timeOfDay;
+    data.peakKwatts = peakKwatts;
+    hydSolver->copy_to(data.hydSolver);
+    matrixSolver->copy_to(data.matrixSolver);
+  }
+
+  void copy_from(const HydEngineData &data) {
+    engineState = static_cast<EngineState>(data.engineState);
+    halted = data.halted;
+    rptTime = data.rptTime;
+    hydStep = data.hydStep;
+    currentTime = data.currentTime;
+    timeOfDay = data.timeOfDay;
+    peakKwatts = data.peakKwatts;
+    hydSolver->copy_from(data.hydSolver);
+    matrixSolver->copy_from(data.matrixSolver);
   }
 
 private:

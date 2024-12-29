@@ -702,7 +702,7 @@ public:
     return execute_test();
   }
 
-  void populate_snapshots(Project &p, BBConstraints &cntrs, std::vector<nlohmann::json> &snapshots)
+  void populate_snapshots(Project &p, BBConstraints &cntrs, std::vector<nlohmann::json> &snapshots, std::vector<ProjectData> &project_snapshots)
   {
     int t = 0, dt = 0, t_next = 0;
 
@@ -711,6 +711,7 @@ public:
 
     // Save the initial state
     snapshots.push_back(p.to_json());
+    p.copy_to(project_snapshots[0]);
 
     double cost = cntrs.calc_cost(&p);
     if (verbose)
@@ -847,7 +848,8 @@ public:
 
     // Create snapshots
     std::vector<nlohmann::json> snapshots;
-    populate_snapshots(p, cntrs, snapshots);
+    std::vector<ProjectData> project_snapshots(24);
+    populate_snapshots(p, cntrs, snapshots, project_snapshots);
 
     // Save the snapshots to a file
     save_snapshots(snapshots);

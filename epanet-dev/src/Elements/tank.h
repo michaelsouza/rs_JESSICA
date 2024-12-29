@@ -76,7 +76,6 @@ public:
                          {"diameter", diameter},
                          {"minVolume", minVolume},
                          {"bulkCoeff", bulkCoeff},
-                         {"volCurve", volCurve ? volCurve->to_json() : nullptr},
                          {"maxVolume", maxVolume},
                          {"volume", volume},
                          {"area", area},
@@ -96,8 +95,6 @@ public:
     diameter = j.at("diameter").get<double>();
     minVolume = j.at("minVolume").get<double>();
     bulkCoeff = j.at("bulkCoeff").get<double>();
-    if (volCurve)
-      volCurve->from_json(j.at("volCurve"));
     maxVolume = j.at("maxVolume").get<double>();
     volume = j.at("volume").get<double>();
     area = j.at("area").get<double>();
@@ -105,6 +102,40 @@ public:
     pastHead = j.at("pastHead").get<double>();
     pastVolume = j.at("pastVolume").get<double>();
     pastOutflow = j.at("pastOutflow").get<double>();
+  }
+
+  virtual void copy_to(NodeData &data) const override {
+    Node::copy_to(data);
+    data.initHead = initHead;
+    data.minHead = minHead;
+    data.maxHead = maxHead;
+    data.diameter = diameter;
+    data.minVolume = minVolume;
+    data.bulkCoeff = bulkCoeff;
+    data.maxVolume = maxVolume;
+    data.volume = volume;
+    data.area = area;
+    data.ucfLength = ucfLength;
+    data.pastHead = pastHead;
+    data.pastVolume = pastVolume;
+    data.pastOutflow = pastOutflow;
+  }
+
+  void copy_from(const NodeData &data) override {
+    Node::copy_from(data);
+    initHead = data.initHead;
+    minHead = data.minHead;
+    maxHead = data.maxHead;
+    diameter = data.diameter;
+    minVolume = data.minVolume;
+    bulkCoeff = data.bulkCoeff;
+    maxVolume = data.maxVolume;
+    volume = data.volume;
+    area = data.area;
+    ucfLength = data.ucfLength;
+    pastHead = data.pastHead;
+    pastVolume = data.pastVolume;
+    pastOutflow = data.pastOutflow;
   }
 };
 

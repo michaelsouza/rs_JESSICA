@@ -19,6 +19,13 @@
 
 #include "Utilities/utilities.h"
 
+class MatrixSolverData {
+public:
+  std::vector<double> lnz;
+  std::vector<double> diag;
+  std::vector<double> rhs;
+};
+
 //! \class MatrixSolver
 //! \brief Abstract class for solving a set of linear equations.
 //!
@@ -54,6 +61,9 @@ public:
 
   virtual nlohmann::json to_json() const = 0;
   virtual void from_json(const nlohmann::json &j) = 0;
+
+  virtual void copy_to(MatrixSolverData &data) const = 0;
+  virtual void copy_from(const MatrixSolverData &data) = 0;
 };
 
 #endif

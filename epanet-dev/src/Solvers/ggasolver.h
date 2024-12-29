@@ -32,28 +32,32 @@ public:
   //! Serialize to JSON for GGASolver
   nlohmann::json to_json() const override {
     nlohmann::json jsonObj = HydSolver::to_json();
-    jsonObj.merge_patch({{"hLossEvalCount", hLossEvalCount},
-                         {"stepSizing", stepSizing},
-                         {"trialsLimit", trialsLimit},
-                         {"reportTrials", reportTrials},
-                         {"headErrLimit", headErrLimit},
-                         {"flowErrLimit", flowErrLimit},
-                         {"flowChangeLimit", flowChangeLimit},
-                         {"flowRatioLimit", flowRatioLimit},
-                         {"tstep", tstep},
-                         {"theta", theta},
-                         {"errorNorm", errorNorm},
-                         {"oldErrorNorm", oldErrorNorm},
-                         {"hydBalance", hydBalance.to_json()},
-                         {"dH", dH},
-                         {"dQ", dQ},
-                         {"xQ", xQ}});
+    jsonObj.merge_patch(
+        {{"matrixSolver", matrixSolver ? matrixSolver->to_json() : nullptr},
+         {"hLossEvalCount", hLossEvalCount},
+         {"stepSizing", stepSizing},
+         {"trialsLimit", trialsLimit},
+         {"reportTrials", reportTrials},
+         {"headErrLimit", headErrLimit},
+         {"flowErrLimit", flowErrLimit},
+         {"flowChangeLimit", flowChangeLimit},
+         {"flowRatioLimit", flowRatioLimit},
+         {"tstep", tstep},
+         {"theta", theta},
+         {"errorNorm", errorNorm},
+         {"oldErrorNorm", oldErrorNorm},
+         {"hydBalance", hydBalance.to_json()},
+         {"dH", dH},
+         {"dQ", dQ},
+         {"xQ", xQ}});
     return jsonObj;
   }
 
   //! Deserialize from JSON for GGASolver
   void from_json(const nlohmann::json &j) override {
     HydSolver::from_json(j);
+    if (matrixSolver)
+      matrixSolver->from_json(j.at("matrixSolver"));
     hLossEvalCount = j.at("hLossEvalCount").get<int>();
     stepSizing = j.at("stepSizing").get<int>();
     trialsLimit = j.at("trialsLimit").get<int>();
@@ -70,6 +74,44 @@ public:
     dH = j.at("dH").get<std::vector<double>>();
     dQ = j.at("dQ").get<std::vector<double>>();
     xQ = j.at("xQ").get<std::vector<double>>();
+  }
+
+  void copy_to(HydSolverData &data) const override {
+    data.hLossEvalCount = hLossEvalCount;
+    data.stepSizing = stepSizing;
+    data.trialsLimit = trialsLimit;
+    data.reportTrials = reportTrials;
+    data.headErrLimit = headErrLimit;
+    data.flowErrLimit = flowErrLimit;
+    data.flowChangeLimit = flowChangeLimit;
+    data.flowRatioLimit = flowRatioLimit;
+    data.tstep = tstep;
+    data.theta = theta;
+    data.errorNorm = errorNorm;
+    data.oldErrorNorm = oldErrorNorm;
+    hydBalance.copy_to(data.hydBalance);
+    data.dH = dH;
+    data.dQ = dQ;
+    data.xQ = xQ;
+  }
+
+  void copy_from(const HydSolverData &data) override {
+    hLossEvalCount = data.hLossEvalCount;
+    stepSizing = data.stepSizing;
+    trialsLimit = data.trialsLimit;
+    reportTrials = data.reportTrials;
+    headErrLimit = data.headErrLimit;
+    flowErrLimit = data.flowErrLimit;
+    flowChangeLimit = data.flowChangeLimit;
+    flowRatioLimit = data.flowRatioLimit;
+    tstep = data.tstep;
+    theta = data.theta;
+    errorNorm = data.errorNorm;
+    oldErrorNorm = data.oldErrorNorm;
+    hydBalance.copy_from(data.hydBalance);
+    dH = data.dH;
+    dQ = data.dQ;
+    xQ = data.xQ;
   }
 
 private:

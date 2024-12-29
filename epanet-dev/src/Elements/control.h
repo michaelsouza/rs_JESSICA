@@ -65,32 +65,10 @@ public:
   void apply(Network *network, int t, int tod);
 
   //! Serialize to JSON
-  nlohmann::json to_json() const override {
-    return {{"link", link ? link->to_json() : nullptr},
-            {"status", status},
-            {"setting", setting},
-            {"node", node ? node->to_json() : nullptr},
-            {"head", head},
-            {"volume", volume},
-            {"levelType", levelType},
-            {"time", time}};
-  }
+  nlohmann::json to_json() const override { return {}; }
 
   //! Deserialize from JSON
-  void from_json(const nlohmann::json &j) override {
-    if (!j.at("link").is_null()) {
-      link->from_json(j.at("link"));
-    }
-    status = j.at("status").get<int>();
-    setting = j.at("setting").get<double>();
-    if (!j.at("node").is_null()) {
-      node->from_json(j.at("node"));
-    }
-    head = j.at("head").get<double>();
-    volume = j.at("volume").get<double>();
-    levelType = static_cast<LevelType>(j.at("levelType").get<int>());
-    time = j.at("time").get<int>();
-  }
+  void from_json(const nlohmann::json &j) override {}
 
 private:
   int type;            //!< type of control

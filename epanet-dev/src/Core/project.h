@@ -31,7 +31,14 @@
 #include <fstream>
 #include <string>
 
+class ProjectData {
+public:
+  NetworkData network;
+  HydEngineData hydEngine;
+};
+
 namespace Epanet {
+
 //!
 //! \class Project
 //! \brief Encapsulates a pipe network and its simulation engines.
@@ -69,16 +76,18 @@ public:
 
   //! Serialize to JSON
   nlohmann::json to_json() const {
-    return {{"network", network.to_json()},
-            {"hydEngine", hydEngine.to_json()},
-            {"hydEngineOpened", hydEngineOpened}};
+    return {{"network", network.to_json()}, {"hydEngine", hydEngine.to_json()}};
   }
 
   //! Deserialize from JSON
   void from_json(const nlohmann::json &j) {
     network.from_json(j.at("network"));
     hydEngine.from_json(j.at("hydEngine"));
-    hydEngineOpened = j.at("hydEngineOpened").get<bool>();
+  }
+
+  void copy_to(ProjectData &data) const {
+    network.copy_to(data.network);
+    hydEngine.copy_to(data.hydEngine);
   }
 
 private:

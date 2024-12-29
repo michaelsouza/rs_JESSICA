@@ -20,6 +20,8 @@
 #include "Elements/element.h"
 #include "Elements/node.h"
 #include "Elements/pattern.h"
+#include "Elements/pump.h"
+#include "Elements/tank.h"
 #include "Models/demandmodel.h"
 #include "Models/headlossmodel.h"
 #include "Models/leakagemodel.h"
@@ -30,6 +32,13 @@
 #include <ostream>
 #include <unordered_map>
 #include <vector>
+
+class NetworkData {
+public:
+  std::vector<NodeData> nodes;
+  std::vector<LinkData> links;
+  std::vector<int> patterns; // indices of patterns
+};
 
 class MemPool;
 
@@ -122,73 +131,67 @@ public:
       linksJson.push_back(l ? l->to_json() : nullptr);
     }
 
-    nlohmann::json curvesJson = nlohmann::json::array();
-    for (const auto *c : curves) {
-      curvesJson.push_back(c ? c->to_json() : nullptr);
-    }
-
     nlohmann::json patternsJson = nlohmann::json::array();
     for (const auto *p : patterns) {
       patternsJson.push_back(p ? p->to_json() : nullptr);
-    }
-
-    nlohmann::json controlsJson = nlohmann::json::array();
-    for (const auto *ctrl : controls) {
-      controlsJson.push_back(ctrl ? ctrl->to_json() : nullptr);
     }
 
     return {
         {"nodes", nodesJson},
         {"links", linksJson},
         {"patterns", patternsJson},
-        {"controls", controlsJson},
-        {"options", options.to_json()},
-        {"headLossModel", headLossModel ? headLossModel->to_json() : nullptr},
-        {"demandModel", demandModel ? demandModel->to_json() : nullptr},
-        {"leakageModel", leakageModel ? leakageModel->to_json() : nullptr}};
+    };
   }
 
   //! Deserialize from JSON for Network
   void from_json(const nlohmann::json &j) {
-    if (!j.at("nodes").is_null()) {
+    if (nodes.size() > 0) {
       const auto &nodesJson = j.at("nodes");
       for (size_t i = 0; i < nodesJson.size(); ++i) {
         nodes[i]->from_json(nodesJson[i]);
       }
     }
 
-    if (!j.at("links").is_null()) {
+    if (links.size() > 0) {
       const auto &linksJson = j.at("links");
       for (size_t i = 0; i < linksJson.size(); ++i) {
         links[i]->from_json(linksJson[i]);
       }
     }
 
-    if (!j.at("patterns").is_null()) {
+    if (patterns.size() > 0) {
       const auto &patternsJson = j.at("patterns");
       for (size_t i = 0; i < patternsJson.size(); ++i) {
         patterns[i]->from_json(patternsJson[i]);
       }
     }
+  }
 
-    if (!j.at("controls").is_null()) {
-      const auto &controlsJson = j.at("controls");
-      for (size_t i = 0; i < controlsJson.size(); ++i) {
-        controls[i]->from_json(controlsJson[i]);
-      }
-    }
+  void copy_to(NetworkData &data) const {
+    // resize data vectors to match network size
+    if (data.nodes.size() < nodes.size())
+      data.nodes.resize(nodes.size());
+    if (data.links.size() < links.size())
+      data.links.resize(links.size());
+    if (data.patterns.size() < patterns.size())
+      data.patterns.resize(patterns.size());
 
-    options.from_json(j.at("options"));
+    // copy data
+    for (size_t i = 0; i < nodes.size(); ++i)
+      nodes[i]->copy_to(data.nodes[i]);
+    for (size_t i = 0; i < links.size(); ++i)
+      links[i]->copy_to(data.links[i]);
+    for (size_t i = 0; i < patterns.size(); ++i)
+      data.patterns[i] = patterns[i]->currentIdx();
+  }
 
-    if (!j.at("headLossModel").is_null()) {
-      headLossModel->from_json(j.at("headLossModel"));
-    }
-    if (!j.at("demandModel").is_null()) {
-      demandModel->from_json(j.at("demandModel"));
-    }
-    if (!j.at("leakageModel").is_null()) {
-      leakageModel->from_json(j.at("leakageModel"));
-    }
+  void copy_from(const NetworkData &data) {
+    for (size_t i = 0; i < nodes.size(); ++i)
+      nodes[i]->copy_from(data.nodes[i]);
+    for (size_t i = 0; i < links.size(); ++i)
+      links[i]->copy_from(data.links[i]);
+    for (size_t i = 0; i < patterns.size(); ++i)
+      patterns[i]->currentIdx() = data.patterns[i];
   }
 
 private:

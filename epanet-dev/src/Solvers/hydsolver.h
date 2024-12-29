@@ -12,12 +12,33 @@
 #ifndef HYDSOLVER_H_
 #define HYDSOLVER_H_
 
+#include "Core/hydbalance.h"
 #include "Solvers/matrixsolver.h"
 #include <string>
 #include <vector>
 
 class Network;
 class MatrixSolver;
+
+class HydSolverData {
+public:
+  int hLossEvalCount;
+  int stepSizing;
+  int trialsLimit;
+  int reportTrials;
+  double headErrLimit;
+  double flowErrLimit;
+  double flowChangeLimit;
+  double flowRatioLimit;
+  double tstep;
+  double theta;
+  double errorNorm;
+  double oldErrorNorm;
+  std::vector<double> dH;
+  std::vector<double> dQ;
+  std::vector<double> xQ;
+  HydBalanceData hydBalance;
+};
 
 //! \class HydSolver
 //! \brief Interface for an equilibrium network hydraulic solver.
@@ -37,16 +58,13 @@ public:
   virtual int solve(double tstep, int &trials) = 0;
 
   //! Serialize to JSON for HydSolver
-  virtual nlohmann::json to_json() const {
-    return {{"matrixSolver", matrixSolver ? matrixSolver->to_json() : nullptr}};
-  }
+  virtual nlohmann::json to_json() const { return {}; }
 
   //! Deserialize from JSON for HydSolver
-  virtual void from_json(const nlohmann::json &j) {
-    if (!j.at("matrixSolver").is_null()) {
-      matrixSolver->from_json(j.at("matrixSolver"));
-    }
-  }
+  virtual void from_json(const nlohmann::json &j) {}
+
+  virtual void copy_to(HydSolverData &data) const = 0;
+  virtual void copy_from(const HydSolverData &data) = 0;
 
 protected:
   Network *network;

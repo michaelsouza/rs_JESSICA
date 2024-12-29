@@ -6,6 +6,29 @@
 #include <nlohmann/json.hpp> // Include nlohmann/json header
 #include <string>
 
+class NodeData {
+public:
+  bool fixedGrade;
+  double head;
+  double qGrad;
+  double fullDemand;
+  double actualDemand;
+  double outflow;
+  double initHead;
+  double minHead;
+  double maxHead;
+  double diameter;
+  double minVolume;
+  double bulkCoeff;
+  double maxVolume;
+  double volume;
+  double area;
+  double ucfLength;
+  double pastHead;
+  double pastVolume;
+  double pastOutflow;
+};
+
 class Network;
 class Emitter;
 class MemPool;
@@ -77,6 +100,24 @@ public:
     fullDemand = j.at("fullDemand").get<double>();
     actualDemand = j.at("actualDemand").get<double>();
     outflow = j.at("outflow").get<double>();
+  }
+
+  virtual void copy_to(NodeData &data) const {
+    data.fixedGrade = fixedGrade;
+    data.head = head;
+    data.qGrad = qGrad;
+    data.fullDemand = fullDemand;
+    data.actualDemand = actualDemand;
+    data.outflow = outflow;
+  }
+
+  virtual void copy_from(const NodeData &data) {
+    fixedGrade = data.fixedGrade;
+    head = data.head;
+    qGrad = data.qGrad;
+    fullDemand = data.fullDemand;
+    actualDemand = data.actualDemand;
+    outflow = data.outflow;
   }
 };
 

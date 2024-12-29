@@ -32,20 +32,6 @@ public:
   virtual double findFlow(double c1, double c2, double length, double h,
                           double &dqdh) = 0;
 
-  //! Serialize to JSON for LeakageModel
-  nlohmann::json to_json() const {
-    return {{"lengthUcf", lengthUcf},
-            {"flowUcf", flowUcf},
-            {"pressureUcf", pressureUcf}};
-  }
-
-  //! Deserialize from JSON for LeakageModel
-  void from_json(const nlohmann::json &j) {
-    lengthUcf = j.at("lengthUcf").get<double>();
-    flowUcf = j.at("flowUcf").get<double>();
-    pressureUcf = j.at("pressureUcf").get<double>();
-  }
-
 protected:
   double lengthUcf;
   double flowUcf;

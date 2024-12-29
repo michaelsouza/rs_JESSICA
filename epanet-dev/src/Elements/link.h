@@ -2,10 +2,25 @@
 #define LINK_H_
 
 #include "Elements/node.h"
+#include "Models/pumpenergy.h"
 
 #include <iostream>
 #include <nlohmann/json.hpp> // Include the JSON library
 #include <string>
+
+class LinkData {
+public:
+  double flow;
+  double hGrad;
+  double hLoss;
+  double initSetting;
+  int initStatus;
+  double setting;
+  int status;
+  double speed;
+  double costPerKwh;
+  PumpEnergyData pumpEnergy;
+};
 
 class Network;
 class MemPool;
@@ -109,6 +124,26 @@ public:
     hLoss = j.at("hLoss").get<double>();
     hGrad = j.at("hGrad").get<double>();
     setting = j.at("setting").get<double>();
+  }
+
+  virtual void copy_to(LinkData &data) const {
+    data.initStatus = initStatus;
+    data.initSetting = initSetting;
+    data.status = status;
+    data.flow = flow;
+    data.hLoss = hLoss;
+    data.hGrad = hGrad;
+    data.setting = setting;
+  }
+
+  virtual void copy_from(const LinkData &data) {
+    initStatus = data.initStatus;
+    initSetting = data.initSetting;
+    status = data.status;
+    flow = data.flow;
+    hLoss = data.hLoss;
+    hGrad = data.hGrad;
+    setting = data.setting;
   }
 };
 

@@ -18,6 +18,17 @@
 
 class Network;
 
+class HydBalanceData {
+public:
+  double maxFlowErr;
+  double maxHeadErr;
+  double maxFlowChange;
+  double totalFlowChange;
+  int maxHeadErrLink;
+  int maxFlowErrNode;
+  int maxFlowChangeLink;
+};
+
 //! \class HydBalance
 //! \brief Computes the degree to which a network solution is unbalanced.
 //!
@@ -61,6 +72,26 @@ struct HydBalance {
     maxHeadErrLink = j.at("maxHeadErrLink").get<int>();
     maxFlowErrNode = j.at("maxFlowErrNode").get<int>();
     maxFlowChangeLink = j.at("maxFlowChangeLink").get<int>();
+  }
+
+  void copy_to(HydBalanceData &data) const {
+    data.maxFlowErr = maxFlowErr;
+    data.maxHeadErr = maxHeadErr;
+    data.maxFlowChange = maxFlowChange;
+    data.totalFlowChange = totalFlowChange;
+    data.maxHeadErrLink = maxHeadErrLink;
+    data.maxFlowErrNode = maxFlowErrNode;
+    data.maxFlowChangeLink = maxFlowChangeLink;
+  }
+
+  void copy_from(const HydBalanceData &data) {
+    maxFlowErr = data.maxFlowErr;
+    maxHeadErr = data.maxHeadErr;
+    maxFlowChange = data.maxFlowChange;
+    totalFlowChange = data.totalFlowChange;
+    maxHeadErrLink = data.maxHeadErrLink;
+    maxFlowErrNode = data.maxFlowErrNode;
+    maxFlowChangeLink = data.maxFlowChangeLink;
   }
 };
 

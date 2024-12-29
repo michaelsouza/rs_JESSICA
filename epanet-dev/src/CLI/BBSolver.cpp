@@ -60,7 +60,8 @@ void BBSolver::epanet_load()
   CHK(p.initSolver(EN_INITFLOW), "Initialize solver");
 
   // Take an initial snapshot
-  snapshots[0] = p.to_json();
+  // snapshots[0] = p.to_json();
+  p.copy_to(snapshots[0]);
 }
 
 void BBSolver::epanet_solve(Project &p, double &cost)
@@ -143,8 +144,9 @@ bool BBSolver::process_node(double &cost)
 
   // Load the previous snapshot
   {
-    ProfileScope scope("process_node: from_json");
-    p.from_json(snapshots[h - 1]);
+    ProfileScope scope("copy_from");
+    // p.from_json(snapshots[h - 1]);
+    p.copy_from(snapshots[h - 1]);
   }
 
   // Initialize variables
@@ -162,8 +164,9 @@ bool BBSolver::process_node(double &cost)
   // Take a snapshot if the solution is feasible
   if (is_feasible)
   {
-    ProfileScope scope("process_node: take_snapshot");
-    snapshots[h] = p.to_json();
+    ProfileScope scope("copy_to");
+    // snapshots[h] = p.to_json();
+    p.copy_to(snapshots[h]);
   }
 
   return is_feasible;
@@ -567,7 +570,8 @@ void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free)
   read_buffer();
 
   // Reset snapshots
-  p.from_json(snapshots[0]); // all ranks have the first snapshot
+  // p.from_json(snapshots[0]); // all ranks have the first snapshot
+  p.copy_from(snapshots[0]);
   update_pumps(p, true);     // update the pumps with the received y
   double cost = 0.0;
   for (int i = 1; i <= h; ++i)
@@ -575,7 +579,8 @@ void BBSolver::recv_work(int send_rank, const std::vector<int> &h_free)
     // Run the solver
     epanet_solve(p, cost);
     // Take a snapshot if the solution is feasible
-    snapshots[i] = p.to_json();
+    // snapshots[i] = p.to_json();
+    p.copy_to(snapshots[i]);
   }
 }
 

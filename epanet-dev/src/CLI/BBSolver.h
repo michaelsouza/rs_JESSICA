@@ -139,7 +139,8 @@ public:
   BBStats stats;   ///< Statistics object for tracking feasibility and pruning.
   BBConfig config; ///< Configuration object for solver parameters.
 
-  std::vector<nlohmann::json> snapshots;
+  // std::vector<nlohmann::json> snapshots;
+  std::vector<ProjectData> snapshots;
   Project p;
 
   // MPI variables

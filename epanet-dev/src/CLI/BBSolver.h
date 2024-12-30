@@ -5,15 +5,13 @@
 #include "BBConstraints.h"
 #include "BBStatistics.h"
 #include "Console.h"
+#include "Profiler.h"
 
 #include "Core/project.h"
 #include "Elements/node.h"
 #include "Elements/tank.h"
-#include "Profiler.h"
 
 #include <algorithm>
-#include <mutex>
-#include <omp.h>
 #include <queue>
 #include <stdexcept>
 #include <vector>
@@ -29,7 +27,6 @@ class BBTask
 {
 public:
   int uid;
-  int tid;
   int h_root; // first hour that can be changed
   double cost;
   std::vector<ProjectData> snapshots;
@@ -39,7 +36,7 @@ public:
   bool is_feasible;
   int num_pumps;
   Project *p;
-  static int uid_counter;
+  int tid;
 
   double priority() const
   {
@@ -87,40 +84,6 @@ public:
   void show_xy(bool all = false) const
   {
     show_xy(h, all);
-  }
-};
-
-class BBTaskQueue
-{
-public:
-  std::queue<BBTask> tasks;
-  std::mutex mutex;
-
-  void push(const BBTask &task)
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-    tasks.push(task);
-  }
-
-  bool pop(BBTask &task)
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-    if (tasks.empty()) return false;
-    task = tasks.front();
-    tasks.pop();
-    return true;
-  }
-
-  bool empty()
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-    return tasks.empty();
-  }
-
-  size_t size()
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-    return tasks.size();
   }
 };
 
@@ -221,16 +184,16 @@ public:
     task.cost = std::numeric_limits<double>::max();
     task.x.resize((config.h_max + 1) * task.num_pumps, 0);
     task.is_feasible = true;
-    task.tid = omp_get_thread_num();
 
     // initialize snapshots
     BBPruneReason prune_reason = initSnapshots(task);
     if (prune_reason != BBPruneReason::NONE)
     {
-      stats.add_stats(BBPruneReason::SNAPSHOTS, task.h_root - 1);
       if (config.verbose) stats.show();
       return;
     }
+
+    constraints.sync_best();
 
     // branch-and-bound loop
     while (true)
@@ -254,6 +217,7 @@ public:
         task.show_xy(true);
       }
 
+      // Process the current level
       stats.add_stats(processLevel(task), task.h);
 
       if (config.verbose) stats.show();
@@ -261,6 +225,7 @@ public:
   }
 
 private:
+  int niters = 0;
   BBConfig &config;
   BBConstraints &constraints;
   BBStatistics &stats;
@@ -318,7 +283,11 @@ private:
       }
 
       prune_reason = constraints.check_feasibility(p, task.h, task.cost, config.verbose);
-      if (prune_reason != BBPruneReason::NONE) return prune_reason;
+      if (prune_reason != BBPruneReason::NONE)
+      {
+        stats.add_stats(prune_reason, task.h + 1);
+        return prune_reason;
+      }
 
       if (t_new % 3600 == 0)
       {
@@ -397,7 +366,6 @@ private:
   void updateX(BBTask &task)
   {
     const bool verbose = config.verbose;
-    int tid = omp_get_thread_num();
 
     // Ensure task.h is valid
     if (task.h < 1 || task.h > config.h_max)
@@ -494,6 +462,8 @@ private:
   //===============================================================
   BBPruneReason epanetSolve(BBTask &task)
   {
+    ProfileScope scope("epanetSolve");
+
     const int t_min = 3600 * (task.h - 1);
     const int t_max = 3600 * task.h;
     BBPruneReason prune_reason = BBPruneReason::NONE;
@@ -559,6 +529,7 @@ private:
 
 void processTask(BBTask &task, BBConfig &config, BBConstraints &constraints, BBStatistics &stats)
 {
+  ProfileScope scope("processTask");
   BBSolver solver(config, constraints, stats);
   solver.solveTask(task);
 }

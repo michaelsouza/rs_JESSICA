@@ -124,6 +124,20 @@
             "options": {
                 "cwd": "${workspaceFolder}/epanet-dev"
             }
+        },
+        // Build run-epanet3 in Debug mode
+        {
+            "label": "build-valgrind",
+            "type": "shell",
+            "command": "make BUILD_TYPE=valgrind -j8",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": ["$gcc", "$msCompile"],
+            "options": {
+                "cwd": "${workspaceFolder}/epanet-dev"
+            }
         }
     ]
 }

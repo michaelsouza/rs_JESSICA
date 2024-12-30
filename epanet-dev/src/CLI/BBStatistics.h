@@ -5,10 +5,9 @@
 #include "CLI/BBConstraints.h"
 
 #include <fstream>
+#include <mpi.h>
 #include <nlohmann/json.hpp>
-#include <omp.h>
 #include <string>
-
 class BBStatistics
 {
 public:
@@ -23,7 +22,6 @@ public:
     data[LEVELS] = std::vector<int>(config.h_max + 1, 0);
     data[STABILITY] = std::vector<int>(config.h_max + 1, 0);
     data[COST] = std::vector<int>(config.h_max + 1, 0);
-    data[SNAPSHOTS] = std::vector<int>(config.h_max + 1, 0);
     data[ACTUATIONS] = std::vector<int>(config.h_max + 1, 0);
 
     labels[NONE] = "NONE";
@@ -31,7 +29,6 @@ public:
     labels[LEVELS] = "LEVELS";
     labels[STABILITY] = "STABILITY";
     labels[COST] = "COST";
-    labels[SNAPSHOTS] = "SNAPSHOTS";
     labels[ACTUATIONS] = "ACTUATIONS";
   }
   ~BBStatistics()
@@ -43,9 +40,15 @@ public:
     data[reason][h]++;
   }
 
-  void to_json(const std::string &fn) const
+  void to_json(char *fn) const
   {
-    Console::printf(Console::Color::BRIGHT_GREEN, "💾 Writing statistics to file: %s\n", fn.c_str());
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if (rank == 0)
+    {
+      Console::printf(Console::Color::BRIGHT_GREEN, "💾 Writing statistics to file: %s\n", fn);
+    }
     nlohmann::json j;
     for (const auto &[reason, counts] : data)
     {
@@ -70,9 +73,11 @@ public:
 
   void show() const
   {
-    int tid = omp_get_thread_num();
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     Console::hline(Console::Color::BRIGHT_YELLOW, 20);
-    Console::printf(Console::Color::BRIGHT_YELLOW, "TID[%d]: Statistics\n", omp_get_thread_num());
+    Console::printf(Console::Color::BRIGHT_YELLOW, "TID[%d]: Statistics\n", rank);
     Console::printf(Console::Color::BRIGHT_YELLOW, "Duration: %.3f seconds\n", duration);
     for (const auto &[type, counts] : data)
     {

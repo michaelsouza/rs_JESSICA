@@ -1,6 +1,8 @@
 // src/CLI/BBConstraints.cpp
+
 #include "BBConstraints.h"
 #include "BBConfig.h"
+#include "Profiler.h"
 
 #include "Elements/pattern.h"
 
@@ -9,7 +11,9 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <mpi.h>
 #include <sstream>
+#include <vector>
 
 // Constructor
 BBConstraints::BBConstraints(const BBConfig &config)
@@ -22,12 +26,141 @@ BBConstraints::BBConstraints(const BBConfig &config)
 
   // Retrieve node and tank IDs from the input file
   get_network_elements_indices(config.inpFile);
+
+  all_finished = false;
+  finished = false;
 }
 
 // Destructor
 BBConstraints::~BBConstraints()
 {
   // Clean up resources if necessary
+}
+
+void BBConstraints::update_best(double cost, std::vector<int> x, std::vector<int> y)
+{
+  best_cost = std::min(best_cost, cost);
+  best_x = x;
+  best_y = y;
+}
+
+void BBConstraints::sync_best()
+{
+  ProfileScope scope("sync_best");
+
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  // Step 1: Synchronize the finished flags to determine if all processes have finished
+  int local_finished = finished ? 1 : 0;
+  int global_finished = 0;
+  int err = MPI_Allreduce(&local_finished, &global_finished, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+  if (err != MPI_SUCCESS)
+  {
+    char error_string[MPI_MAX_ERROR_STRING];
+    int length;
+    MPI_Error_string(err, error_string, &length);
+    fprintf(stderr, "MPI_Allreduce (finished flags) failed: %s\n", error_string);
+    MPI_Abort(MPI_COMM_WORLD, err);
+  }
+  all_finished = (global_finished == 1);
+
+  // Step 2: Synchronize the best solution across all processes
+  struct BestSolution
+  {
+    double cost;
+    int rank;
+  };
+
+  BestSolution local_best = {best_cost, rank};
+  BestSolution global_best;
+
+  // Perform a global reduction to find the minimum cost and the rank that has it
+  err = MPI_Allreduce(&local_best, &global_best, 1, MPI_DOUBLE_INT, MPI_MINLOC, MPI_COMM_WORLD);
+  if (err != MPI_SUCCESS)
+  {
+    char error_string[MPI_MAX_ERROR_STRING];
+    int length;
+    MPI_Error_string(err, error_string, &length);
+    fprintf(stderr, "MPI_Allreduce (MINLOC) failed: %s\n", error_string);
+    MPI_Abort(MPI_COMM_WORLD, err);
+  }
+
+  // Broadcast the best_cost from the process with the minimum cost
+  err = MPI_Bcast(&best_cost, 1, MPI_DOUBLE, global_best.rank, MPI_COMM_WORLD);
+  if (err != MPI_SUCCESS)
+  {
+    char error_string[MPI_MAX_ERROR_STRING];
+    int length;
+    MPI_Error_string(err, error_string, &length);
+    fprintf(stderr, "MPI_Bcast (best_cost) failed: %s\n", error_string);
+    MPI_Abort(MPI_COMM_WORLD, err);
+  }
+
+  // Broadcast the sizes of best_x and best_y
+  int best_x_size = 0;
+  int best_y_size = 0;
+  if (rank == global_best.rank)
+  {
+    best_x_size = static_cast<int>(best_x.size());
+    best_y_size = static_cast<int>(best_y.size());
+  }
+
+  err = MPI_Bcast(&best_x_size, 1, MPI_INT, global_best.rank, MPI_COMM_WORLD);
+  if (err != MPI_SUCCESS)
+  {
+    char error_string[MPI_MAX_ERROR_STRING];
+    int length;
+    MPI_Error_string(err, error_string, &length);
+    fprintf(stderr, "MPI_Bcast (best_x_size) failed: %s\n", error_string);
+    MPI_Abort(MPI_COMM_WORLD, err);
+  }
+
+  err = MPI_Bcast(&best_y_size, 1, MPI_INT, global_best.rank, MPI_COMM_WORLD);
+  if (err != MPI_SUCCESS)
+  {
+    char error_string[MPI_MAX_ERROR_STRING];
+    int length;
+    MPI_Error_string(err, error_string, &length);
+    fprintf(stderr, "MPI_Bcast (best_y_size) failed: %s\n", error_string);
+    MPI_Abort(MPI_COMM_WORLD, err);
+  }
+
+  // Resize the vectors on non-root processes to receive the data
+  if (rank != global_best.rank)
+  {
+    best_x.resize(best_x_size);
+    best_y.resize(best_y_size);
+  }
+
+  // Broadcast the best_x vector
+  if (best_x_size > 0)
+  {
+    err = MPI_Bcast(best_x.data(), best_x_size, MPI_INT, global_best.rank, MPI_COMM_WORLD);
+    if (err != MPI_SUCCESS)
+    {
+      char error_string[MPI_MAX_ERROR_STRING];
+      int length;
+      MPI_Error_string(err, error_string, &length);
+      fprintf(stderr, "MPI_Bcast (best_x) failed: %s\n", error_string);
+      MPI_Abort(MPI_COMM_WORLD, err);
+    }
+  }
+
+  // Broadcast the best_y vector
+  if (best_y_size > 0)
+  {
+    err = MPI_Bcast(best_y.data(), best_y_size, MPI_INT, global_best.rank, MPI_COMM_WORLD);
+    if (err != MPI_SUCCESS)
+    {
+      char error_string[MPI_MAX_ERROR_STRING];
+      int length;
+      MPI_Error_string(err, error_string, &length);
+      fprintf(stderr, "MPI_Bcast (best_y) failed: %s\n", error_string);
+      MPI_Abort(MPI_COMM_WORLD, err);
+    }
+  }
 }
 
 // Function to display the constraints
@@ -311,15 +444,24 @@ void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int>
 
 BBPruneReason BBConstraints::check_feasibility(Project &p, const int h, double &cost, bool verbose)
 {
+  ProfileScope scope("check_feasibility");
+
   if (!check_cost(p, cost, verbose)) return BBPruneReason::COST;
   if (!check_pressures(p, verbose)) return BBPruneReason::PRESSURES;
   if (!check_levels(p, verbose)) return BBPruneReason::LEVELS;
   return BBPruneReason::NONE;
 }
 
-void BBConstraints::to_json(std::string &fn) const
+void BBConstraints::to_json(char *fn) const
 {
-  Console::printf(Console::Color::BRIGHT_GREEN, "💾 Writing best solution to file: %s\n", fn.c_str());
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  if (rank == 0)
+  {
+    Console::printf(Console::Color::BRIGHT_GREEN, "💾 Writing best solution to file: %s\n", fn);
+  }
+
   nlohmann::json j;
   j["best_cost"] = best_cost;
   j["best_x"] = best_x;

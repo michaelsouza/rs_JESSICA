@@ -37,7 +37,7 @@ public:
     return profile;
   }
 
-  static void save()
+  static void save(const std::string &fn)
   {
     // Get MPI rank
     int rank;
@@ -46,12 +46,10 @@ public:
     // Only rank 0 prints the summary message
     if (rank == 0)
     {
-      Console::printf(Console::Color::BRIGHT_BLUE, "\nSaving profile_rank_*.txt files\n");
+      Console::printf(Console::Color::BRIGHT_GREEN, "💾 Writing profile to file: %s\n", fn.c_str());
     }
 
-    // Create filename for this rank
-    std::string filename = "profile_rank_" + std::to_string(rank) + ".txt";
-    std::ofstream outfile(filename);
+    std::ofstream outfile(fn);
 
     outfile << "=== Profiling Results (Rank " << rank << ") ===\n";
 

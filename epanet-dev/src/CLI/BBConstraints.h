@@ -22,7 +22,6 @@ enum BBPruneReason
   LEVELS,
   STABILITY,
   COST,
-  SNAPSHOTS,
   ACTUATIONS
 };
 
@@ -32,6 +31,17 @@ enum BBPruneReason
 class BBConstraints
 {
 public:
+  std::map<std::string, int> nodes; ///< Map of node names to indices
+  std::map<std::string, int> tanks; ///< Map of tank names to indices
+  std::map<std::string, int> pumps; ///< Map of pump names to indices
+  std::string inpFile;              ///< Path to input file
+  std::mutex mtx_cost;              ///< Mutex for protecting cost_ub updates
+  double best_cost;                 ///< Maximum cost allowed (upper bound)
+  std::vector<int> best_x;          ///< Best pump statuses
+  std::vector<int> best_y;          ///< Best pump speed patterns
+  bool finished;                    ///< Whether the process is finished
+  bool all_finished;                ///< Whether all processes are finished
+
   /**
    * @brief Constructs constraints checker for the given input file
    * @param inpFile Path to the EPANET input file
@@ -135,24 +145,24 @@ public:
    */
   void update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose);
 
-  void update_best(double cost, std::vector<int> x, std::vector<int> y)
-  {
-    std::lock_guard<std::mutex> lock(mtx_cost);
-    best_cost = std::min(best_cost, cost);
-    best_x = x;
-    best_y = y;
-  }
+  /**
+   * @brief Updates the best solution found
+   * @param cost Cost of the new solution
+   * @param x Pump statuses of the new solution
+   * @param y Pump speed patterns of the new solution
+   */
+  void update_best(double cost, std::vector<int> x, std::vector<int> y);
 
-  void to_json(std::string &fn) const;
+  /**
+   * @brief Synchronizes the best solution found among all processes
+   */
+  void sync_best();
 
-  std::map<std::string, int> nodes; ///< Map of node names to indices
-  std::map<std::string, int> tanks; ///< Map of tank names to indices
-  std::map<std::string, int> pumps; ///< Map of pump names to indices
-  std::string inpFile;              ///< Path to input file
-  std::mutex mtx_cost;              ///< Mutex for protecting cost_ub updates
-  double best_cost;                 ///< Maximum cost allowed (upper bound)
-  std::vector<int> best_x;          ///< Best pump statuses
-  std::vector<int> best_y;          ///< Best pump speed patterns
+  /**
+   * @brief Writes the best solution to a JSON file
+   * @param fn Path to the output file
+   */
+  void to_json(char *fn) const;
 
 private:
   /**
@@ -182,5 +192,4 @@ private:
    * @param initial_level Initial tank level
    */
   void show_stability(bool is_feasible, const std::string &tank_name, double level, double initial_level);
-
 };

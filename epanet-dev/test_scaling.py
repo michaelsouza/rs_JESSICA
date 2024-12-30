@@ -8,7 +8,7 @@ import statistics
 from pathlib import Path
 import csv
 
-def run_test(executable: str, num_processes: int, num_runs: int = 3, h_max: int = 5, num_activations: int = 3) -> tuple[float, float]:
+def run_test(executable: str, np: int, num_runs: int = 3, h_max: int = 5, num_activations: int = 3) -> tuple[float, float]:
     """
     Run the MPI program multiple times and return the average execution time and standard deviation.
     
@@ -27,7 +27,7 @@ def run_test(executable: str, num_processes: int, num_runs: int = 3, h_max: int 
         try:
             # Run MPI program and suppress output
             subprocess.run(
-                ['mpirun', '-n', str(num_processes), str(executable), "--h_max", str(h_max), "--num_activations", str(num_activations)],
+                ['mpirun', '-n', str(np), str(executable), "-h", str(h_max), "-a", str(num_activations)],
                 check=True
             )
         except subprocess.CalledProcessError as e:
@@ -45,11 +45,12 @@ def main():
     num_runs = 3
     h_max = 12
     num_activations = 3
+    level = 5
     
     # Setup paths
     build_dir = '/home/michael/gitrepos/rs_JESSICA/epanet-dev/release'
     executable = os.path.join(build_dir, 'run-epanet3')
-    results_file = os.path.join(build_dir, 'mpi_scaling_results.csv')
+    results_file = os.path.join(build_dir, f'mpi_scaling_h_{h_max:02d}_a_{num_activations:02d}_l_{level:02d}.csv')
     
     # Check if build directory exists
     if not os.path.exists(build_dir):

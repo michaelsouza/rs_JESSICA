@@ -3,11 +3,50 @@
 #include "Console.h"
 
 #include <mpi.h>
-#include <omp.h>
 #include <string>
+
+void BBConfig::generateFilenames()
+{
+  int rank, np;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &np);
+
+  char fn_base[256];
+  // Format the base filename
+  int ret = snprintf(fn_base, sizeof(fn_base), "run_h_%02d_a_%02d_l_%02d_n_%02d_r_%02d", h_max, max_actuations, level, np, rank);
+  if (ret < 0 || static_cast<size_t>(ret) >= sizeof(fn_base))
+  {
+    throw std::runtime_error("Filename truncation occurred in fn_base!");
+  }
+
+  // Format the stats filename
+  ret = snprintf(fn_stats, sizeof(fn_stats), "%s_stats.json", fn_base);
+  if (ret < 0 || static_cast<size_t>(ret) >= sizeof(fn_stats))
+  {
+    throw std::runtime_error("Filename truncation occurred in fn_stats!");
+  }
+
+  // Format the best filename
+  ret = snprintf(fn_best, sizeof(fn_best), "%s_best.json", fn_base);
+  if (ret < 0 || static_cast<size_t>(ret) >= sizeof(fn_best))
+  {
+    throw std::runtime_error("Filename truncation occurred in fn_best!");
+  }
+
+  // Format the profile filename
+  ret = snprintf(fn_profile, sizeof(fn_profile), "%s_prof.txt", fn_base);
+  if (ret < 0 || static_cast<size_t>(ret) >= sizeof(fn_profile))
+  {
+    throw std::runtime_error("Filename truncation occurred in fn_profile!");
+  }
+}
 
 BBConfig::BBConfig(int argc, char *argv[])
 {
+  int rank, np;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &np);
+
   // Default input file
   inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
 
@@ -23,35 +62,19 @@ BBConfig::BBConfig(int argc, char *argv[])
       h_max = std::stoi(argv[++i]);
     else if (arg == "-a" || arg == "--max_actuations")
       max_actuations = std::stoi(argv[++i]);
-    else if (arg == "-n" || arg == "--num_threads")
-      num_threads = std::stoi(argv[++i]);
-    else if (arg == "-k" || arg == "--max_tasks")
-      max_tasks = std::stoi(argv[++i]);
+    else if (arg == "-l" || arg == "--level")
+      level = std::stoi(argv[++i]);
   }
 
-  // Set the number of threads for subsequent parallel regions
-  omp_set_num_threads(num_threads);
-
-  // Verify the number of threads in a parallel region
-  int actual_num_threads = 0;
-#pragma omp parallel
+  // Buffers for filenames
+  try
   {
-#pragma omp single
-    {
-      actual_num_threads = omp_get_num_threads();
-    }
+    generateFilenames();
   }
-
-  if (actual_num_threads != num_threads)
+  catch (const std::runtime_error &e)
   {
-    throw std::runtime_error("Number of threads mismatch: " + std::to_string(actual_num_threads) + " != " + std::to_string(num_threads));
+    throw std::runtime_error(e.what());
   }
-
-  std::string fn_stats_base = "run_h_" + std::to_string(h_max) + "_a_" + std::to_string(max_actuations) + "_n_" + std::to_string(num_threads) + "_k_" +
-                              std::to_string(max_tasks);
-
-  fn_stats = fn_stats_base + "_stats.json";
-  fn_best = fn_stats_base + "_best.json";
 }
 
 void BBConfig::show() const
@@ -61,9 +84,9 @@ void BBConfig::show() const
   Console::printf(Console::Color::WHITE, "  Input file:      %s\n", inpFile.c_str());
   Console::printf(Console::Color::WHITE, "  Max hours:       %d\n", h_max);
   Console::printf(Console::Color::WHITE, "  Max actuations:  %d\n", max_actuations);
+  Console::printf(Console::Color::WHITE, "  Level:           %d\n", level);
   Console::printf(Console::Color::WHITE, "  Verbose:         %s\n", verbose ? "true" : "false");
-  Console::printf(Console::Color::WHITE, "  Max tasks:       %d\n", max_tasks);
-  Console::printf(Console::Color::WHITE, "  Num threads:     %d\n", num_threads);
-  Console::printf(Console::Color::WHITE, "  Stats file:      %s\n", fn_stats.c_str());
-  Console::printf(Console::Color::WHITE, "  Best file:       %s\n", fn_best.c_str());
+  Console::printf(Console::Color::WHITE, "  Stats file:      %s\n", fn_stats);
+  Console::printf(Console::Color::WHITE, "  Best file:       %s\n", fn_best);
+  Console::printf(Console::Color::WHITE, "  Profile file:    %s\n", fn_profile);
 }

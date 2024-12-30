@@ -11,11 +11,14 @@ public:
   void show() const;
 
   std::string inpFile;
-  int num_threads = 2;
   int h_max = 24;
   int max_actuations = 3;
-  int max_tasks = 256; // max number of tasks in queue
+  int level = 5;
   bool verbose = false;
-  std::string fn_stats;
-  std::string fn_best;
+  char fn_stats[256];
+  char fn_best[256];
+  char fn_profile[256];
+
+private:
+  void generateFilenames();
 };

@@ -27,17 +27,13 @@ namespace Epanet {
 //  Constructor
 
 Project::Project()
-    : inpFileName(""), outFileName(""), rptFileName(""), networkEmpty(true),
-      hydEngineOpened(false), qualEngineOpened(false), outputFileOpened(false),
-      solverInitialized(false), runQuality(false) {}
+    : inpFileName(""), networkEmpty(true), hydEngineOpened(false),
+      qualEngineOpened(false), solverInitialized(false), runQuality(false) {}
 
 //  Destructor
 
 Project::~Project() {
   // cout << "\nDestructing Project.";
-
-  closeReport();
-  outputFile.close();
 
   // cout << "\nProject destructed.\n";
 }
@@ -50,15 +46,6 @@ int Project::load(const char *fname) {
   try {
     // ... clear any current project
     clear();
-
-    // ... check for duplicate file names
-    string s = fname;
-    if (s.size() == rptFileName.size() && Utilities::match(s, rptFileName)) {
-      throw FileError(FileError::DUPLICATE_FILE_NAMES);
-    }
-    if (s.size() == outFileName.size() && Utilities::match(s, outFileName)) {
-      throw FileError(FileError::DUPLICATE_FILE_NAMES);
-    }
 
     // ... save name of input file
     inpFileName = fname;
@@ -146,8 +133,6 @@ int Project::initSolver(bool initFlows) {
     // ... mark solvers as being initialized
     solverInitialized = true;
 
-    // ... initialize the binary output file
-    outputFile.initWriter();
     return 0;
   } catch (ENerror const &e) {
     writeMsg(e.msg);
@@ -164,9 +149,6 @@ int Project::runSolver(int *t) {
     if (!solverInitialized)
       throw SystemError(SystemError::SOLVER_NOT_INITIALIZED);
     int statusCode = hydEngine.solve(t);
-    if (outputFileOpened && *t % network.option(Options::REPORT_STEP) == 0) {
-      outputFile.writeNetworkResults();
-    }
     return statusCode;
   } catch (ENerror const &e) {
     writeMsg(e.msg);
@@ -202,32 +184,13 @@ int Project::advanceSolver(int *dt) {
 
 //  Open a binary file that saves computed results.
 
-int Project::openOutput(const char *fname) {
-  //... close an already opened output file
-  if (networkEmpty)
-    return 0;
-  outputFile.close();
-  outputFileOpened = false;
-  outputFile.open(tempFile, &network);
-  outputFileOpened = true;
-  return 0;
-}
+int Project::openOutput(const char *fname) { return 0; }
 
 //-----------------------------------------------------------------------------
 
 //  Save results for the current time period to the binary output file.
 
-int Project::saveOutput() {
-  if (!outputFileOpened)
-    return 0;
-  try {
-    outputFile.writeNetworkResults();
-    return 0;
-  } catch (ENerror const &e) {
-    writeMsg(e.msg);
-    return e.code;
-  }
-}
+int Project::saveOutput() { return 0; }
 
 //-----------------------------------------------------------------------------
 
@@ -236,13 +199,6 @@ int Project::saveOutput() {
 void Project::finalizeSolver() {
   if (!solverInitialized)
     return;
-
-  // Save energy usage results to the binary output file.
-  if (outputFileOpened) {
-    double totalHrs = hydEngine.getElapsedTime() / 3600.0;
-    double peakKwatts = hydEngine.getPeakKwatts();
-    outputFile.writeEnergyResults(totalHrs, peakKwatts);
-  }
 
   // Write mass balance results for WQ constituent to message log
   if (runQuality && network.option(Options::REPORT_STATUS)) {
@@ -254,34 +210,7 @@ void Project::finalizeSolver() {
 
 //  Open the project's status/report file.
 
-int Project::openReport(const char *fname) {
-  try {
-    //... close an already opened report file
-    if (rptFile.is_open())
-      closeReport();
-
-    // ... check that file name is different from input file name
-    string s = fname;
-    if (s.size() == inpFileName.size() && Utilities::match(s, inpFileName)) {
-      throw FileError(FileError::DUPLICATE_FILE_NAMES);
-    }
-    if (s.size() == outFileName.size() && Utilities::match(s, outFileName)) {
-      throw FileError(FileError::DUPLICATE_FILE_NAMES);
-    }
-
-    // ... open the report file
-    rptFile.open(fname);
-    if (!rptFile.is_open()) {
-      throw FileError(FileError::CANNOT_OPEN_REPORT_FILE);
-    }
-    ReportWriter rw(rptFile, &network);
-    rw.writeHeading();
-    return 0;
-  } catch (ENerror const &e) {
-    writeMsg(e.msg);
-    return e.code;
-  }
-}
+int Project::openReport(const char *fname) { return 0; }
 
 //-----------------------------------------------------------------------------
 
@@ -293,21 +222,13 @@ void Project::writeMsg(const std::string &msg) { network.msgLog << msg; }
 
 //  Write the project's title and option summary to the report file.
 
-void Project::writeSummary() {
-  if (!rptFile.is_open())
-    return;
-  ReportWriter reportWriter(rptFile, &network);
-  reportWriter.writeSummary(inpFileName);
-}
+void Project::writeSummary() {}
 
 //-----------------------------------------------------------------------------
 
 //  Close the project's report file.
 
-void Project::closeReport() {
-  if (rptFile.is_open())
-    rptFile.close();
-}
+void Project::closeReport() {}
 
 //-----------------------------------------------------------------------------
 
@@ -322,39 +243,17 @@ void Project::writeMsgLog(ostream &out) {
 
 //  Write the project's message log to the report file.
 
-void Project::writeMsgLog() {
-  if (rptFile.is_open()) {
-    rptFile << network.msgLog.str();
-    network.msgLog.str("");
-  }
-}
+void Project::writeMsgLog() {}
 
 //-----------------------------------------------------------------------------
 
 //  Write results at the current time period to the report file.
 
-void Project::writeResults(int t) {
-  if (!rptFile.is_open())
-    return;
-  ReportWriter reportWriter(rptFile, &network);
-  reportWriter.writeResults(t);
-}
+void Project::writeResults(int t) {}
 
 //-----------------------------------------------------------------------------
 
 //  Write all results saved to the binary output file to a report file.
 
-int Project::writeReport() {
-  try {
-    if (!outputFileOpened) {
-      throw FileError(FileError::NO_RESULTS_SAVED_TO_REPORT);
-    }
-    ReportWriter reportWriter(rptFile, &network);
-    reportWriter.writeReport(inpFileName, &outputFile);
-    return 0;
-  } catch (ENerror const &e) {
-    writeMsg(e.msg);
-    return e.code;
-  }
-}
+int Project::writeReport() { return 0; }
 } // namespace Epanet

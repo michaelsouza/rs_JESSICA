@@ -99,20 +99,12 @@ private:
   Network network;         //!< pipe network to be analyzed.
   HydEngine hydEngine;     //!< hydraulic simulation engine.
   QualEngine qualEngine;   //!< water quality simulation engine.
-  OutputFile outputFile;   //!< binary output file for saved results.
   std::string inpFileName; //!< name of project's input file.
-  std::string outFileName; //!< name of project's binary output file.
-  // std::string    tmpFileName;    //!< name of project's temporary binary
-  // output file.
-  TempFile tempFile;       //!< Replace std::string tmpFileName
-  std::string rptFileName; //!< name of project's report file.
-  std::ofstream rptFile;   //!< reporting file stream.
 
   // Project status conditions
   bool networkEmpty;
   bool hydEngineOpened;
   bool qualEngineOpened;
-  bool outputFileOpened;
   bool solverInitialized;
   bool runQuality;
 

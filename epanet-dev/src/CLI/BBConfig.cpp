@@ -6,11 +6,6 @@
 
 BBConfig::BBConfig(int argc, char *argv[])
 {
-  parse_args(argc, argv);
-}
-
-void BBConfig::parse_args(int argc, char *argv[])
-{
   // Default input file
   inpFile = "/home/michael/gitrepos/rs_JESSICA/networks/any-town.inp";
 
@@ -26,14 +21,10 @@ void BBConfig::parse_args(int argc, char *argv[])
       h_max = std::stoi(argv[++i]);
     else if (arg == "-a" || arg == "--max_actuations")
       max_actuations = std::stoi(argv[++i]);
-    else if (arg == "-s" || arg == "--dump")
-      dump_project = true;
-    else if (arg == "-l" || arg == "--log")
-      use_logger = true;
-    else if (arg == "-t" || arg == "--h_threshold")
-      h_threshold = std::stoi(argv[++i]);
-    else if (arg == "-k" || arg == "--interval_sync")
-      interval_sync = std::stoi(argv[++i]);
+    else if (arg == "-t" || arg == "--h_min")
+      h_min = std::stoi(argv[++i]);
+    else if (arg == "-n" || arg == "--num_threads")
+      num_threads = std::stoi(argv[++i]);
   }
 }
 
@@ -49,10 +40,7 @@ void BBConfig::show() const
     Console::printf(Console::Color::WHITE, "  Input file:      %s\n", inpFile.c_str());
     Console::printf(Console::Color::WHITE, "  Max hours:       %d\n", h_max);
     Console::printf(Console::Color::WHITE, "  Max actuations:  %d\n", max_actuations);
-    Console::printf(Console::Color::WHITE, "  Hour threshold:  %d\n", h_threshold);
-    Console::printf(Console::Color::WHITE, "  Interval sync:   %d\n", interval_sync);
+    Console::printf(Console::Color::WHITE, "  Hour threshold:  %d\n", h_min);
     Console::printf(Console::Color::WHITE, "  Verbose:         %s\n", verbose ? "true" : "false");
-    Console::printf(Console::Color::WHITE, "  Save project:    %s\n", dump_project ? "true" : "false");
-    Console::printf(Console::Color::WHITE, "  Use logger:      %s\n", use_logger ? "true" : "false");
   }
 }

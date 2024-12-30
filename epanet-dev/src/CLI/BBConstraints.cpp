@@ -1,5 +1,6 @@
 // src/CLI/BBConstraints.cpp
 #include "BBConstraints.h"
+#include "BBConfig.h"
 
 #include "Elements/pattern.h"
 
@@ -11,7 +12,7 @@
 #include <sstream>
 
 // Constructor
-BBConstraints::BBConstraints(std::string inpFile) : inpFile(inpFile)
+BBConstraints::BBConstraints(const BBConfig &config)
 {
   // Initialize nodes and tanks with placeholder IDs
   nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
@@ -20,7 +21,13 @@ BBConstraints::BBConstraints(std::string inpFile) : inpFile(inpFile)
   cost_ub = std::numeric_limits<double>::max();
 
   // Retrieve node and tank IDs from the input file
-  get_network_elements_indices(inpFile);
+  get_network_elements_indices(config.inpFile);
+
+  // Initialize prunes
+  prunes = {
+      {PruneType::PRUNE_PRESSURES, std::vector<long>(config.h_max + 1, 0)}, {PruneType::PRUNE_LEVELS, std::vector<long>(config.h_max + 1, 0)},
+      {PruneType::PRUNE_STABILITY, std::vector<long>(config.h_max + 1, 0)}, {PruneType::PRUNE_COST, std::vector<long>(config.h_max + 1, 0)},
+      {PruneType::PRUNE_SNAPSHOTS, std::vector<long>(config.h_max + 1, 0)}, {PruneType::PRUNE_ACTUATIONS, std::vector<long>(config.h_max + 1, 0)}};
 }
 
 // Destructor
@@ -114,7 +121,7 @@ void BBConstraints::show_stability(bool is_feasible, const std::string &tank_nam
 }
 
 // Function to check node pressures
-bool BBConstraints::check_pressures(Project *p, bool verbose)
+bool BBConstraints::check_pressures(Project &p, bool verbose)
 {
   if (verbose)
   {
@@ -136,7 +143,7 @@ bool BBConstraints::check_pressures(Project *p, bool verbose)
     double pressure;
 
     // Retrieve node pressure
-    CHK(EN_getNodeValue(node_index, EN_PRESSURE, &pressure, p), "Get node pressure");
+    CHK(EN_getNodeValue(node_index, EN_PRESSURE, &pressure, &p), "Get node pressure");
 
     // Check if pressure meets the threshold
     bool is_feasible = pressure >= thresholds[node_name];
@@ -153,7 +160,7 @@ bool BBConstraints::check_pressures(Project *p, bool verbose)
 }
 
 // Function to check tank levels
-bool BBConstraints::check_levels(Project *p, bool verbose)
+bool BBConstraints::check_levels(Project &p, bool verbose)
 {
   if (verbose)
   {
@@ -174,7 +181,7 @@ bool BBConstraints::check_levels(Project *p, bool verbose)
     double level;
 
     // Retrieve tank level
-    CHK(EN_getNodeValue(tank_index, EN_HEAD, &level, p), "Get tank level");
+    CHK(EN_getNodeValue(tank_index, EN_HEAD, &level, &p), "Get tank level");
 
     // Check if level is within acceptable range
     bool is_feasible = (level >= level_min) && (level <= level_max);
@@ -191,7 +198,7 @@ bool BBConstraints::check_levels(Project *p, bool verbose)
 }
 
 // Function to check tank stability
-bool BBConstraints::check_stability(Project *p, bool verbose)
+bool BBConstraints::check_stability(Project &p, bool verbose)
 {
   if (verbose)
   {
@@ -211,7 +218,7 @@ bool BBConstraints::check_stability(Project *p, bool verbose)
     double level;
 
     // Retrieve tank level
-    CHK(EN_getNodeValue(tank_index, EN_HEAD, &level, p), "Get tank level");
+    CHK(EN_getNodeValue(tank_index, EN_HEAD, &level, &p), "Get tank level");
 
     // Check if level meets the initial stability condition
     bool is_feasible = level >= initial_level;
@@ -228,8 +235,9 @@ bool BBConstraints::check_stability(Project *p, bool verbose)
 }
 
 // Function to check the cost
-bool BBConstraints::check_cost(Project *p, const double cost, bool verbose)
+bool BBConstraints::check_cost(Project &p, double &cost, bool verbose)
 {
+  cost = calc_cost(p);
   bool is_feasible = cost < cost_ub;
   if (verbose)
   {
@@ -250,9 +258,9 @@ bool BBConstraints::check_cost(Project *p, const double cost, bool verbose)
 }
 
 // Function to calculate the total cost of pump operations
-double BBConstraints::calc_cost(Project *p) const
+double BBConstraints::calc_cost(Project &p) const
 {
-  Network *nw = p->getNetwork();
+  Network *nw = p.getNetwork();
   double cost = 0.0;
   for (const auto &pump : pumps)
   {
@@ -263,7 +271,7 @@ double BBConstraints::calc_cost(Project *p) const
 }
 
 // Function to update pump speed patterns
-void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int> &x, bool verbose)
+void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose)
 {
   // Update pump speed patterns based on vector x
   int j = 0;
@@ -276,7 +284,7 @@ void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int>
     {
       const auto &pump_name = pump.first;
       const auto &pump_index = pump.second;
-      Pump *pump_link = (Pump *)p->getNetwork()->link(pump_index);
+      Pump *pump_link = (Pump *)p.getNetwork()->link(pump_index);
       FixedPattern *pattern = dynamic_cast<FixedPattern *>(pump_link->speedPattern);
       if (!pattern)
       {
@@ -292,4 +300,28 @@ void BBConstraints::update_pumps(Project *p, const int h, const std::vector<int>
       pattern->setFactor(factor_id, factor_new);
     }
   }
+}
+
+PruneType BBConstraints::check_feasibility(Project &p, const int h, double &cost)
+{
+  if (!check_cost(p, cost, false))
+  {
+    ++prunes[PruneType::PRUNE_COST][h];
+    return PruneType::PRUNE_COST;
+  }
+  if (!check_pressures(p, false))
+  {
+    ++prunes[PruneType::PRUNE_PRESSURES][h];
+    return PruneType::PRUNE_PRESSURES;
+  }
+  if (prunes[PruneType::PRUNE_LEVELS][h] == 0)
+  {
+    if (!check_levels(p, false))
+    {
+      ++prunes[PruneType::PRUNE_LEVELS][h];
+      return PruneType::PRUNE_LEVELS;
+    }
+  }
+
+  return PruneType::PRUNE_NONE;
 }

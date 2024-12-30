@@ -1,8 +1,5 @@
-// src/CLI/main.cpp
-
 #include "BBConfig.h"
 #include "BBSolver.h"
-#include "BBTests.h"
 #include "Profiler.h"
 
 #include <mpi.h>
@@ -10,73 +7,40 @@
 #include <unistd.h>
 #include <vector>
 
-void run_tests(int argc, char *argv[])
-{
-  std::vector<std::string> test_names;
-  bool run_tests_flag = false;
-
-  // Search for --test parameter
-  for (int i = 1; i < argc; ++i)
-  {
-    std::string arg = argv[i];
-    if (arg == "--test")
-    {
-      run_tests_flag = true;
-      // Collect all subsequent arguments as test names
-      while (++i < argc)
-      {
-        std::string test_name = argv[i];
-        if (test_name.rfind("--", 0) == 0)
-        {
-          // Encountered another flag, stop collecting test names
-          i--;
-          break;
-        }
-        test_names.push_back(test_name);
-      }
-    }
-  }
-
-  if (run_tests_flag)
-  {
-    if (test_names.empty())
-    {
-      Console::printf(Console::Color::BRIGHT_RED, "No test names provided\n");
-      exit(EXIT_FAILURE);
-    }
-    else
-      test_all(test_names);
-  }
-}
-
 int main(int argc, char *argv[])
 {
-  // Initialize MPI
-  MPI_Init(nullptr, nullptr);
+  const int num_threads = 4;
 
+  // Initialize config
+  BBConfig config(argc, argv);
+
+  // Initialize Projects and Constraints
+  std::vector<Project> projects(num_threads);
+  std::vector<BBConstraints> constraints;
+  constraints.reserve(num_threads);
+  for (int i = 0; i < num_threads; ++i)
   {
-    ProfileScope scope("main");
-    run_tests(argc, argv);
-
-    // Create configuration from command-line arguments
-    BBConfig config(argc, argv);
-    config.show();
-
-    // Create solver instance
-    BBSolver solver(config);
-
-    // Start solving
-    solver.solve();
+    constraints.emplace_back(config); // Explicit initialization
   }
 
-  // Print profiling results to separate files
-  Profiler::save();
+  // Create priority queue of tasks sorted by min (cost / h_root)
+  auto cmp = [](const BBTask &a, const BBTask &b) { return a.cost / a.h_root > b.cost / b.h_root; };
+  BBTaskQueue tasks;
 
-  // Make sure all ranks have finished writing their profiles
-  MPI_Barrier(MPI_COMM_WORLD);
+  // Initialize first task
+  BBTask task;
+  task.h_root = 0;
+  task.y = std::vector<int>(config.h_max + 1, 0);
+  task.cost = std::numeric_limits<double>::infinity();
+  tasks.push(task);
 
-  // Finalize MPI
-  MPI_Finalize();
+  omp_set_num_threads(num_threads);
+#pragma omp parallel
+  {
+    int tid = omp_get_thread_num();
+    Project &p = projects[tid];
+    BBConstraints &c = constraints[tid];
+  }
 
   return EXIT_SUCCESS;
 }

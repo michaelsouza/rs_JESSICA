@@ -5,18 +5,18 @@ CXX = mpicxx
 BUILD_TYPE ?= debug
 
 # Base compiler flags
-CXXFLAGS_BASE = -std=c++17 -Isrc -MMD -MP -fPIC -I/usr/include/nlohmann # Add JSON library path here
+CXXFLAGS_BASE = -std=c++17 -Isrc -MMD -MP -fPIC -I/usr/include/nlohmann -fopenmp # Add JSON library path here
 
 # Compiler flags for different build types
 ifeq ($(BUILD_TYPE), valgrind)
     CXXFLAGS = $(CXXFLAGS_BASE) -g -O0
-    LDFLAGS = -Wl,-rpath,'$$ORIGIN'
+    LDFLAGS = -Wl,-rpath,'$$ORIGIN' -fopenmp
 else ifeq ($(BUILD_TYPE), debug)
     CXXFLAGS = $(CXXFLAGS_BASE) -g -pg
-    LDFLAGS = -pg -Wl,-rpath,'$$ORIGIN'
+    LDFLAGS = -pg -Wl,-rpath,'$$ORIGIN' -fopenmp
 else ifeq ($(BUILD_TYPE), release)
     CXXFLAGS = $(CXXFLAGS_BASE) -O3 -DNDEBUG -march=native -funroll-loops -fomit-frame-pointer -flto
-    LDFLAGS = -flto -Wl,-rpath,'$$ORIGIN'
+    LDFLAGS = -flto -Wl,-rpath,'$$ORIGIN' -fopenmp
 else
     $(error Invalid BUILD_TYPE specified. Use 'debug' or 'release'.)
 endif

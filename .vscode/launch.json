@@ -27,7 +27,7 @@
             "program": "${workspaceFolder}/epanet-dev/debug/run-epanet3",
             "args": [
                 "--test",
-                "test_reuse"
+                "test_omp"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/epanet-dev/debug",

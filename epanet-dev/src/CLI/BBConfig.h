@@ -11,16 +11,9 @@ public:
   void show() const;
 
   std::string inpFile;
+  int num_threads = 1;
   int h_max = 24;
-  // Maximum number of times a pump can change state from 0 to 1 (i.e. turn ons)
-  // during the simulation period
+  int h_min = 18;
   int max_actuations = 3;
   bool verbose = false;
-  bool dump_project = false;
-  bool use_logger = false;
-  int h_threshold = 18;
-  int interval_sync = 2048;
-
-private:
-  void parse_args(int argc, char *argv[]);
 };

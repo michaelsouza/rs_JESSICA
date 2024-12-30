@@ -1,7 +1,9 @@
 // src/CLI/BBConstraints.h
 #pragma once
 
+#include "CLI/BBConfig.h"
 #include "CLI/Console.h"
+
 #include "Core/network.h"
 #include "Core/project.h"
 #include "Elements/pump.h"
@@ -11,6 +13,17 @@
 #include <string>
 
 using Epanet::Project;
+
+enum PruneType
+{
+  PRUNE_NONE,
+  PRUNE_PRESSURES,
+  PRUNE_LEVELS,
+  PRUNE_STABILITY,
+  PRUNE_COST,
+  PRUNE_SNAPSHOTS,
+  PRUNE_ACTUATIONS
+};
 
 /**
  * @brief Class to handle constraint checking for branch and bound optimization
@@ -22,7 +35,7 @@ public:
    * @brief Constructs constraints checker for the given input file
    * @param inpFile Path to the EPANET input file
    */
-  BBConstraints(std::string inpFile);
+  BBConstraints(const BBConfig &config);
   ~BBConstraints();
 
   /**
@@ -30,21 +43,21 @@ public:
    * @param verbose If true, prints detailed constraint violation info
    * @return true if all pressure constraints are satisfied
    */
-  bool check_pressures(Project *p, bool verbose = false);
+  bool check_pressures(Project &p, bool verbose = false);
 
   /**
    * @brief Verifies that tank levels are within bounds
    * @param verbose If true, prints detailed constraint violation info
    * @return true if all tank level constraints are satisfied
    */
-  bool check_levels(Project *p, bool verbose = false);
+  bool check_levels(Project &p, bool verbose = false);
 
   /**
    * @brief Verifies that final tank levels match initial levels
    * @param verbose If true, prints detailed constraint violation info
    * @return true if all tanks return to initial levels
    */
-  bool check_stability(Project *p, bool verbose = false);
+  bool check_stability(Project &p, bool verbose = false);
 
   /**
    * @brief Checks if total operational cost is within allowed bounds
@@ -52,7 +65,16 @@ public:
    * @param verbose If true, prints detailed constraint violation info
    * @return true if cost is below maximum allowed
    */
-  bool check_cost(Project *p, const double cost, bool verbose = false);
+  bool check_cost(Project &p, double &cost, bool verbose = false);
+
+  /**
+   * @brief Checks if the current state of the network is feasible
+   * @param p Project containing the network
+   * @param h Current time period
+   * @param cost Cost of the current state
+   * @return PruneType of the reason for pruning
+   */
+  PruneType check_feasibility(Project &p, const int h, double &cost);
 
   /**
    * @brief Loads node and tank IDs from input file
@@ -64,7 +86,7 @@ public:
    * @brief Calculates total pump operation cost
    * @return Total operational cost
    */
-  double calc_cost(Project *p) const;
+  double calc_cost(Project &p) const;
 
   /**
    * @brief Gets number of nodes in network
@@ -105,13 +127,33 @@ public:
    * @param x Vector of pump statuses (0/1)
    * @param verbose If true, prints status updates
    */
-  void update_pumps(Project *p, const int h, const std::vector<int> &x, bool verbose);
+  void update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose);
 
-  std::map<std::string, int> nodes; ///< Map of node names to indices
-  std::map<std::string, int> tanks; ///< Map of tank names to indices
-  std::map<std::string, int> pumps; ///< Map of pump names to indices
-  double cost_ub;                   ///< Maximum cost allowed (upper bound)
-  std::string inpFile;              ///< Path to input file
+  /**
+   * @brief Adds a prune to the constraints
+   * @param prune_type Type of prune
+   */
+  void add_prune(PruneType prune_type, int h)
+  {
+    ++prunes[prune_type][h];
+  }
+
+  /**
+   * @brief Adds a feasible time period
+   * @param h Time period
+   */
+  void add_feasible(int h)
+  {
+    feasibles.push_back(h);
+  }
+
+  std::map<std::string, int> nodes;              ///< Map of node names to indices
+  std::map<std::string, int> tanks;              ///< Map of tank names to indices
+  std::map<std::string, int> pumps;              ///< Map of pump names to indices
+  double cost_ub;                                ///< Maximum cost allowed (upper bound)
+  std::string inpFile;                           ///< Path to input file
+  std::map<PruneType, std::vector<long>> prunes; ///< Map of time periods to snapshots
+  std::vector<int> feasibles;                    ///< Vector of feasible time periods
 
 private:
   /**

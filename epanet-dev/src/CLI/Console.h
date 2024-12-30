@@ -58,6 +58,8 @@ public:
 
   static void hline(Color color, size_t length = 10);
 
+  static void title(Color color, const std::string &title);
+
 private:
 };
 

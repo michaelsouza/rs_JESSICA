@@ -103,6 +103,12 @@ void Console::hline(Color color, size_t length)
   }
 }
 
+void Console::title(Color color, const std::string &title)
+{
+  Console::printf(color, "%s  ", title.c_str());
+  Console::hline(color);
+}
+
 // Implementation of CHK function
 void CHK(int err, const std::string &message)
 {

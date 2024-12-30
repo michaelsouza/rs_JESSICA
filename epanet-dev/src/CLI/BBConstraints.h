@@ -10,19 +10,20 @@
 #include "epanet3.h"
 
 #include <map>
+#include <mutex>
 #include <string>
 
 using Epanet::Project;
 
-enum PruneType
+enum BBPruneReason
 {
-  PRUNE_NONE,
-  PRUNE_PRESSURES,
-  PRUNE_LEVELS,
-  PRUNE_STABILITY,
-  PRUNE_COST,
-  PRUNE_SNAPSHOTS,
-  PRUNE_ACTUATIONS
+  NONE,
+  PRESSURES,
+  LEVELS,
+  STABILITY,
+  COST,
+  SNAPSHOTS,
+  ACTUATIONS
 };
 
 /**
@@ -57,7 +58,7 @@ public:
    * @param verbose If true, prints detailed constraint violation info
    * @return true if all tanks return to initial levels
    */
-  bool check_stability(Project &p, bool verbose = false);
+  BBPruneReason check_stability(Project &p, bool verbose = false);
 
   /**
    * @brief Checks if total operational cost is within allowed bounds
@@ -74,7 +75,7 @@ public:
    * @param cost Cost of the current state
    * @return PruneType of the reason for pruning
    */
-  PruneType check_feasibility(Project &p, const int h, double &cost);
+  BBPruneReason check_feasibility(Project &p, const int h, double &cost, bool verbose);
 
   /**
    * @brief Loads node and tank IDs from input file
@@ -121,6 +122,11 @@ public:
   void show() const;
 
   /**
+   * @brief Displays the best solution found
+   */
+  void show_best() const;
+
+  /**
    * @brief Updates pump statuses for the initial time period until the current time period
    * @param p Project containing the network
    * @param h Current time period
@@ -129,31 +135,24 @@ public:
    */
   void update_pumps(Project &p, const int h, const std::vector<int> &x, bool verbose);
 
-  /**
-   * @brief Adds a prune to the constraints
-   * @param prune_type Type of prune
-   */
-  void add_prune(PruneType prune_type, int h)
+  void update_best(double cost, std::vector<int> x, std::vector<int> y)
   {
-    ++prunes[prune_type][h];
+    std::lock_guard<std::mutex> lock(mtx_cost);
+    best_cost = std::min(best_cost, cost);
+    best_x = x;
+    best_y = y;
   }
 
-  /**
-   * @brief Adds a feasible time period
-   * @param h Time period
-   */
-  void add_feasible(int h)
-  {
-    feasibles.push_back(h);
-  }
+  void to_json(std::string &fn) const;
 
-  std::map<std::string, int> nodes;              ///< Map of node names to indices
-  std::map<std::string, int> tanks;              ///< Map of tank names to indices
-  std::map<std::string, int> pumps;              ///< Map of pump names to indices
-  double cost_ub;                                ///< Maximum cost allowed (upper bound)
-  std::string inpFile;                           ///< Path to input file
-  std::map<PruneType, std::vector<long>> prunes; ///< Map of time periods to snapshots
-  std::vector<int> feasibles;                    ///< Vector of feasible time periods
+  std::map<std::string, int> nodes; ///< Map of node names to indices
+  std::map<std::string, int> tanks; ///< Map of tank names to indices
+  std::map<std::string, int> pumps; ///< Map of pump names to indices
+  std::string inpFile;              ///< Path to input file
+  std::mutex mtx_cost;              ///< Mutex for protecting cost_ub updates
+  double best_cost;                 ///< Maximum cost allowed (upper bound)
+  std::vector<int> best_x;          ///< Best pump statuses
+  std::vector<int> best_y;          ///< Best pump speed patterns
 
 private:
   /**
@@ -183,4 +182,5 @@ private:
    * @param initial_level Initial tank level
    */
   void show_stability(bool is_feasible, const std::string &tank_name, double level, double initial_level);
+
 };

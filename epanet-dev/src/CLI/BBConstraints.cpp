@@ -18,16 +18,10 @@ BBConstraints::BBConstraints(const BBConfig &config)
   nodes = {{"55", 0}, {"90", 0}, {"170", 0}};
   tanks = {{"65", 0}, {"165", 0}, {"265", 0}};
   pumps = {{"111", 0}, {"222", 0}, {"333", 0}};
-  cost_ub = std::numeric_limits<double>::max();
+  best_cost = std::numeric_limits<double>::max();
 
   // Retrieve node and tank IDs from the input file
   get_network_elements_indices(config.inpFile);
-
-  // Initialize prunes
-  prunes = {
-      {PruneType::PRUNE_PRESSURES, std::vector<long>(config.h_max + 1, 0)}, {PruneType::PRUNE_LEVELS, std::vector<long>(config.h_max + 1, 0)},
-      {PruneType::PRUNE_STABILITY, std::vector<long>(config.h_max + 1, 0)}, {PruneType::PRUNE_COST, std::vector<long>(config.h_max + 1, 0)},
-      {PruneType::PRUNE_SNAPSHOTS, std::vector<long>(config.h_max + 1, 0)}, {PruneType::PRUNE_ACTUATIONS, std::vector<long>(config.h_max + 1, 0)}};
 }
 
 // Destructor
@@ -102,6 +96,19 @@ void BBConstraints::show_pressures(bool is_feasible, const std::string &node_nam
     Console::printf(Console::Color::GREEN, "  \u2705 node[%3s]: %.2f >= %.2f\n", node_name.c_str(), pressure, threshold);
 }
 
+void BBConstraints::show_best() const
+{
+  Console::printf(Console::Color::BRIGHT_WHITE, "Best solution: cost=%.2f\n", best_cost);
+  Console::printf(Console::Color::BRIGHT_WHITE, "  X: [ ");
+  for (const auto &x : best_x)
+    Console::printf(Console::Color::BRIGHT_WHITE, "%d ", x);
+  Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
+  Console::printf(Console::Color::BRIGHT_WHITE, "  Y: [ ");
+  for (const auto &y : best_y)
+    Console::printf(Console::Color::BRIGHT_WHITE, "%d ", y);
+  Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
+}
+
 // Function to display tank level status
 void BBConstraints::show_levels(bool is_feasible, const std::string &tank_name, double level, double level_min, double level_max)
 {
@@ -125,7 +132,7 @@ bool BBConstraints::check_pressures(Project &p, bool verbose)
 {
   if (verbose)
   {
-    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking pressures: [");
+    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking pressures: [ ");
     for (const auto &node : nodes)
     {
       Console::printf(Console::Color::BRIGHT_CYAN, "%s ", node.first.c_str());
@@ -164,9 +171,9 @@ bool BBConstraints::check_levels(Project &p, bool verbose)
 {
   if (verbose)
   {
-    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking levels: [");
+    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking levels: [ ");
     for (const auto &tank : tanks)
-      Console::printf(Console::Color::BRIGHT_WHITE, "%s ", tank.first.c_str());
+      Console::printf(Console::Color::BRIGHT_CYAN, "%s ", tank.first.c_str());
     Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
   }
 
@@ -198,14 +205,14 @@ bool BBConstraints::check_levels(Project &p, bool verbose)
 }
 
 // Function to check tank stability
-bool BBConstraints::check_stability(Project &p, bool verbose)
+BBPruneReason BBConstraints::check_stability(Project &p, bool verbose)
 {
   if (verbose)
   {
-    std::cout << "\nChecking stability: [";
+    Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking stability: [ ");
     for (const auto &tank : tanks)
-      std::cout << tank.first << " ";
-    std::cout << "]" << std::endl;
+      Console::printf(Console::Color::BRIGHT_CYAN, "%s ", tank.first.c_str());
+    Console::printf(Console::Color::BRIGHT_WHITE, "]\n");
   }
 
   const double initial_level = 66.93;
@@ -231,28 +238,28 @@ bool BBConstraints::check_stability(Project &p, bool verbose)
     if (verbose) show_stability(is_feasible, tank_name, level, initial_level);
   }
 
-  return all_ok;
+  return all_ok ? BBPruneReason::NONE : BBPruneReason::STABILITY;
 }
 
 // Function to check the cost
 bool BBConstraints::check_cost(Project &p, double &cost, bool verbose)
 {
   cost = calc_cost(p);
-  bool is_feasible = cost < cost_ub;
+  bool is_feasible = cost < best_cost;
   if (verbose)
   {
     Console::printf(Console::Color::BRIGHT_WHITE, "\nChecking cost:\n");
     if (is_feasible)
     {
-      if (cost_ub > 999999999)
+      if (best_cost > 999999999)
         Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=inf\n", cost);
       else
-        Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%.2f\n", cost, cost_ub);
+        Console::printf(Console::Color::GREEN, "  \u2705 cost=%.2f < cost_max=%.2f\n", cost, best_cost);
     }
-    else if (cost_ub > 999999999)
+    else if (best_cost > 999999999)
       Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=inf\n", cost);
     else
-      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%.2f\n", cost, cost_ub);
+      Console::printf(Console::Color::RED, "  \u274C cost=%.2f >= cost_max=%.2f\n", cost, best_cost);
   }
   return is_feasible;
 }
@@ -302,26 +309,21 @@ void BBConstraints::update_pumps(Project &p, const int h, const std::vector<int>
   }
 }
 
-PruneType BBConstraints::check_feasibility(Project &p, const int h, double &cost)
+BBPruneReason BBConstraints::check_feasibility(Project &p, const int h, double &cost, bool verbose)
 {
-  if (!check_cost(p, cost, false))
-  {
-    ++prunes[PruneType::PRUNE_COST][h];
-    return PruneType::PRUNE_COST;
-  }
-  if (!check_pressures(p, false))
-  {
-    ++prunes[PruneType::PRUNE_PRESSURES][h];
-    return PruneType::PRUNE_PRESSURES;
-  }
-  if (prunes[PruneType::PRUNE_LEVELS][h] == 0)
-  {
-    if (!check_levels(p, false))
-    {
-      ++prunes[PruneType::PRUNE_LEVELS][h];
-      return PruneType::PRUNE_LEVELS;
-    }
-  }
+  if (!check_cost(p, cost, verbose)) return BBPruneReason::COST;
+  if (!check_pressures(p, verbose)) return BBPruneReason::PRESSURES;
+  if (!check_levels(p, verbose)) return BBPruneReason::LEVELS;
+  return BBPruneReason::NONE;
+}
 
-  return PruneType::PRUNE_NONE;
+void BBConstraints::to_json(std::string &fn) const
+{
+  Console::printf(Console::Color::BRIGHT_GREEN, "💾 Writing best solution to file: %s\n", fn.c_str());
+  nlohmann::json j;
+  j["best_cost"] = best_cost;
+  j["best_x"] = best_x;
+  j["best_y"] = best_y;
+  std::ofstream f(fn);
+  f << j.dump(2);
 }

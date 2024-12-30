@@ -1,28 +1,36 @@
-// src/CLI/BBSolver.cpp
+// BBSolver.h
+#pragma once
+
 #include "BBConfig.h"
 #include "BBConstraints.h"
+#include "BBStatistics.h"
 #include "Console.h"
-#include "Profiler.h"
 
-#include "Core/network.h"
 #include "Core/project.h"
 #include "Elements/node.h"
 #include "Elements/tank.h"
+#include "Profiler.h"
 
 #include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include <mpi.h>
-#include <numeric>
+#include <mutex>
 #include <omp.h>
 #include <queue>
 #include <stdexcept>
-#include <thread>
+#include <vector>
 
+// Forward declarations
+class BBTask;
+class BBSolver;
+
+//---------------------------------------------------------------------
+// BBTask: Holds the data needed to process a single branch-and-bound task.
+//---------------------------------------------------------------------
 class BBTask
 {
 public:
-  int h_root; // the first hour that can be changed
+  int uid;
+  int tid;
+  int h_root; // first hour that can be changed
   double cost;
   std::vector<ProjectData> snapshots;
   std::vector<int> y;
@@ -31,452 +39,526 @@ public:
   bool is_feasible;
   int num_pumps;
   Project *p;
-};
+  static int uid_counter;
 
-// Define comparator for BBTask priority queue
-struct BBTaskComparator
-{
-  bool operator()(const BBTask &a, const BBTask &b)
+  double priority() const
   {
-    return a.cost / a.h_root > b.cost / b.h_root;
+    return h_root;
   }
-};
 
-// Define priority queue type for BBTask
-using BBTaskQueue = std::priority_queue<BBTask, std::vector<BBTask>, BBTaskComparator>;
-
-bool switch_pumps_off(int *x_new, const std::vector<int> &pumps_sorted, const std::vector<int> &allowed_10, int &counter_10)
-{
-  for (const int pump_id : pumps_sorted)
+  BBTask() = default;
+  BBTask(int uid, const BBConfig &config, const BBConstraints &constraints)
   {
-    if (counter_10 <= 0) break;
+    h_root = 1;
+    y.resize(config.h_max + 1, 0);
+    num_pumps = constraints.get_num_pumps();
+    this->uid = uid;
+  }
 
-    if (x_new[pump_id] == 1)
+  bool operator<(const BBTask &other) const
+  {
+    return priority() > other.priority(); // Higher priority comes first
+  }
+
+  void show() const
+  {
+    Console::printf(Console::Color::BRIGHT_YELLOW, "uid=%d, h_root=%d\n", uid, h_root);
+    show_vector(y, "y");
+  }
+
+  void show_xy(int h, bool all = false) const
+  {
+    if (!all) // show only for the current hour
     {
-      if (allowed_10[pump_id] <= 0) return false; // Cannot turn off this pump
-
-      x_new[pump_id] = 0; // Turn off the pump
-      --counter_10;
+      Console::printf(Console::Color::BRIGHT_YELLOW, "TID[%d]: h=%d, y=%d, x=[ ", tid, h, y[h]);
+      for (int j = 0; j < num_pumps; ++j)
+      {
+        Console::printf(Console::Color::BRIGHT_YELLOW, "%d ", x[h * num_pumps + j]);
+      }
+      Console::printf(Console::Color::BRIGHT_YELLOW, "]\n");
+    }
+    else // show for all hours
+    {
+      for (int h = 0; h <= this->h; ++h)
+        show_xy(h);
     }
   }
-  return counter_10 == 0;
-}
 
-void compute_allowed_switches(const int num_pumps, const int *x, int current_h, std::vector<int> &allowed_01, std::vector<int> &allowed_10)
-{
-  for (int pump_id = 0; pump_id < num_pumps; ++pump_id)
+  void show_xy(bool all = false) const
   {
-    for (int i = 2; i < current_h; ++i)
+    show_xy(h, all);
+  }
+};
+
+class BBTaskQueue
+{
+public:
+  std::queue<BBTask> tasks;
+  std::mutex mutex;
+
+  void push(const BBTask &task)
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    tasks.push(task);
+  }
+
+  bool pop(BBTask &task)
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    if (tasks.empty()) return false;
+    task = tasks.front();
+    tasks.pop();
+    return true;
+  }
+
+  bool empty()
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    return tasks.empty();
+  }
+
+  size_t size()
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    return tasks.size();
+  }
+};
+
+//---------------------------------------------------------------------
+// BBPumpController: Manages pump switching logic.
+//---------------------------------------------------------------------
+class BBPumpController
+{
+public:
+  static bool switchPumpsOff(int *x_new, const std::vector<int> &pumps_sorted, const std::vector<int> &allowed_10, int &counter_10)
+  {
+    for (int pump_id : pumps_sorted)
     {
-      int x_old = x[pump_id + num_pumps * (i - 1)];
-      int x_new = x[pump_id + num_pumps * i];
-      if (x_old < x_new)
+      if (counter_10 <= 0) break;
+      if (x_new[pump_id] == 1)
       {
-        // Pump was turned on (0 -> 1)
-        --allowed_01[pump_id];
+        if (allowed_10[pump_id] <= 0) return false;
+        x_new[pump_id] = 0;
+        --counter_10;
       }
-      else if (x_old > x_new)
+    }
+    return (counter_10 == 0);
+  }
+
+  static bool switchPumpsOn(int *x_new, const std::vector<int> &pumps_sorted, const std::vector<int> &allowed_01, int &counter_01)
+  {
+    for (int pump_id : pumps_sorted)
+    {
+      if (counter_01 <= 0) break;
+      if (x_new[pump_id] == 0)
       {
-        // Pump was turned off (1 -> 0)
-        --allowed_10[pump_id];
+        if (allowed_01[pump_id] <= 0) return false;
+        x_new[pump_id] = 1;
+        --counter_01;
+      }
+    }
+    return (counter_01 == 0);
+  }
+
+  static void computeAllowedSwitches(int num_pumps, const int *x, int current_h, std::vector<int> &allowed_01, std::vector<int> &allowed_10)
+  {
+    for (int pump_id = 0; pump_id < num_pumps; ++pump_id)
+    {
+      for (int i = 2; i < current_h; ++i)
+      {
+        int x_old = x[pump_id + num_pumps * (i - 1)];
+        int x_new = x[pump_id + num_pumps * i];
+        if (x_old < x_new)
+          --allowed_01[pump_id]; // 0 -> 1
+        else if (x_old > x_new)
+          --allowed_10[pump_id]; // 1 -> 0
       }
     }
   }
-}
 
-void sort_pumps(std::vector<int> &pumps_sorted, const std::vector<int> &allowed_01, const std::vector<int> &allowed_10, bool switch_on)
-{
-  if (switch_on)
+  static void sortPumps(std::vector<int> &pumps_sorted, const std::vector<int> &allowed_01, const std::vector<int> &allowed_10, bool switch_on)
   {
-    // Sort pumps by decreasing (allowed_01, allowed_10)
-    std::sort(pumps_sorted.begin(), pumps_sorted.end(),
-              [&allowed_01, &allowed_10](int a, int b)
-              {
-                if (allowed_01[a] != allowed_01[b])
+    if (switch_on)
+    {
+      // Sort by decreasing (allowed_01, then allowed_10)
+      std::sort(pumps_sorted.begin(), pumps_sorted.end(),
+                [&allowed_01, &allowed_10](int a, int b)
                 {
-                  return allowed_01[a] > allowed_01[b];
-                }
-                return allowed_10[a] > allowed_10[b];
-              });
-  }
-  else
-  {
-    // Sort pumps by decreasing (allowed_10, allowed_01)
-    std::sort(pumps_sorted.begin(), pumps_sorted.end(),
-              [&allowed_01, &allowed_10](int a, int b)
-              {
-                if (allowed_10[a] != allowed_10[b])
-                {
+                  if (allowed_01[a] != allowed_01[b]) return allowed_01[a] > allowed_01[b];
                   return allowed_10[a] > allowed_10[b];
-                }
-                return allowed_01[a] > allowed_01[b];
-              });
-  }
-}
-
-bool switch_pumps_on(int *x_new, const std::vector<int> &pumps_sorted, const std::vector<int> &allowed_01, int &counter_01)
-{
-  for (const int pump_id : pumps_sorted)
-  {
-    if (counter_01 <= 0) break;
-
-    if (x_new[pump_id] == 0)
+                });
+    }
+    else
     {
-      if (allowed_01[pump_id] <= 0) return false; // Cannot turn on this pump
-
-      x_new[pump_id] = 1; // Turn on the pump
-      --counter_01;
+      // Sort by decreasing (allowed_10, then allowed_01)
+      std::sort(pumps_sorted.begin(), pumps_sorted.end(),
+                [&allowed_01, &allowed_10](int a, int b)
+                {
+                  if (allowed_10[a] != allowed_10[b]) return allowed_10[a] > allowed_10[b];
+                  return allowed_01[a] > allowed_01[b];
+                });
     }
   }
-  return counter_01 == 0;
-}
+};
 
-void update_cost(BBConstraints &constraints, double &cost)
+//---------------------------------------------------------------------
+// BBSolver: Main solver class that uses BBTask, BBPumpController, etc.
+//---------------------------------------------------------------------
+class BBSolver
 {
-#pragma omp atomic write
-  constraints.cost_ub = cost;
-}
-
-void epanet_solve(BBTask &task, BBConfig &config, BBConstraints &constraints)
-{
-  const int t_min = 3600 * (task.h - 1);
-  const int t_max = 3600 * task.h;
-  PruneType prune_type = PruneType::PRUNE_NONE;
-  Project &p = *(task.p);
-  // Run the solver
-  int t = 0, dt = 0;
-  do
+public:
+  // Constructor can take config and constraints references
+  BBSolver(BBConfig &configRef, BBConstraints &constraintsRef, BBStatistics &statsRef)
+      : config(configRef), constraints(constraintsRef), stats(statsRef)
   {
-    // Run the solver
-    CHK(p.runSolver(&t), "Run solver");
+  }
 
-    // Advance the solver
-    CHK(p.advanceSolver(&dt), "Advance solver");
+  // Orchestrates the BBTask solution process
+  void solveTask(BBTask &task)
+  {
+    Project p;
+    task.p = &p;
+    task.cost = std::numeric_limits<double>::max();
+    task.x.resize((config.h_max + 1) * task.num_pumps, 0);
+    task.is_feasible = true;
+    task.tid = omp_get_thread_num();
 
-    const int t_new = t + dt;
+    // initialize snapshots
+    BBPruneReason prune_reason = initSnapshots(task);
+    if (prune_reason != BBPruneReason::NONE)
+    {
+      stats.add_stats(BBPruneReason::SNAPSHOTS, task.h_root - 1);
+      if (config.verbose) stats.show();
+      return;
+    }
 
-    // Show the current state
+    // branch-and-bound loop
+    while (true)
+    {
+      updateY(task);
+
+      // work is done if not feasible
+      if (!task.is_feasible) break;
+
+      updateX(task);
+      if (!task.is_feasible)
+      {
+        stats.add_stats(BBPruneReason::ACTUATIONS, task.h);
+        continue;
+      }
+
+      if (config.verbose)
+      {
+        Console::hline(Console::Color::BRIGHT_YELLOW, 20);
+        Console::printf(Console::Color::BRIGHT_YELLOW, "TID[%d]: solveTask: h=%d\n", task.tid, task.h);
+        task.show_xy(true);
+      }
+
+      stats.add_stats(processLevel(task), task.h);
+
+      if (config.verbose) stats.show();
+    }
+  }
+
+private:
+  BBConfig &config;
+  BBConstraints &constraints;
+  BBStatistics &stats;
+  //---------------------------------------------------------------------
+  // Helper function for tasks initialization
+  //---------------------------------------------------------------------
+  inline BBPruneReason initSnapshots(BBTask &task)
+  {
     if (config.verbose)
     {
-      Console::printf(Console::Color::CYAN, "===========================================");
-      Console::printf(Console::Color::MAGENTA, "\nSimulation: t_new=%d, t_max=%d, t=%d, dt=%d\n", t_new, 3600 * task.h, t, dt);
+      Console::hline(Console::Color::BRIGHT_YELLOW, 20);
+      Console::printf(Console::Color::BRIGHT_YELLOW, "TID[%d]: initSnapshots: task.h_root=%d\n", task.tid, task.h_root);
     }
 
-    // Check feasibility
-    prune_type = constraints.check_feasibility(p, task.h, task.cost);
-    task.is_feasible = prune_type == PruneType::PRUNE_NONE;
+    // load project
+    Project &p = *(task.p);
+    p.load(config.inpFile.c_str());
+    Network *nw = p.getNetwork();
+    int t_max = 3600 * config.h_max;
+    nw->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
+    p.initSolver(EN_INITFLOW);
 
-    // If the solution is not feasible, jump to the end of the level
-    if (!task.is_feasible)
+    // Initialize pumps
+    for (int i = 1; i < task.h_root; ++i)
     {
-      if (prune_type == PruneType::PRUNE_COST)
+      task.h = i;
+      updateX(task);
+      if (!task.is_feasible) return BBPruneReason::ACTUATIONS;
+      updatePumps(task, false);
+    }
+
+    // copy snapshots
+    task.snapshots.resize(config.h_max + 1);
+    p.copy_to(task.snapshots[0]);
+
+    // run solver to copy snapshots
+    int t, dt, t_new;
+    task.h = 0;
+
+    // run solver to copy snapshots
+    BBPruneReason prune_reason = BBPruneReason::NONE;
+    do
+    {
+      CHK(p.runSolver(&t), "Run solver");
+      CHK(p.advanceSolver(&dt), "Advance solver");
+      t_new = t + dt;
+
+      if (config.verbose)
       {
-        // jump to the end of the level
-        task.y[task.h] = task.num_pumps;
+        Console::printf(Console::Color::MAGENTA, "\nTID[%d]: t_new=%d, t_max=%d, t=%d, dt=%d\n", task.tid, t_new, t_max, t, dt);
+        if (config.verbose)
+        {
+          task.show_xy(task.h + 1);
+        }
       }
-      return;
-    };
 
-    // When the simulation reaches t_max and it is not the last hour, break.
-    // When it is the last hour, just stop if "dt == 0".
-    if (t_new == t_max && task.h != config.h_max) break;
-  } while (dt > 0);
+      prune_reason = constraints.check_feasibility(p, task.h, task.cost, config.verbose);
+      if (prune_reason != BBPruneReason::NONE) return prune_reason;
 
-  // Check stability if the the solution is feasible and the current hour is the last hour
-  if (task.is_feasible && task.h == config.h_max)
-  {
-    task.is_feasible = constraints.check_stability(p, config.verbose);
+      if (t_new % 3600 == 0)
+      {
+        task.h = t_new / 3600; // update hour
+        p.copy_to(task.snapshots[task.h]);
+      }
+    } while (task.h < (task.h_root - 1)); // initialize the snapshots for hours up to h_root
 
-    // Update cost_ub
-    if (task.is_feasible) update_cost(constraints, task.cost);
+    return prune_reason;
   }
-}
 
-bool init_snapshots(BBTask &task, BBConfig &config, BBConstraints &constraints)
-{
-  Project &p = *(task.p);
-  // load the project
-  p.load(config.inpFile.c_str());
-  Network *nw = p.getNetwork();
-  int t_max = 3600 * config.h_max;
-  nw->options.setOption(Options::TimeOption::TOTAL_DURATION, t_max);
-  p.initSolver(EN_INITFLOW);
-
-  // take snapshots
-  task.snapshots.resize(config.h_max + 1);
-  p.copy_to(task.snapshots[0]); // first snapshot is the initial state
-
-  // run the solver
-  int t, dt, t_new;
-  int h = 0;
-  do
+  //===============================================================
+  // 1) Moves to the next feasible y value or stops if none exist
+  //===============================================================
+  void updateY(BBTask &task)
   {
-    p.runSolver(&t);
-    p.advanceSolver(&dt);
+    if (task.h > config.h_max) throw std::runtime_error("task.h > config.h_max");
 
-    if (!constraints.check_feasibility(p, h, task.cost))
+    // If current level is feasible
+    if (task.is_feasible)
     {
-      return false;
-    }
-
-    t_new = t + dt;
-
-    // take a snapshot
-    if (t_new % 3600 == 0)
-    {
-      h = t / 3600;
-      p.copy_to(task.snapshots[h]);
-    }
-
-  } while (t_new < task.h_root);
-
-  return true;
-}
-
-bool init_task(BBTask &task, BBTaskQueue &tasks, BBConfig &config, BBConstraints &constraints)
-{
-  // check if the task is large enough to be split
-  if (task.h_root > config.h_min)
-  {
-    return false;
-  }
-
-  // there are already enough tasks
-  if (tasks.size() > config.num_threads)
-  {
-    return false;
-  }
-
-  // get the number of pumps
-  task.num_pumps = constraints.get_num_pumps();
-
-  // split the task into two new tasks
-  for (int i = 1; i <= task.num_pumps; ++i)
-  {
-    BBTask task_new;
-    task_new.h_root = task.h_root + 1;
-    task_new.y = task.y;
-    task_new.y[task_new.h_root] = i;
-    tasks.push(task_new);
-  }
-
-  // add the root task to the queue
-  task.h_root = task.h_root + 1;
-  task.y[task.h_root] = 0;
-
-  init_snapshots(task, config, constraints);
-  return true;
-}
-
-void update_y(BBTask &task, BBConfig &config)
-{
-  // Check if the current level is valid
-  if (task.h > config.h_max) throw std::runtime_error("task.h > config.h_max");
-
-  // There is no more work to do
-  if (task.h < task.h_root)
-  {
-    task.is_feasible = false;
-    return;
-  }
-
-  // If the current level is feasible =========================================
-  if (task.is_feasible)
-  {
-    // If the current level is not the last level, move to the next level and reset its value
-    if (task.h < config.h_max)
-    {
-      task.y[++task.h] = 0;
-      task.is_feasible = true;
-      return;
-    }
-
-    // task.h == config.h_max
-    if (task.y[task.h] < task.num_pumps)
-    {
-      task.y[task.h]++;
-      task.is_feasible = true;
-      return;
-    }
-
-    // Otherwise, decrement the current level
-    --task.h;
-    task.is_feasible = false;
-    return update_y(task, config);
-  }
-
-  // The level is unfeasible ==================================================
-  if (task.h == task.h_root)
-  {
-    // Increment the current level
-    if (task.y[task.h] < task.num_pumps)
-    {
-      task.y[task.h]++;
-      task.is_feasible = true;
-      return;
-    }
-
-    // There is no more work to do
-    task.is_feasible = false;
-    return;
-  }
-
-  if (task.h <= config.h_max)
-  {
-    // The level is finished
-    if (task.y[task.h] == task.num_pumps)
-    {
+      // If not the last level, move to the next
+      if (task.h < config.h_max)
+      {
+        task.y[++task.h] = 0;
+        task.is_feasible = true;
+        return;
+      }
+      // If last level, increment if possible
+      if (task.y[task.h] < task.num_pumps)
+      {
+        task.y[task.h]++;
+        task.is_feasible = true;
+        return;
+      }
+      // No more increments, backtrack
       --task.h;
-      return update_y(task, config);
+      task.is_feasible = false;
+      updateY(task);
+      return;
     }
-
-    // Otherwise, increment the current level
-    task.y[task.h]++;
-    task.is_feasible = true;
-    return;
-  }
-}
-
-void update_x(BBTask &task, BBConfig &config)
-{
-  const bool verbose = config.verbose;
-  int tid = omp_get_thread_num();
-
-  // Get the previous and new states
-  const int &y_old = task.y[task.h - 1];
-  const int &y_new = task.y[task.h];
-  const int *x_old = &task.x[task.num_pumps * (task.h - 1)];
-  int *x_new = &task.x[task.num_pumps * task.h];
-
-  // Start by copying the previous state
-  std::copy(x_old, x_old + task.num_pumps, x_new);
-
-  if (verbose) Console::printf(Console::Color::BRIGHT_MAGENTA, "TID[%d]: update_x_h[%d]: y_new=%d, y_old=%d\n", tid, task.h, y_new, y_old);
-
-  // Nothing to be done
-  if (y_new == y_old)
-  {
-    task.is_feasible = true;
-    return;
-  }
-
-  // Initialize allowed switches
-  std::vector<int> allowed_01(task.num_pumps, config.max_actuations);
-  std::vector<int> allowed_10(task.num_pumps, config.max_actuations);
-
-  // Compute allowed switches based on history
-  compute_allowed_switches(task.num_pumps, &task.x[0], task.h, allowed_01, allowed_10);
-
-  // Create and initialize pump indices
-  std::vector<int> pumps_sorted(task.num_pumps);
-  for (int pump_id = 0; pump_id < task.num_pumps; ++pump_id)
-  {
-    pumps_sorted[pump_id] = pump_id;
-  }
-
-  bool success = true;
-  if (y_new > y_old) // Switch on pumps
-  {
-    sort_pumps(pumps_sorted, allowed_01, allowed_10, true);
-    int counter_01 = y_new - y_old;
-    success = switch_pumps_on(x_new, pumps_sorted, allowed_01, counter_01);
-  }
-  else if (y_new < y_old) // Switch off pumps
-  {
-    sort_pumps(pumps_sorted, allowed_01, allowed_10, false);
-    int counter_10 = y_old - y_new;
-    success = switch_pumps_off(x_new, pumps_sorted, allowed_10, counter_10);
-  }
-
-  if (verbose) show_vector(x_new, task.num_pumps, "   x_new");
-  task.is_feasible = success;
-}
-
-bool set_y(BBTask &task, BBConfig &config, const std::vector<int> &y)
-{
-  // Copy y to the internal y vector
-  task.y = y;
-
-  // Start assuming the y vector is feasible
-  task.is_feasible = true;
-
-  // Set y and update x for all hours
-  task.h = 0;
-  for (int i = 0; i < config.h_max; ++i)
-  {
-    task.h++;
-    update_x(task, config);
-    if (!task.is_feasible) return false;
-  }
-
-  return true;
-}
-
-void update_pumps(BBTask &task, BBConfig &config, BBConstraints &constraints, bool full_update)
-{
-  Project &p = *(task.p);
-  if (full_update)
-  {
-    // Update pumps for all time periods
-    for (int i = 0; i <= config.h_max; ++i)
+    else // Not feasible
     {
-      constraints.update_pumps(p, i, task.x, config.verbose);
+      if (task.h == task.h_root)
+      {
+        // Try incrementing at root
+        if (task.y[task.h] < task.num_pumps)
+        {
+          task.y[task.h]++;
+          task.is_feasible = true;
+          return;
+        }
+        // No more options
+        task.is_feasible = false;
+        return;
+      }
+      if (task.h <= config.h_max)
+      {
+        if (task.y[task.h] == task.num_pumps)
+        {
+          --task.h;
+          updateY(task);
+          return;
+        }
+        // Try increment
+        task.y[task.h]++;
+        task.is_feasible = true;
+        return;
+      }
     }
   }
-  else
+
+  //===============================================================
+  // 2) Updates x based on changes in y
+  //===============================================================
+  void updateX(BBTask &task)
   {
-    // Update pumps only for current time period
-    constraints.update_pumps(p, task.h, task.x, config.verbose);
-  }
-}
+    const bool verbose = config.verbose;
+    int tid = omp_get_thread_num();
 
-void process_level(BBTask &task, BBConfig &config, BBConstraints &constraints)
-{
-  ProfileScope scope("process_node");
+    // Ensure task.h is valid
+    if (task.h < 1 || task.h > config.h_max)
+      throw std::runtime_error("Invalid task.h=" + std::to_string(task.h) + " out of range [1, config.h_max=" + std::to_string(config.h_max) + "].");
 
-  // Load the previous snapshot
-  {
-    ProfileScope scope("copy_from");
-    // p.from_json(snapshots[h - 1]);
-    task.p->copy_from(task.snapshots[task.h - 1]);
-  }
+    // Get the previous and new y
+    const int &y_old = task.y[task.h - 1];
+    const int &y_new = task.y[task.h];
 
-  // Set the project and constraints
-  update_pumps(task, config, constraints, true);
+    const int *x_old = &task.x[task.num_pumps * (task.h - 1)];
+    int *x_new = &task.x[task.num_pumps * task.h];
 
-  // Run simulation
-  epanet_solve(task, config, constraints);
+    // Start by copying old state
+    std::copy(x_old, x_old + task.num_pumps, x_new);
 
-  // Take a snapshot if the solution is feasible
-  if (task.is_feasible)
-  {
-    ProfileScope scope("copy_to");
-    // snapshots[h] = p.to_json();
-    task.p->copy_to(task.snapshots[task.h]);
-  }
-}
-
-void solve_task(BBTask &task, BBConfig &config, BBConstraints &constraints)
-{
-  while (true)
-  {
-    // Update y vector
-    update_y(task, config);
-    if (!task.is_feasible)
+    // If no change
+    if (y_new == y_old)
     {
-      constraints.add_prune(PruneType::PRUNE_ACTUATIONS, task.h);
-      break;
-    }
-
-    // Update x vector
-    update_x(task, config);
-    if (!task.is_feasible)
-    {
-      constraints.add_prune(PruneType::PRUNE_ACTUATIONS, task.h);
+      task.is_feasible = true;
       return;
     }
 
-    // Process node
-    process_level(task, config, constraints);
+    // Initialize counters
+    std::vector<int> allowed_01(task.num_pumps, config.max_actuations);
+    std::vector<int> allowed_10(task.num_pumps, config.max_actuations);
+
+    // Compute allowed switches
+    BBPumpController::computeAllowedSwitches(task.num_pumps, &task.x[0], task.h, allowed_01, allowed_10);
+
+    // Sort pumps
+    std::vector<int> pumps_sorted(task.num_pumps);
+    for (int pump_id = 0; pump_id < task.num_pumps; ++pump_id)
+      pumps_sorted[pump_id] = pump_id;
+
+    bool success = true;
+    if (y_new > y_old)
+    {
+      int counter_01 = y_new - y_old;
+      BBPumpController::sortPumps(pumps_sorted, allowed_01, allowed_10, true);
+      success = BBPumpController::switchPumpsOn(x_new, pumps_sorted, allowed_01, counter_01);
+    }
+    else // y_new < y_old
+    {
+      int counter_10 = y_old - y_new;
+      BBPumpController::sortPumps(pumps_sorted, allowed_01, allowed_10, false);
+      success = BBPumpController::switchPumpsOff(x_new, pumps_sorted, allowed_10, counter_10);
+    }
+
+    task.is_feasible = success;
   }
+
+  //===============================================================
+  // 3) Processes the current level: loads a snapshot, updates pumps, runs sim
+  //===============================================================
+  BBPruneReason processLevel(BBTask &task)
+  {
+    if (config.verbose)
+    {
+      Console::hline(Console::Color::BRIGHT_YELLOW, 20);
+      Console::printf(Console::Color::BRIGHT_YELLOW, "TID[%d]: processLevel: h=%d\n", task.tid, task.h);
+    }
+
+    // load previous state
+    task.p->copy_from(task.snapshots[task.h - 1]);
+
+    updatePumps(task, false);
+    BBPruneReason prune_reason = epanetSolve(task);
+
+    // copy current state to snapshot
+    if (task.is_feasible) task.p->copy_to(task.snapshots[task.h]);
+
+    return prune_reason;
+  }
+
+  //===============================================================
+  // 4) Updates pumps in the Project according to x
+  //===============================================================
+  void updatePumps(BBTask &task, bool full_update)
+  {
+    Project &p = *(task.p);
+    if (full_update)
+    {
+      for (int i = 0; i <= task.h; ++i)
+        constraints.update_pumps(p, i, task.x, config.verbose);
+    }
+    else
+    {
+      constraints.update_pumps(p, task.h, task.x, config.verbose);
+    }
+  }
+
+  //===============================================================
+  // 5) Wrapper for running the solver on the Project
+  //===============================================================
+  BBPruneReason epanetSolve(BBTask &task)
+  {
+    const int t_min = 3600 * (task.h - 1);
+    const int t_max = 3600 * task.h;
+    BBPruneReason prune_reason = BBPruneReason::NONE;
+    Project &p = *(task.p);
+
+    int t = 0, dt = 0, t_new = t_min;
+    do
+    {
+      CHK(p.runSolver(&t), "Run solver");
+      CHK(p.advanceSolver(&dt), "Advance solver");
+
+      t_new = t + dt;
+
+      if (config.verbose)
+      {
+        int h = std::min(t_new / 3600 + 1, task.h);
+        Console::printf(Console::Color::MAGENTA, "\nSimulation: t_min=%d <= t_new=%d <= t_max=%d, dt=%d\n", t_min, t_new, t_max, dt);
+        task.show_xy(h);
+      }
+
+      // check feasibility
+      prune_reason = constraints.check_feasibility(p, task.h, task.cost, config.verbose);
+
+      task.is_feasible = (prune_reason == BBPruneReason::NONE);
+      if (!task.is_feasible)
+      {
+        if (prune_reason == BBPruneReason::COST) task.y[task.h] = task.num_pumps; // jump to end
+        return prune_reason;
+      }
+
+      // check if we are at the end of the simulation
+      if (t_new == t_max && task.h != config.h_max) break;
+    } while (dt > 0);
+
+    // Check stability if last hour
+    if (task.is_feasible && task.h == config.h_max)
+    {
+      prune_reason = constraints.check_stability(p, config.verbose);
+      if (prune_reason != BBPruneReason::NONE) return prune_reason;
+
+      if (task.is_feasible)
+      {
+        if (config.verbose)
+        {
+          // Format cost_ub
+          char fmt_cost_ub[100];
+          if (constraints.best_cost == std::numeric_limits<double>::max())
+            snprintf(fmt_cost_ub, sizeof(fmt_cost_ub), "inf");
+          else
+            snprintf(fmt_cost_ub, sizeof(fmt_cost_ub), "%.2f", constraints.best_cost);
+          // Show old and new cost
+          Console::printf(Console::Color::BRIGHT_GREEN, "TID[%d]: cost update: 💰 cost=%.2f, cost_ub=%s\n", task.tid, task.cost, fmt_cost_ub);
+        }
+
+        // update best solution
+        constraints.update_best(task.cost, task.x, task.y);
+      }
+    }
+
+    return prune_reason;
+  }
+};
+
+void processTask(BBTask &task, BBConfig &config, BBConstraints &constraints, BBStatistics &stats)
+{
+  BBSolver solver(config, constraints, stats);
+  solver.solveTask(task);
 }

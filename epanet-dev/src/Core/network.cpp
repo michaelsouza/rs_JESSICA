@@ -33,7 +33,6 @@ Network::Network()
     : headLossModel(nullptr), demandModel(nullptr), leakageModel(nullptr),
       qualModel(nullptr) {
   options.setDefaults();
-  memPool = new MemPool();
 }
 
 //-----------------------------------------------------------------------------
@@ -42,8 +41,6 @@ Network::Network()
 
 Network::~Network() {
   clear();
-  delete memPool;
-  memPool = nullptr;
   delete headLossModel;
   headLossModel = nullptr;
   delete demandModel;
@@ -52,8 +49,6 @@ Network::~Network() {
   leakageModel = nullptr;
   delete qualModel;
   qualModel = nullptr;
-
-  //    cout << "\nNetwork destructed.\n";
 }
 
 //-----------------------------------------------------------------------------
@@ -79,7 +74,7 @@ void Network::clear() {
 
   // ... reclaim all memory allocated by the memory pool
 
-  memPool->reset();
+  memPool.reset();
 
   // ... re-set all options to their default values
 
@@ -209,28 +204,28 @@ bool Network::addElement(Element::ElementType element, int type, string name) {
 
   try {
     if (element == Element::NODE) {
-      Node *node = Node::factory(type, name, memPool);
+      Node *node = Node::factory(type, name, &memPool);
       node->index = nodes.size();
       nodeTable[node->name] = node;
       nodes.push_back(node);
     }
 
     else if (element == Element::LINK) {
-      Link *link = Link::factory(type, name, memPool);
+      Link *link = Link::factory(type, name, &memPool);
       link->index = links.size();
       linkTable[link->name] = link;
       links.push_back(link);
     }
 
     else if (element == Element::PATTERN) {
-      Pattern *pattern = Pattern::factory(type, name, memPool);
+      Pattern *pattern = Pattern::factory(type, name, &memPool);
       pattern->index = patterns.size();
       patternTable[pattern->name] = pattern;
       patterns.push_back(pattern);
     }
 
     else if (element == Element::CURVE) {
-      Curve *curve = new (memPool->alloc(sizeof(Curve))) Curve(name);
+      Curve *curve = new (memPool.alloc(sizeof(Curve))) Curve(name);
       curve->index = curves.size();
       curveTable[curve->name] = curve;
       curves.push_back(curve);
@@ -238,7 +233,7 @@ bool Network::addElement(Element::ElementType element, int type, string name) {
 
     else if (element == Element::CONTROL) {
       Control *control =
-          new (memPool->alloc(sizeof(Control))) Control(type, name);
+          new (memPool.alloc(sizeof(Control))) Control(type, name);
       control->index = controls.size();
       controlTable[control->name] = control;
       controls.push_back(control);

@@ -27,8 +27,8 @@
 #include "Models/leakagemodel.h"
 #include "Models/qualmodel.h"
 #include "Utilities/graph.h"
+#include "Utilities/mempool.h"
 #include "Utilities/utilities.h"
-
 #include <ostream>
 #include <unordered_map>
 #include <vector>
@@ -39,8 +39,6 @@ public:
   std::vector<LinkData> links;
   std::vector<int> patterns; // indices of patterns
 };
-
-class MemPool;
 
 //! \class Network
 //! \brief Contains the data elements that describe a pipe network.
@@ -206,7 +204,7 @@ private:
       patternTable; //!< hash table for pattern ID names.
   std::unordered_map<std::string, Element *>
       controlTable; //!< hash table for control ID names.
-  MemPool *memPool; //!< memory pool for network objects
+  MemPool memPool;  //!< memory pool for network objects
 };
 
 //-----------------------------------------------------------------------------

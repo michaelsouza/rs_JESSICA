@@ -11,9 +11,11 @@ public:
   void show() const;
 
   std::string inpFile;
-  int num_threads = 1;
+  int num_threads = 2;
   int h_max = 24;
-  int h_min = 18;
   int max_actuations = 3;
+  int max_tasks = 256; // max number of tasks in queue
   bool verbose = false;
+  std::string fn_stats;
+  std::string fn_best;
 };

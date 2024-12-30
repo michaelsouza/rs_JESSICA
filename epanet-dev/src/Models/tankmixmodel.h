@@ -53,9 +53,7 @@ public:
     return {{"cTol", cTol},
             {"fracMixed", fracMixed},
             {"cTank", cTank},
-            {"vMixed", vMixed},
-            {"firstSeg", firstSeg ? firstSeg->to_json() : nullptr},
-            {"lastSeg", lastSeg ? lastSeg->to_json() : nullptr}};
+            {"vMixed", vMixed}};
   }
 
   //! Deserialize from JSON for TankMixModel
@@ -64,12 +62,6 @@ public:
     fracMixed = j.at("fracMixed").get<double>();
     cTank = j.at("cTank").get<double>();
     vMixed = j.at("vMixed").get<double>();
-
-    if (firstSeg)
-      firstSeg->from_json(j.at("firstSeg"));
-
-    if (lastSeg)
-      lastSeg->from_json(j.at("lastSeg"));
   }
 
 private:

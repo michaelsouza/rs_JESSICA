@@ -59,9 +59,14 @@
                 "1",
                 "--h_max",
                 "3",
-                "--verbose"
+                "--h_tsk",
+                "1",
+                "--num_threads",
+                "2",
+                "--verbose",
+                "true"
             ],
-            "stopAtEntry": true,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
                 {

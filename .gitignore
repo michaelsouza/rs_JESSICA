@@ -39,3 +39,5 @@ epanet-dev/edges.txt
 epanet-dev/callgrind.out.*
 epanet-dev/call_tree.dot
 epanet-dev/call_tree.png
+run_h_3_a_1_n_2_k_256_best.json
+run_h_3_a_1_n_2_k_256_stats.json

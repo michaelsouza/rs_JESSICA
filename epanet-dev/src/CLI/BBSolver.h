@@ -193,8 +193,6 @@ public:
       return;
     }
 
-    constraints.sync_best();
-
     // branch-and-bound loop
     while (true)
     {
@@ -510,10 +508,10 @@ private:
         {
           // Format cost_ub
           char fmt_cost_ub[100];
-          if (constraints.best_cost == std::numeric_limits<double>::max())
+          if (constraints.best_cost_local == std::numeric_limits<double>::max())
             snprintf(fmt_cost_ub, sizeof(fmt_cost_ub), "inf");
           else
-            snprintf(fmt_cost_ub, sizeof(fmt_cost_ub), "%.2f", constraints.best_cost);
+            snprintf(fmt_cost_ub, sizeof(fmt_cost_ub), "%.2f", constraints.best_cost_local);
           // Show old and new cost
           Console::printf(Console::Color::BRIGHT_GREEN, "TID[%d]: cost update: 💰 cost=%.2f, cost_ub=%s\n", task.tid, task.cost, fmt_cost_ub);
         }

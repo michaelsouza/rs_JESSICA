@@ -45,7 +45,7 @@ def main():
     num_runs = 3
     h_max = 12
     num_activations = 3
-    level = 5
+    level = 7
     
     # Setup paths
     build_dir = '/home/michael/gitrepos/rs_JESSICA/epanet-dev/release'

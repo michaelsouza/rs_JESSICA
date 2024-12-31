@@ -5,11 +5,10 @@
 #include "BBStatistics.h"
 #include "Profiler.h"
 
-#include <mpi.h>
-#include <string>
-#include <vector>
-
 #include <algorithm>
+#include <mpi.h>
+#include <random>
+#include <string>
 #include <vector>
 
 void populate_tasks(std::vector<BBTask> &tasks, const BBConfig &config, const BBConstraints &constraints)
@@ -48,6 +47,10 @@ void populate_tasks(std::vector<BBTask> &tasks, const BBConfig &config, const BB
   // Start generating combinations from the first position
   generate_combinations(1); // Start at index 1 to skip y[0] (root level)
 
+  // Shuffle tasks with a fixed seed in order to get a consistent order in all processes
+  // This aiming to reduce unbalance among the processes
+  std::shuffle(tasks.begin(), tasks.end(), std::default_random_engine(12345));
+
   for (size_t uid = 0; uid < tasks.size(); uid++)
   {
     // set the uid
@@ -85,35 +88,28 @@ int main(int argc, char *argv[])
 
   for (size_t i = 0; i < tasks.size(); i++)
   {
+    // Sync best before processing each task
+    constraints.sync_best();
+
     // Skip tasks that are not assigned to this process
     if (tasks[i].tid != rank) continue;
+
     // Process the task
     processTask(tasks[i], config, constraints, stats);
   }
 
-  // signal that this process is finished
-  constraints.finished = true;
-
-  // Wait for all processes to finish
-  while (!constraints.all_finished)
-  {
-    constraints.sync_best();
-  }
-
   auto toc = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(toc - tic);
-
   stats.duration = duration.count() / 1e6; // seconds
+
+  Console::printf(Console::Color::BRIGHT_YELLOW, "Proc %02d finished in %.3f seconds, cost(local=%s, global=%s)\n", rank, stats.duration,
+                  constraints.fmt_cost(constraints.best_cost_local).c_str(), constraints.fmt_cost(constraints.best_cost_global).c_str());
+  fflush(stdout);
+  MPI_Barrier(MPI_COMM_WORLD);
+
   stats.to_json(config.fn_stats);
   constraints.to_json(config.fn_best);
   Profiler::save(config.fn_profile);
-
-  if (rank == 0)
-  {
-    Console::printf(Console::Color::BRIGHT_CYAN, "Total time: %.3f seconds\n", duration.count() / 1e6);
-    stats.show();
-    constraints.show_best();
-  }
 
   MPI_Finalize();
   return EXIT_SUCCESS;

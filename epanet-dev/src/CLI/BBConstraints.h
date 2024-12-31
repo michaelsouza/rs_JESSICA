@@ -10,7 +10,8 @@
 #include "epanet3.h"
 
 #include <map>
-#include <mutex>
+#include <mpi.h>
+#include <queue>
 #include <string>
 
 using Epanet::Project;
@@ -35,12 +36,16 @@ public:
   std::map<std::string, int> tanks; ///< Map of tank names to indices
   std::map<std::string, int> pumps; ///< Map of pump names to indices
   std::string inpFile;              ///< Path to input file
-  std::mutex mtx_cost;              ///< Mutex for protecting cost_ub updates
-  double best_cost;                 ///< Maximum cost allowed (upper bound)
+  double best_cost_local;           ///< Local best cost
+  double best_cost_global;          ///< Global best cost
   std::vector<int> best_x;          ///< Best pump statuses
   std::vector<int> best_y;          ///< Best pump speed patterns
-  bool finished;                    ///< Whether the process is finished
-  bool all_finished;                ///< Whether all processes are finished
+  MPI_Request request_nonblocking;
+
+  /**
+   * @brief Synchronizes the best solution found among all processes
+   */
+  void sync_best();
 
   /**
    * @brief Constructs constraints checker for the given input file
@@ -131,6 +136,15 @@ public:
    */
   void show() const;
 
+  std::string fmt_cost(double cost) const
+  {
+    char fmt[256];
+    if (cost > 999999999)
+      sprintf(fmt, "INFINITY");
+    else
+      sprintf(fmt, "%.2f", cost);
+    return fmt;
+  }
   /**
    * @brief Displays the best solution found
    */
@@ -152,11 +166,6 @@ public:
    * @param y Pump speed patterns of the new solution
    */
   void update_best(double cost, std::vector<int> x, std::vector<int> y);
-
-  /**
-   * @brief Synchronizes the best solution found among all processes
-   */
-  void sync_best();
 
   /**
    * @brief Writes the best solution to a JSON file

@@ -39,7 +39,6 @@ void BBConstraints::sync_best()
   ProfileScope scope("sync_best");
 
   int err, flag;
-  MPI_Request request_copy = request_nonblocking;
 
   if (request_nonblocking == MPI_REQUEST_NULL)
     MPI_Iallreduce(&best_cost_local, &best_cost_global, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD, &request_nonblocking);
